@@ -1,0 +1,108 @@
+# ==============================================================================
+# Environment Variables & Secrets (SECURITY COMPROMISE PREVENTION)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.asc
+secrets/
+private/
+credentials.json
+service-account*.json
+id_rsa
+id_ed25519
+*.tfvars
+*.tfvars.json
+*.tfstate
+*.tfstate.backup
+
+# ==============================================================================
+# Python & Backend Artifacts
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+ENV/
+env/
+backend/.venv/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ==============================================================================
+# Node.js & Frontend Build Artifacts
+# ==============================================================================
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+frontend/out/
+.turbo/
+.npm/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================================================
+# OS & System Files
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ==============================================================================
+# IDEs, Editors & Tooling Temp Files
+# ==============================================================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.tmp/
+tmp/
