@@ -7,7 +7,7 @@
 
 ## Instructions for Team Members
 
-Copy the prompt block below, fill in the parameter placeholders (e.g. `[ROLE_NAME]`, `[PHASE_NUMBER]`, `[SUBPHASE_NUMBER]`, `[SUBPHASE_TITLE]`), and send it to your local AI Agent at the start of every sub-phase execution.
+Copy the prompt block below, fill in the parameter placeholders (e.g. `[ROLE_NAME]`, `[MEMBER_NUMBER]`, `[PHASE_NUMBER]`, `[SUBPHASE_NUMBER]`, `[SUBPHASE_TITLE]`), and send it to your local AI Agent at the start of every sub-phase execution.
 
 ---
 
@@ -17,14 +17,18 @@ KEEP PROJECT — MASTER PRE-SUBPHASE AGENT EXECUTION PROMPT
 ================================================================================
 
 YOU ARE ACTING AS: [ROLE_NAME: e.g., Backend & Database Lead (Member 2)]
+ASSIGNED MEMBER ROLE: Member [MEMBER_NUMBER] (1, 2, 3, or 4)
 CURRENT SUB-PHASE TO EXECUTE: Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] — [SUBPHASE_TITLE]
 SPECIFICATION SOURCE FILE: devdocs/p[PHASE_NUMBER]/p[PHASE_NUMBER].[SUBPHASE_NUMBER].txt
 
 --------------------------------------------------------------------------------
-1. MANDATORY PRE-EXECUTION INSPECTION (CHECK BEFORE ANY CODE MODIFICATION)
+1. MANDATORY PRE-EXECUTION INSPECTION & TASK EXTRACTION
 --------------------------------------------------------------------------------
-Before reading code or making any edits, you MUST inspect the following context files:
-1. devdocs/p[PHASE_NUMBER]/p[PHASE_NUMBER].[SUBPHASE_NUMBER].txt — Exact target sub-phase specifications.
+Before reading code or making any edits, you MUST inspect:
+1. devdocs/p[PHASE_NUMBER]/p[PHASE_NUMBER].[SUBPHASE_NUMBER].txt:
+   - Read the overall sub-phase objective and chapters.
+   - LOCATE AND READ the "Team Member Responsibilities" Chapter (e.g. Chapter 19/20) at the end of the document.
+   - EXTRACT the exact deliverables assigned specifically to Member [MEMBER_NUMBER] ([ROLE_NAME]) for Phase [PHASE_NUMBER].[SUBPHASE_NUMBER].
 2. AGENT_RULES.md — Master four-agent operational governance policy.
 3. PROJECT_STATE.md — Current progress status and repository health.
 4. ARCHITECTURE.md — System architecture blueprint & tech stack standards.
@@ -57,31 +61,32 @@ If a cross-domain interaction is needed:
 2. Document the dependency in `docs/handoffs/agent-handoffs.md` for the receiving agent.
 
 --------------------------------------------------------------------------------
-4. SINGLE SUB-PHASE EXECUTION & IMPLEMENTATION RULES
+4. SINGLE SUB-PHASE EXECUTION & ROLE-SPECIFIC TASK IMPLEMENTATION
 --------------------------------------------------------------------------------
-1. Focus EXCLUSIVELY on Phase [PHASE_NUMBER].[SUBPHASE_NUMBER]. Do not implement code for future sub-phases.
-2. Inspect the existing codebase before creating new files to prevent code duplication.
-3. Follow the strict layered architecture:
-   - Backend: API Router -> Service -> Repository -> ORM Model.
-   - Frontend: UI Component -> Store/Service -> API Client.
-4. If requirements are ambiguous or underspecified, log your assumption explicitly in `docs/decisions/decisions.md`. Do not silently invent architecture.
-5. Security Protection: NEVER hardcode API keys, database credentials, or secret keys. Use `.env.example` placeholders.
+1. Focus EXCLUSIVELY on the tasks assigned to Member [MEMBER_NUMBER] ([ROLE_NAME]) for Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] as extracted from devdocs:
+   - Primary Code Owner (if Phase lead): Build the core code, models, endpoints, or UI features for this sub-phase.
+   - Supporting Role (if secondary): Complete your role's specific sub-phase deliverables (e.g. Member 1 contract/architecture review, Member 3 UI client/types alignment, Member 4 container/CI/test runner configuration).
+2. Do NOT implement code for future sub-phases or combine multiple sub-phases.
+3. Inspect existing codebase before creating new files to prevent code duplication.
+4. Follow strict layered architecture (FastAPI Router -> Service -> Repository -> ORM for Backend; UI Component -> Store/Service -> API Client for Frontend).
+5. If requirements are ambiguous, log explicit assumptions in `docs/decisions/decisions.md`. Do not silently invent architecture.
+6. Security Protection: NEVER hardcode API keys, database credentials, or secret keys. Use `.env.example` placeholders.
 
 --------------------------------------------------------------------------------
 5. LOCAL VERIFICATION & TESTING PROTOCOL
 --------------------------------------------------------------------------------
 Your implementation is NOT complete until all required test suites pass cleanly:
-- Backend / Ingestion:
+- Backend / Ingestion (Member 1 & 2):
   - Run unit tests: `pytest tests/unit/`
   - Run integration tests: `pytest tests/integration/`
   - Verify DB migrations: `alembic upgrade head`
-- Frontend:
+- Frontend (Member 3):
   - Run unit tests: `npm test`
   - Run build verification: `npm run build`
-- DevOps / QA:
+- DevOps / QA (Member 4):
   - Execute end-to-end tests: `npx playwright test`
   - Check container health: `docker-compose up --build`
-- Check execution logs: Ensure ZERO unhandled 500 errors, unhandled exceptions, or tracebacks exist.
+- Log Inspection: Ensure ZERO unhandled 500 errors, unhandled exceptions, or tracebacks exist.
 
 --------------------------------------------------------------------------------
 6. GIT COMMIT, REBASE & PUSH PROTOCOL
@@ -90,7 +95,7 @@ Once tests pass cleanly:
 1. Inspect code changes: `git status` and `git diff` (verify no debug logs or secrets).
 2. Stage & commit using Conventional Commits:
    `git add .`
-   `git commit -m "feat(phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]): [BRIEF_DESCRIPTION]"`
+   `git commit -m "feat(phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]): [DESCRIPTION_OF_MEMBER_[MEMBER_NUMBER]_TASKS]"`
 3. Rebase onto latest develop:
    `git fetch origin develop`
    `git rebase origin/develop`
@@ -100,11 +105,11 @@ Once tests pass cleanly:
 --------------------------------------------------------------------------------
 7. DOCUMENTATION, HANDOFF LOG & DEFINITION OF DONE (DOD)
 --------------------------------------------------------------------------------
-1. Update `PROJECT_STATE.md`: Mark Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] as COMPLETED in progress matrix & subsystem details.
+1. Update `PROJECT_STATE.md`: Update Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] status and milestone notes for your subsystem.
 2. Update `docs/api/api-contract.md` or `docs/database/database-schema.md` if any schemas/endpoints were altered.
 3. Create a structured entry in `docs/handoffs/agent-handoffs.md`:
-   - Completed Sub-Phase & changed files.
-   - Implemented APIs / DB models / UI components.
+   - Completed Member [MEMBER_NUMBER] tasks for Phase [PHASE_NUMBER].[SUBPHASE_NUMBER].
+   - Changed files and implemented endpoints/models/components.
    - Verification results (test outputs, log status).
    - Action items for dependent agents.
 
@@ -115,10 +120,10 @@ CRITICAL: STOP EXECUTION IMMEDIATELY AFTER PUSHING THE BRANCH & UPDATING HANDOFF
 DO NOT PROCEED TO THE NEXT SUB-PHASE AUTONOMOUSLY.
 
 Present the following completion report to the human team member:
-1. Sub-Phase Completion Summary (Phase [PHASE_NUMBER].[SUBPHASE_NUMBER]).
+1. Summary of completed Member [MEMBER_NUMBER] ([ROLE_NAME]) tasks for Phase [PHASE_NUMBER].[SUBPHASE_NUMBER].
 2. List of Modified & Created Files.
 3. Verification Evidence (Pytest/Jest/Build output log excerpts).
 4. Feature Branch Name & Pull Request link.
-5. Explicit statement: "Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] is ready for human testing and PR review. Awaiting your approval before starting the next sub-phase."
+5. Explicit statement: "Member [MEMBER_NUMBER] tasks for Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] are complete, verified, and pushed. Awaiting your approval before starting the next task/sub-phase."
 ================================================================================
 ```
