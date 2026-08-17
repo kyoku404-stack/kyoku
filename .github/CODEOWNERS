@@ -1,0 +1,29 @@
+# KEEP Repository Code Owners (CODEOWNERS)
+# Replace placeholders with actual GitHub usernames or team names upon deployment.
+
+# Global Infrastructure & CI/CD
+/.github/ @DEVOPS_AGENT_OWNER
+/docker/ @DEVOPS_AGENT_OWNER
+/infrastructure/ @DEVOPS_AGENT_OWNER
+/tests/ @DEVOPS_AGENT_OWNER
+
+# Backend API & RAG Services (Agent 1)
+/backend/app/api/ @BACKEND_AGENT_OWNER
+/backend/app/core/ @BACKEND_AGENT_OWNER
+/backend/app/services/rag/ @BACKEND_AGENT_OWNER
+
+# Frontend Application Workspace (Agent 2)
+/frontend/ @FRONTEND_AGENT_OWNER
+
+# Database, Ingestion & Knowledge Graph (Agent 3)
+/backend/app/models/ @DATA_AGENT_OWNER
+/backend/app/db/ @DATA_AGENT_OWNER
+/backend/app/services/ingestion/ @DATA_AGENT_OWNER
+/backend/app/services/graph/ @DATA_AGENT_OWNER
+
+# Shared Specifications & Control Documents
+/devdocs/ @LEAD_ARCHITECT
+/docs/ @LEAD_ARCHITECT
+AGENT_RULES.md @LEAD_ARCHITECT
+ARCHITECTURE.md @LEAD_ARCHITECT
+PROJECT_STATE.md @LEAD_ARCHITECT
