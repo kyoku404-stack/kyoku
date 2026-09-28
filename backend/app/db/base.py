@@ -3,8 +3,9 @@
 Provides the foundational SQLAlchemy 2.0 DeclarativeBase and reusable column mixins.
 """
 
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime
+
 from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -12,7 +13,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy ORM models in KEEP."""
-    pass
 
 
 class TimestampMixin:

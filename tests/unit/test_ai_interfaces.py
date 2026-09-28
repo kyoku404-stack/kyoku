@@ -7,15 +7,15 @@ Supports both unittest discovery and pytest.
 import unittest
 from uuid import uuid4
 
-from backend.app.services.rag.interfaces import (
-    CitationMetadata,
-    RetrievalResult,
-    RAGResponse,
-)
 from backend.app.services.ai.interfaces import (
+    LLMGenerationResult,
     LLMMessage,
     MessageRole,
-    LLMGenerationResult,
+)
+from backend.app.services.rag.interfaces import (
+    CitationMetadata,
+    RAGResponse,
+    RetrievalResult,
 )
 
 

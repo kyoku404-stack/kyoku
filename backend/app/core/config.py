@@ -4,9 +4,9 @@ Loads environment variables, validates settings, and exposes centralized
 configuration parameters using Pydantic v2 BaseSettings.
 """
 
-from typing import List, Union
 import json
-from pydantic import field_validator, ValidationInfo
+
+from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # CORS Origins
-    BACKEND_CORS_ORIGINS: Union[List[str], str] = [
+    BACKEND_CORS_ORIGINS: list[str] | str = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
@@ -38,14 +38,14 @@ class Settings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, str):
             if v.startswith("[") and v.endswith("]"):
                 try:
                     parsed = json.loads(v)
                     if isinstance(parsed, list):
                         return [str(item) for item in parsed]
-                except Exception:
+                except (json.JSONDecodeError, TypeError, ValueError):
                     pass
             return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, (list, tuple)):
@@ -59,12 +59,12 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "keep_password"
     POSTGRES_DB: str = "keep_db"
 
-    DATABASE_URL: Union[str, None] = None
-    SYNC_DATABASE_URL: Union[str, None] = None
+    DATABASE_URL: str | None = None
+    SYNC_DATABASE_URL: str | None = None
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
-    def assemble_async_db_connection(cls, v: Union[str, None], info: ValidationInfo) -> str:
+    def assemble_async_db_connection(cls, v: str | None, info: ValidationInfo) -> str:
         if isinstance(v, str) and v.strip():
             return v
         data = info.data
@@ -77,7 +77,7 @@ class Settings(BaseSettings):
 
     @field_validator("SYNC_DATABASE_URL", mode="before")
     @classmethod
-    def assemble_sync_db_connection(cls, v: Union[str, None], info: ValidationInfo) -> str:
+    def assemble_sync_db_connection(cls, v: str | None, info: ValidationInfo) -> str:
         if isinstance(v, str) and v.strip():
             return v
         data = info.data
@@ -92,11 +92,11 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
-    REDIS_URL: Union[str, None] = None
+    REDIS_URL: str | None = None
 
     @field_validator("REDIS_URL", mode="before")
     @classmethod
-    def assemble_redis_url(cls, v: Union[str, None], info: ValidationInfo) -> str:
+    def assemble_redis_url(cls, v: str | None, info: ValidationInfo) -> str:
         if isinstance(v, str) and v.strip():
             return v
         data = info.data

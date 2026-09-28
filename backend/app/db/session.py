@@ -3,17 +3,19 @@
 Manages SQLAlchemy 2.0 asynchronous engine and session creation.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+
+from backend.app.core.config import settings
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from backend.app.core.config import settings
 
 # Create async engine with connection pooling
 async_engine = create_async_engine(
-    settings.DATABASE_URL or "postgresql+asyncpg://keep_user:keep_password@localhost:5432/keep_db",
+    settings.DATABASE_URL
+    or "postgresql+asyncpg://keep_user:keep_password@localhost:5432/keep_db",
     echo=(settings.LOG_LEVEL.upper() == "DEBUG"),
     future=True,
     pool_pre_ping=True,

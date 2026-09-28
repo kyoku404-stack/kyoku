@@ -1,3 +1,7 @@
+# ==============================================================================
+# KEEP — Continuous Integration (CI) Workflow
+# ==============================================================================
+
 name: KEEP Continuous Integration (CI)
 
 on:
@@ -6,9 +10,16 @@ on:
   pull_request:
     branches: [ main, develop, 'agent/**' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # ----------------------------------------------------------------------------
+  # Backend Quality, Typing & Unit Tests
+  # ----------------------------------------------------------------------------
   backend-checks:
-    name: Backend Lint, Type Check & Unit Tests
+    name: Backend (Python 3.12) Lint, Typecheck & Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -19,27 +30,35 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
-      - name: Install Backend Dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
-          pip install pytest ruff pyright
+          pip install pytest ruff pyright httpx
 
       - name: Run Backend Linting (Ruff)
         run: |
-          ruff check backend/ || echo "Ruff check completed with warnings"
+          ruff check backend/ tests/
 
       - name: Run Backend Type Checking (Pyright)
         run: |
-          pyright backend/ || echo "Pyright check completed with warnings"
+          pyright backend/ || echo "Pyright warnings reported"
 
-      - name: Run Backend Unit Tests (Pytest)
+      - name: Run Backend Unit & Integration Tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          ENVIRONMENT: test
+          SECRET_KEY: test_secret_key_ci_only
         run: |
-          pytest tests/unit/ || echo "Unit tests placeholder executed"
+          pytest tests/unit/ -v
 
+  # ----------------------------------------------------------------------------
+  # Frontend Quality, Typing, Tests & Build
+  # ----------------------------------------------------------------------------
   frontend-checks:
-    name: Frontend Lint, Type Check & Build
+    name: Frontend (Node 22) Lint, Types, Tests & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -50,15 +69,56 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Frontend Dependencies
+        working-directory: ./frontend
         run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm ci; fi
+          npm ci
 
-      - name: Run Frontend Linting
+      - name: Run TypeScript Strict Check
+        working-directory: ./frontend
         run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm run lint --if-present; fi
+          npx tsc --noEmit
 
-      - name: Build Frontend
+      - name: Run Frontend Linting (ESLint)
+        working-directory: ./frontend
         run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm run build --if-present; fi
+          npm run lint
+
+      - name: Run Frontend Unit Tests (Vitest)
+        working-directory: ./frontend
+        run: |
+          npm test
+
+      - name: Build Frontend Production Bundle
+        working-directory: ./frontend
+        run: |
+          npm run build
+
+  # ----------------------------------------------------------------------------
+  # Docker Compose & Container Configuration Validation
+  # ----------------------------------------------------------------------------
+  docker-validation:
+    name: Docker Compose Syntax & Build Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose config
+
+      - name: Build Backend Container
+        run: |
+          docker build -t keep-backend:test -f docker/Dockerfile.backend .
+
+      - name: Build Frontend Container
+        run: |
+          docker build -t keep-frontend:test -f docker/Dockerfile.frontend --target builder .
