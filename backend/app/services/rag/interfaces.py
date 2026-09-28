@@ -5,39 +5,43 @@ Domain: /backend/app/services/rag
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 
 @dataclass
 class CitationMetadata:
     """Represents provenanced citation information linked to source documents."""
+
     document_id: UUID
     filename: str
-    page_number: Optional[int] = None
+    page_number: int | None = None
     chunk_index: int = 0
     snippet: str = ""
     relevance_score: float = 0.0
-    extra_metadata: Dict[str, Any] = field(default_factory=dict)
+    extra_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class RetrievalResult:
     """Represents a single retrieved chunk candidate with similarity score."""
+
     chunk_id: UUID
     document_id: UUID
     content: str
     score: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class RAGResponse:
     """Represents a complete, citation-backed RAG answer."""
+
     query: str
     answer: str
-    citations: List[CitationMetadata] = field(default_factory=list)
+    citations: list[CitationMetadata] = field(default_factory=list)
     confidence_score: float = 1.0
     model_name: str = ""
     tokens_used: int = 0
@@ -52,8 +56,8 @@ class BaseRetriever(ABC):
         query: str,
         organization_id: UUID,
         top_k: int = 10,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievalResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[RetrievalResult]:
         """Retrieves top-k relevant document chunks scoped to a tenant organization.
 
         Args:
@@ -65,7 +69,6 @@ class BaseRetriever(ABC):
         Returns:
             List of scored RetrievalResult candidates.
         """
-        pass
 
 
 class BaseReranker(ABC):
@@ -75,9 +78,9 @@ class BaseReranker(ABC):
     async def rerank(
         self,
         query: str,
-        candidates: List[RetrievalResult],
+        candidates: list[RetrievalResult],
         top_n: int = 5,
-    ) -> List[RetrievalResult]:
+    ) -> list[RetrievalResult]:
         """Reranks retrieved candidate chunks based on deep relevance scoring.
 
         Args:
@@ -88,7 +91,6 @@ class BaseReranker(ABC):
         Returns:
             Sorted list of top_n RetrievalResult objects with updated scores.
         """
-        pass
 
 
 class BaseRAGEngine(ABC):
@@ -99,7 +101,7 @@ class BaseRAGEngine(ABC):
         self,
         query: str,
         organization_id: UUID,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> RAGResponse:
         """Executes full hybrid retrieval, reranking, context assembly, and LLM answer generation.
 
@@ -111,14 +113,13 @@ class BaseRAGEngine(ABC):
         Returns:
             Complete RAGResponse containing synthesized answer and verified citations.
         """
-        pass
 
     @abstractmethod
     async def stream_answer(
         self,
         query: str,
         organization_id: UUID,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> AsyncIterator[str]:
         """Streams generated tokens in real-time while capturing citation provenance.
 
@@ -130,4 +131,3 @@ class BaseRAGEngine(ABC):
         Yields:
             Token chunks as strings.
         """
-        pass

@@ -8,21 +8,20 @@ Verifies:
 """
 
 import unittest
-from datetime import datetime, timezone
-import uuid
 
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.app.core.config import Settings
-from backend.app.core.logging import setup_logging, get_logger
+from backend.app.core.logging import get_logger, setup_logging
 from backend.app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 from backend.app.main import app
 
 
 class MockItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """Mock model to test DeclarativeBase and mixins."""
+
     __tablename__ = "mock_items"
 
     name: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -49,10 +48,16 @@ class TestBackendInitialization(unittest.TestCase):
         self.assertEqual(settings.ENVIRONMENT, "test")
         self.assertIsNotNone(settings.DATABASE_URL)
         assert settings.DATABASE_URL is not None
-        self.assertIn("postgresql+asyncpg://test_user:test_password@localhost:5432/test_db", settings.DATABASE_URL)
+        self.assertIn(
+            "postgresql+asyncpg://test_user:test_password@localhost:5432/test_db",
+            settings.DATABASE_URL,
+        )
         self.assertIsNotNone(settings.SYNC_DATABASE_URL)
         assert settings.SYNC_DATABASE_URL is not None
-        self.assertIn("postgresql+psycopg2://test_user:test_password@localhost:5432/test_db", settings.SYNC_DATABASE_URL)
+        self.assertIn(
+            "postgresql+psycopg2://test_user:test_password@localhost:5432/test_db",
+            settings.SYNC_DATABASE_URL,
+        )
         self.assertIsNotNone(settings.REDIS_URL)
         assert settings.REDIS_URL is not None
         self.assertIn("redis://localhost:6379/0", settings.REDIS_URL)

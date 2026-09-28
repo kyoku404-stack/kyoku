@@ -5,9 +5,11 @@ CORS headers, and system health status.
 """
 
 import unittest
+
 from fastapi.testclient import TestClient
-from backend.app.main import app
+
 from backend.app.core.config import settings
+from backend.app.main import app
 
 
 class TestSystemHealthIntegration(unittest.TestCase):
@@ -61,7 +63,9 @@ class TestSystemHealthIntegration(unittest.TestCase):
         }
         response = self.client.options(f"{settings.API_V1_STR}/health", headers=headers)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers.get("access-control-allow-origin"), "http://localhost:3000")
+        self.assertEqual(
+            response.headers.get("access-control-allow-origin"), "http://localhost:3000"
+        )
 
 
 if __name__ == "__main__":

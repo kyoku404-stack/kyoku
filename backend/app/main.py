@@ -3,16 +3,16 @@
 Configures application lifespan, middleware, routers, and global exception handlers.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, Any
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
+from backend.app.core.config import settings
+from backend.app.core.logging import get_logger, setup_logging
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-from backend.app.core.config import settings
-from backend.app.core.logging import setup_logging, get_logger
 
 logger = get_logger("main")
 
@@ -21,7 +21,9 @@ logger = get_logger("main")
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manages application startup and graceful shutdown."""
     setup_logging(settings.LOG_LEVEL)
-    logger.info("Starting KEEP Enterprise Platform Backend Engine (v%s)", settings.VERSION)
+    logger.info(
+        "Starting KEEP Enterprise Platform Backend Engine (v%s)", settings.VERSION
+    )
     logger.info("Environment: %s", settings.ENVIRONMENT)
 
     yield
@@ -43,7 +45,9 @@ app = FastAPI(
 # Configure CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS if settings.BACKEND_CORS_ORIGINS else ["*"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS
+    if settings.BACKEND_CORS_ORIGINS
+    else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,7 +58,12 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Catches unhandled exceptions and returns standardized error response."""
-    logger.error("Unhandled exception processing request %s: %s", request.url, str(exc), exc_info=True)
+    logger.error(
+        "Unhandled exception processing request %s: %s",
+        request.url,
+        str(exc),
+        exc_info=exc,
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -67,7 +76,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 # Root Endpoint
 @app.get("/", tags=["Root"])
-async def root() -> Dict[str, Any]:
+async def root() -> dict[str, Any]:
     """Root health and discovery endpoint."""
     return {
         "name": settings.PROJECT_NAME,
@@ -79,11 +88,11 @@ async def root() -> Dict[str, Any]:
 
 # Health Check Endpoint
 @app.get(f"{settings.API_V1_STR}/health", tags=["Health"])
-async def health_check() -> Dict[str, Any]:
+async def health_check() -> dict[str, Any]:
     """Central system health-check endpoint."""
     return {
         "status": "healthy",
         "environment": settings.ENVIRONMENT,
         "version": settings.VERSION,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }

@@ -5,13 +5,15 @@ Domain: /backend/app/services/ai
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any
 
 
 class MessageRole(str, Enum):
     """Supported roles in conversational LLM interactions."""
+
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -21,20 +23,22 @@ class MessageRole(str, Enum):
 @dataclass
 class LLMMessage:
     """Represents a single message in an LLM conversation prompt."""
+
     role: MessageRole
     content: str
-    name: Optional[str] = None
+    name: str | None = None
 
 
 @dataclass
 class LLMGenerationResult:
     """Result of an LLM generation call."""
+
     content: str
     model_name: str
     tokens_prompt: int = 0
     tokens_completion: int = 0
     finish_reason: str = "stop"
-    raw_response: Dict[str, Any] = field(default_factory=dict)
+    raw_response: dict[str, Any] = field(default_factory=dict)
 
 
 class BaseEmbeddingService(ABC):
@@ -44,16 +48,14 @@ class BaseEmbeddingService(ABC):
     @abstractmethod
     def dimension(self) -> int:
         """Returns the vector dimensionality of the embedding model (e.g. 1536 or 384)."""
-        pass
 
     @property
     @abstractmethod
     def model_name(self) -> str:
         """Returns the underlying model identifier string."""
-        pass
 
     @abstractmethod
-    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Generates vector embeddings for a list of document chunk strings.
 
         Args:
@@ -62,10 +64,9 @@ class BaseEmbeddingService(ABC):
         Returns:
             List of high-dimensional float vector embeddings.
         """
-        pass
 
     @abstractmethod
-    async def embed_query(self, query: str) -> List[float]:
+    async def embed_query(self, query: str) -> list[float]:
         """Generates a vector embedding for a single query string.
 
         Args:
@@ -74,7 +75,6 @@ class BaseEmbeddingService(ABC):
         Returns:
             Single high-dimensional float vector embedding.
         """
-        pass
 
 
 class BaseLLMService(ABC):
@@ -84,14 +84,13 @@ class BaseLLMService(ABC):
     @abstractmethod
     def model_name(self) -> str:
         """Returns the model name identifier."""
-        pass
 
     @abstractmethod
     async def generate(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         temperature: float = 0.2,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
     ) -> LLMGenerationResult:
         """Executes a single non-streaming generation call.
 
@@ -103,14 +102,13 @@ class BaseLLMService(ABC):
         Returns:
             Structured LLMGenerationResult.
         """
-        pass
 
     @abstractmethod
     async def generate_stream(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         temperature: float = 0.2,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
     ) -> AsyncIterator[str]:
         """Executes a streaming generation call yielding tokens in real time.
 
@@ -122,4 +120,3 @@ class BaseLLMService(ABC):
         Yields:
             Token strings as they arrive from the LLM engine.
         """
-        pass

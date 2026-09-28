@@ -5,7 +5,8 @@ lifespan-managed test clients, and isolated environment variables.
 """
 
 import os
-from typing import Generator
+from collections.abc import Generator
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -21,8 +22,8 @@ os.environ["POSTGRES_DB"] = "keep_test_db"
 os.environ["REDIS_HOST"] = "localhost"
 os.environ["REDIS_PORT"] = "6379"
 
-from backend.app.main import app
 from backend.app.core.config import Settings, settings
+from backend.app.main import app
 
 
 @pytest.fixture(scope="session")
