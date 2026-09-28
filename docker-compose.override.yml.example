@@ -1,0 +1,19 @@
+# ==============================================================================
+# KEEP — Docker Compose Local Override Example
+# Copy this file to docker-compose.override.yml for local custom overrides.
+# docker-compose.override.yml is automatically ignored by Git.
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - LOG_LEVEL=DEBUG
+    # Expose debugpy port if debugging in VS Code
+    # ports:
+    #   - "5678:5678"
+
+  frontend:
+    environment:
+      - VITE_ENABLE_MOCK_DATA=false

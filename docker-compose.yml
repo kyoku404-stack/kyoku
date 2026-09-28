@@ -1,24 +1,143 @@
-version: '3.8'
+# ==============================================================================
+# KEEP — Knowledge Extraction & Enterprise Platform
+# Local Multi-Container Development Orchestration (Phase 1.1)
+# ==============================================================================
 
 services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL 16 Relational Persistence
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: keep-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-keep_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-keep_password}
+      POSTGRES_DB: ${POSTGRES_DB:-keep_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-keep_user} -d ${POSTGRES_DB:-keep_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - keep-network
+
+  # ----------------------------------------------------------------------------
+  # Redis 7 Caching & Task Broker
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: keep-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - keep-network
+
+  # ----------------------------------------------------------------------------
+  # FastAPI Backend Application Engine
+  # ----------------------------------------------------------------------------
   backend:
     build:
-      context: ./backend
-      dockerfile: ../docker/Dockerfile.backend
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: keep-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
-      - ./backend:/app
+      - ./backend:/app/backend
+      - ./tests:/app/tests
+      - ./uploads:/app/uploads
     environment:
-      - ENVIRONMENT=development
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-keep_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-keep_password}
+      POSTGRES_DB: ${POSTGRES_DB:-keep_db}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-keep_user}:${POSTGRES_PASSWORD:-keep_password}@postgres:5432/${POSTGRES_DB:-keep_db}
+      SYNC_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-keep_user}:${POSTGRES_PASSWORD:-keep_password}@postgres:5432/${POSTGRES_DB:-keep_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379/0
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000","http://localhost:8000"]'
+      UPLOAD_STORAGE_PATH: /app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - keep-network
 
+  # ----------------------------------------------------------------------------
+  # React + Vite Frontend Application
+  # ----------------------------------------------------------------------------
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../docker/Dockerfile.frontend
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      target: development
+    container_name: keep-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:8000/api/v1
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - keep-network
+
+# ------------------------------------------------------------------------------
+# Persistent Storage Volumes
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ------------------------------------------------------------------------------
+# Bridge Network
+# ------------------------------------------------------------------------------
+networks:
+  keep-network:
+    driver: bridge
