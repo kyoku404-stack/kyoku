@@ -47,8 +47,14 @@ class TestBackendInitialization(unittest.TestCase):
             BACKEND_CORS_ORIGINS=["http://localhost:3000"],
         )
         self.assertEqual(settings.ENVIRONMENT, "test")
+        self.assertIsNotNone(settings.DATABASE_URL)
+        assert settings.DATABASE_URL is not None
         self.assertIn("postgresql+asyncpg://test_user:test_password@localhost:5432/test_db", settings.DATABASE_URL)
+        self.assertIsNotNone(settings.SYNC_DATABASE_URL)
+        assert settings.SYNC_DATABASE_URL is not None
         self.assertIn("postgresql+psycopg2://test_user:test_password@localhost:5432/test_db", settings.SYNC_DATABASE_URL)
+        self.assertIsNotNone(settings.REDIS_URL)
+        assert settings.REDIS_URL is not None
         self.assertIn("redis://localhost:6379/0", settings.REDIS_URL)
         self.assertIn("http://localhost:3000", settings.BACKEND_CORS_ORIGINS)
 

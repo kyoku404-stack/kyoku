@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from sqlalchemy import pool, engine_from_config
+from sqlalchemy.engine import Connection
 from alembic import context
 
 # Ensure backend root is in Python path
@@ -51,7 +52,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def do_run_migrations(connection) -> None:
+def do_run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,

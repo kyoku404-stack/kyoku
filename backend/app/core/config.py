@@ -42,12 +42,14 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             if v.startswith("[") and v.endswith("]"):
                 try:
-                    return json.loads(v)
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item) for item in parsed]
                 except Exception:
                     pass
             return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, (list, tuple)):
-            return [str(i) for i in v]
+            return [str(i) if not isinstance(i, str) else i for i in v]
         return []
 
     # PostgreSQL Relational Persistence
