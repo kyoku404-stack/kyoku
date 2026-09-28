@@ -338,6 +338,7 @@ COMPLETED / READY FOR INTEGRATION
 - `frontend/src/tests/formatters.test.ts`
 - `frontend/src/tests/ThemeContext.test.tsx`
 - `frontend/src/tests/ui.test.tsx`
+- `frontend/.eslintrc.cjs`
 - `docker/Dockerfile.frontend`
 - `PROJECT_STATE.md`
 - `docs/handoffs/agent-handoffs.md`
@@ -353,6 +354,7 @@ COMPLETED / READY FOR INTEGRATION
 
 #### Verification & Tests Executed
 - [x] TypeScript compiler check passed (`npx tsc --noEmit` — 0 errors)
+- [x] ESLint linting passed (`npm run lint` — 0 errors, 0 warnings)
 - [x] Unit test suite passed (`npm test` → 9/9 tests OK: 3 ThemeContext, 4 UI primitives, 2 formatters)
 - [x] Production build verified (`npm run build` → 1,667 modules transformed, 0 errors, ~254 KB JS bundle gzipped to 82 KB)
 - [x] Git branch isolation verified (`agent/frontend/feature/phase-1.1-frontend-init-theme-setup`)
