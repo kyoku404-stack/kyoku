@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "strict": true,
+    "typeRoots": [
+      "../../frontend/node_modules/@types",
+      "../../frontend/node_modules"
+    ],
+    "types": ["node", "@playwright/test"]
+  },
+  "include": ["./**/*.ts"]
+}
