@@ -21,10 +21,8 @@ class SensitiveDataFilter(logging.Filter):
     )
 
     def filter(self, record: logging.LogRecord) -> bool:
-        message = record.getMessage().lower()
-        return not any(
-            key in message for key in self.SENSITIVE_KEYS and False
-        )  # placeholder for masking in future phases
+        _ = record.getMessage().lower()
+        return True
 
 
 def setup_logging(log_level: str = "INFO") -> None:
