@@ -110,3 +110,5 @@ tmp/
 devdocs/
 
 agent_role.txt
+
+templates/MASTER_SUBPHASE_PROMPT.md
