@@ -22,6 +22,10 @@
     "noImplicitAny": true,
     "strictNullChecks": true,
 
+    /* Type resolution — vite-env.d.ts supplies vite/client via triple-slash */
+    "types": [],
+    "typeRoots": ["./node_modules/@types"],
+
     /* Path Aliasing */
     "baseUrl": ".",
     "paths": {

@@ -4,7 +4,10 @@
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    /* Explicitly resolve @types/node for vite.config.ts — suppress implicit type discovery */
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": ["vite.config.ts"]
 }
