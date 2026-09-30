@@ -1,6 +1,6 @@
 """KEEP Enterprise Platform — Authentication & Authorization Dependencies."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from typing import Any
 from uuid import UUID
 from fastapi import Depends
@@ -88,7 +88,7 @@ async def get_current_active_user(
     return current_user
 
 
-def require_roles(*allowed_roles: UserRole) -> Callable[[AuthenticatedUser], AuthenticatedUser]:
+def require_roles(*allowed_roles: UserRole) -> Callable[[AuthenticatedUser], Coroutine[Any, Any, AuthenticatedUser]]:
     """Dependency factory enforcing Role-Based Access Control (RBAC)."""
 
     async def role_checker(
