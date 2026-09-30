@@ -128,7 +128,6 @@ class BaseRetriever(ABC):
         Returns:
             List of scored RetrievalResult candidates.
         """
-        pass
 
 
 class BaseReranker(ABC):
@@ -151,7 +150,6 @@ class BaseReranker(ABC):
         Returns:
             Sorted list of top_n RetrievalResult objects with updated scores.
         """
-        pass
 
 
 class BaseContextBuilder(ABC):
@@ -164,7 +162,6 @@ class BaseContextBuilder(ABC):
         max_context_tokens: int = 4096,
     ) -> list[ContextBlock]:
         """Assembles and truncates context blocks within LLM prompt token budget."""
-        pass
 
 
 class BaseCitationFormatter(ABC):
@@ -177,7 +174,6 @@ class BaseCitationFormatter(ABC):
         context_blocks: list[ContextBlock],
     ) -> list[CitationMetadata]:
         """Extracts and formats verified citations mapped to cited sources."""
-        pass
 
 
 class BaseHybridSearchService(ABC):
@@ -186,7 +182,6 @@ class BaseHybridSearchService(ABC):
     @abstractmethod
     async def search(self, search_query: SearchQuery) -> SearchResultSet:
         """Executes hybrid retrieval, rank fusion, and filtering."""
-        pass
 
 
 class BaseKnowledgeGraphQueryService(ABC):
@@ -201,7 +196,6 @@ class BaseKnowledgeGraphQueryService(ABC):
         max_depth: int = 2,
     ) -> list[dict[str, Any]]:
         """Queries interconnected entities and relationships from graph store."""
-        pass
 
 
 class BaseRAGEngine(ABC):
@@ -215,7 +209,6 @@ class BaseRAGEngine(ABC):
         conversation_history: list[dict[str, str]] | None = None,
     ) -> RAGResponse:
         """Executes full hybrid retrieval, reranking, context assembly, and LLM answer generation."""
-        pass
 
     @abstractmethod
     async def stream_answer(
@@ -225,7 +218,6 @@ class BaseRAGEngine(ABC):
         conversation_history: list[dict[str, str]] | None = None,
     ) -> AsyncIterator[StreamEvent]:
         """Streams generated tokens and citations in real-time via typed stream events."""
-        pass
 
 
 class BaseRAGService(ABC):
@@ -240,7 +232,6 @@ class BaseRAGService(ABC):
         conversation_id: UUID | None = None,
     ) -> RAGResponse:
         """High-level entry point for Q&A requests."""
-        pass
 
     @abstractmethod
     async def stream_question(
@@ -251,4 +242,3 @@ class BaseRAGService(ABC):
         conversation_id: UUID | None = None,
     ) -> AsyncIterator[StreamEvent]:
         """High-level entry point for streaming Q&A requests."""
-        pass

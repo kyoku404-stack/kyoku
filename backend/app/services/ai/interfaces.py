@@ -108,13 +108,11 @@ class BaseEmbeddingService(ABC):
     @abstractmethod
     def dimension(self) -> int:
         """Returns the vector dimensionality of the embedding model (e.g. 1536 or 384)."""
-        pass
 
     @property
     @abstractmethod
     def model_name(self) -> str:
         """Returns the underlying model identifier string."""
-        pass
 
     @abstractmethod
     async def embed_documents(self, texts: list[str]) -> list[list[float]]:
@@ -126,7 +124,6 @@ class BaseEmbeddingService(ABC):
         Returns:
             List of high-dimensional float vector embeddings.
         """
-        pass
 
     @abstractmethod
     async def embed_query(self, query: str) -> list[float]:
@@ -138,7 +135,6 @@ class BaseEmbeddingService(ABC):
         Returns:
             Single high-dimensional float vector embedding.
         """
-        pass
 
 
 class BaseLLMService(ABC):
@@ -148,7 +144,6 @@ class BaseLLMService(ABC):
     @abstractmethod
     def model_name(self) -> str:
         """Returns the model name identifier."""
-        pass
 
     @abstractmethod
     async def generate(
@@ -167,7 +162,6 @@ class BaseLLMService(ABC):
         Returns:
             Structured LLMGenerationResult.
         """
-        pass
 
     @abstractmethod
     async def generate_stream(
@@ -186,7 +180,6 @@ class BaseLLMService(ABC):
         Yields:
             Token strings as they arrive from the LLM engine.
         """
-        pass
 
 
 class BasePromptService(ABC):
@@ -199,7 +192,6 @@ class BasePromptService(ABC):
         variables: dict[str, Any],
     ) -> list[LLMMessage]:
         """Renders messages from a named template and parameter map."""
-        pass
 
 
 class BaseSemanticCacheService(ABC):
@@ -213,7 +205,6 @@ class BaseSemanticCacheService(ABC):
         similarity_threshold: float = 0.95,
     ) -> str | None:
         """Looks up a semantically equivalent query in cache."""
-        pass
 
     @abstractmethod
     async def set_cached_response(
@@ -224,7 +215,6 @@ class BaseSemanticCacheService(ABC):
         ttl_seconds: int = 86400,
     ) -> None:
         """Stores a query-response pair in semantic cache."""
-        pass
 
 
 class BaseTokenTrackerService(ABC):
@@ -237,12 +227,10 @@ class BaseTokenTrackerService(ABC):
         usage: TokenUsage,
     ) -> None:
         """Records token usage for billing, audit, and quota tracking."""
-        pass
 
     @abstractmethod
     async def check_quota(self, organization_id: UUID) -> bool:
         """Verifies if tenant has remaining quota for AI inference."""
-        pass
 
 
 class BaseAssistantService(ABC):
@@ -256,4 +244,3 @@ class BaseAssistantService(ABC):
         available_tools: list[ToolDefinition] | None = None,
     ) -> LLMGenerationResult:
         """Processes intent, coordinates tool calling, and generates final answer."""
-        pass
