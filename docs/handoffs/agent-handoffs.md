@@ -648,3 +648,111 @@ COMPLETED
 - **Member 2**: Prepare SQLAlchemy ORM models (`Organization`, `User`, `Document`, `Chunk`, `Conversation`, `Message`) and Alembic migrations for Phase 1.3.
 - **Member 3**: Consume authenticated `/api/v1/auth/login`, `/api/v1/documents`, and `/api/v1/chat/stream` SSE endpoints.
 
+---
+
+### Handoff Entry #008: Phase 1.2 — Frontend API Client Foundation, DTO Typing & SSE Streaming Engine
+
+#### Date
+2026-10-01
+
+#### Author Agent
+Member 3 — Frontend Engineering Lead
+
+#### Status
+COMPLETED / READY FOR INTEGRATION
+
+#### Implemented Features
+- **Contract Conformance & Type System Mirroring (`frontend/src/types/`)**:
+  - Implemented 100% typed mirrors of backend Pydantic DTOs for all API v1 endpoints.
+  - Standardized JSON envelope types (`ApiResponse<T>`, `ApiErrorResponse`, `ApiErrorDetail`, `PaginatedData<T>`).
+  - Standardized `ErrorCode` enum matching `backend/app/core/constants.py` across Auth, Validation, Resource, AI, and Server categories.
+  - Domain models: `types/auth.ts`, `types/user.ts`, `types/organization.ts`, `types/document.ts`, `types/search.ts`, `types/chat.ts`, `types/analytics.ts`, `types/health.ts`.
+  - Type guards `isApiResponse` and `isApiErrorResponse`.
+- **Centralized Axios Client & Interceptors (`frontend/src/services/api.ts`)**:
+  - Automatically attaches Bearer token from `localStorage` to all outgoing requests.
+  - Distributed request tracing: automatically attaches `X-Request-ID` header (`req_<timestamp>_<random>`) to correlate frontend actions with backend logs.
+  - Structured response interceptor: unwraps backend's `ApiErrorResponse` envelope into a custom typed `ApiError` class with status, machine-readable code, message, and contextual details.
+  - 401 Unauthorized handling: automatically purges expired tokens from storage.
+  - Provided `unwrapData<T>` and `normalizeApiError` helper utilities.
+- **Domain API Service Clients (`frontend/src/services/`)**:
+  - `authService`: `login`, `refreshToken`, `getCurrentUser`, `logout`
+  - `userService`: `listUsers` (paginated), `getUserById`
+  - `orgService`: `getCurrentOrganization`
+  - `documentService`: `uploadDocument` (multipart form-data), `listDocuments` (paginated)
+  - `searchService`: `hybridSearch` (vector + BM25 keyword query)
+  - `chatService`: `queryChat` (synchronous RAG with citations)
+  - `analyticsService`: `getSummary`, `getUsage`
+  - `healthService`: `checkHealth`, `getDetailedHealth`, `getRootDiscovery`
+- **Real-Time Server-Sent Events (SSE) Streaming Engine (`frontend/src/services/chatService.ts` & `useChatStream`)**:
+  - High-performance HTTP POST SSE stream reader utilizing native `fetch` and `ReadableStream`.
+  - Parses `event: citation`, `event: token`, `event: done`, and `event: error`.
+  - Custom React Hook `useChatStream` with real-time token accumulation, citation collection, cancellation via `AbortController`, and error state management.
+- **Feature Modules Alignment (`frontend/src/features/`)**:
+  - Re-exported typed services and contracts across `auth`, `search`, `upload`, `chat`, and `analytics`.
+- **Engineering Documentation**:
+  - Authored `docs/api/frontend-api-integration-guide.md` documenting API client patterns, error handling, SSE streaming, and type mirrors.
+  - Appended Section 5 ("Frontend Review & UI Integration Feedback") to `docs/api/api-contract.md`.
+- **Unit & Integration Verification Suite**:
+  - Authored `src/tests/apiClient.test.ts` (9 tests), `src/tests/domainServices.test.ts` (13 tests), and `src/tests/chatStream.test.ts` (3 tests).
+  - All 34 frontend tests passing 100% (`npm test`).
+  - Production build clean: `npm run build` -> 1,668 modules, 0 errors.
+
+#### Files Modified / Created
+- `frontend/src/types/api.ts`
+- `frontend/src/types/auth.ts`
+- `frontend/src/types/user.ts`
+- `frontend/src/types/organization.ts`
+- `frontend/src/types/document.ts`
+- `frontend/src/types/search.ts`
+- `frontend/src/types/chat.ts`
+- `frontend/src/types/analytics.ts`
+- `frontend/src/types/health.ts`
+- `frontend/src/types/index.ts`
+- `frontend/src/services/api.ts`
+- `frontend/src/services/authService.ts`
+- `frontend/src/services/userService.ts`
+- `frontend/src/services/orgService.ts`
+- `frontend/src/services/documentService.ts`
+- `frontend/src/services/searchService.ts`
+- `frontend/src/services/chatService.ts`
+- `frontend/src/services/analyticsService.ts`
+- `frontend/src/services/healthService.ts`
+- `frontend/src/services/index.ts`
+- `frontend/src/hooks/useChatStream.ts`
+- `frontend/src/features/auth/index.ts`
+- `frontend/src/features/search/index.ts`
+- `frontend/src/features/upload/index.ts`
+- `frontend/src/features/chat/index.ts`
+- `frontend/src/features/analytics/index.ts`
+- `frontend/src/tests/apiClient.test.ts`
+- `frontend/src/tests/domainServices.test.ts`
+- `frontend/src/tests/chatStream.test.ts`
+- `docs/api/api-contract.md`
+- `docs/api/frontend-api-integration-guide.md`
+- `PROJECT_STATE.md`
+- `docs/handoffs/agent-handoffs.md`
+
+#### API Contracts Updated
+- Validated all 8 API v1 endpoint groups against OpenAPI 3.1 specifications. Added Section 5 in `docs/api/api-contract.md`.
+
+#### Database Changes / Migrations
+- None. Member 3 domain is strictly `/frontend/` and frontend-related documentation.
+
+#### Verification & Tests Executed
+- [x] TypeScript compiler check passed (`npx tsc --noEmit` — 0 errors)
+- [x] ESLint linting passed with zero warnings (`npm run lint` — 0 errors, 0 warnings)
+- [x] Unit test suite passed (`npm test` — 34/34 tests OK, 6 test files)
+- [x] Production build verified (`npm run build` — 1,668 modules transformed, 0 errors, ~254 KB bundle)
+- [x] Git branch isolation verified (`agent/frontend/feature/phase-1.2-frontend-api-client-foundation`)
+- [x] Zero hardcoded secrets, zero console.log in committed code
+
+#### Target Receiving Agent
+- **Member 2 (Backend Lead)**: Proceed with Phase 1.3 Database Models & Persistence Layer.
+- **Member 4 (DevOps Lead)**: Verify Docker container build for frontend and full-stack integration in Docker Compose.
+- **Member 3 (Self - Phase 1.7)**: Proceed to Phase 1.7 Core UI Component Library & Feature Module Implementation upon human approval.
+
+#### Required Action for Receiving Agent
+- **Member 2**: Implement PostgreSQL 16 SQLAlchemy 2.0 ORM models and Alembic migrations in Phase 1.3 adhering to `docs/database/database-schema.md`.
+- **Member 4**: Run full stack health check `./scripts/healthcheck.sh` and ensure CI checks run both `pytest` and `cd frontend && npm test && npm run build`.
+
+

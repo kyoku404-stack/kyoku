@@ -1,9 +1,13 @@
 /**
- * Analytics & Knowledge Graph Feature Module
- * Entity-relationship graph visualization, semantic clusters, anomaly detection.
+ * Analytics & Observability Feature Module
+ * System metrics, query performance, storage tracking, and telemetry.
  */
+
+export * from '@/types/analytics';
+export { analyticsService } from '@/services/analyticsService';
+
 export const ANALYTICS_FEATURE = {
   name: 'analytics',
-  version: '1.0.0',
-  description: 'Knowledge graph traversal and predictive intelligence analytics',
+  version: '1.2.0',
+  description: 'Enterprise operational intelligence, token usage, and telemetry dashboards',
 };
