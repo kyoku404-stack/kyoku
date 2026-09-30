@@ -472,6 +472,64 @@ COMPLETED / READY FOR PHASE 1.2 & 1.3
 - **Member 3**:
   1. Build feature components using standard design system primitives and run `./scripts/test-frontend.sh` for verification.
 
+---
 
+### Handoff Entry #006: Phase 1.2 — Backend Architecture, Standard API Envelope & AI Integration Contracts
 
+#### Date
+2026-09-30
 
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED
+
+#### Implemented Features
+- Master Backend Architecture & API Foundation specification (`docs/Architecture/backend-architecture.md`) covering the 4-tier layered architecture, middleware pipeline, dependency injection, and security foundation.
+- Official REST & SSE Streaming API contracts approved in `docs/api/api-contract.md` with uniform JSON response envelopes (`ApiResponse[T]`, `ApiErrorResponse`, `PaginatedData[T]`).
+- Architecture Decision Records ADR-006 (Backend Layering, Standardized Envelope & Error Handling) and ADR-007 (AI Service Integration Points, Streaming Protocol & Context Hooks) in `docs/decisions/decisions.md`.
+- Comprehensive typed AI and RAG domain interfaces, context builders, streaming event protocols, prompt templates, and execution context tracking (`backend/app/services/rag/`, `backend/app/services/ai/`).
+- Full unit test suite covering AI/RAG data contracts and execution contexts (`tests/unit/test_ai_interfaces.py`) passing 100%.
+
+#### Files Modified / Created
+- `docs/Architecture/backend-architecture.md`
+- `docs/api/api-contract.md`
+- `docs/decisions/decisions.md`
+- `backend/app/services/rag/interfaces.py`
+- `backend/app/services/rag/__init__.py`
+- `backend/app/services/ai/interfaces.py`
+- `backend/app/services/ai/__init__.py`
+- `tests/unit/test_ai_interfaces.py`
+- `PROJECT_STATE.md`
+- `docs/handoffs/agent-handoffs.md`
+
+#### API Contracts Updated
+- `/api/v1/auth/login` (POST)
+- `/api/v1/auth/refresh` (POST)
+- `/api/v1/auth/me` (GET)
+- `/api/v1/organizations/current` (GET)
+- `/api/v1/documents/upload` (POST)
+- `/api/v1/documents` (GET)
+- `/api/v1/search/hybrid` (POST)
+- `/api/v1/chat/query` (POST)
+- `/api/v1/chat/stream` (POST SSE)
+
+#### Database Changes / Migrations
+- None for this sub-phase.
+
+#### Verification & Tests Executed
+- [x] Python syntax compilation check passed (`python -m py_compile`)
+- [x] Unit test suite passed (`python -m unittest discover -s tests/unit -p "test_*.py"` -> 15/15 tests OK)
+- [x] Git branch isolation verified (`agent/backend/feature/phase-1.2-backend-architecture-ai-contracts`)
+- [x] Clean tree diff verified with zero sensitive keys or unhandled errors
+
+#### Target Receiving Agent
+- **Member 2 (Backend Lead)**: Implement Phase 1.2 FastAPI application routers, middleware, Pydantic DTO schemas, and base service/repository classes.
+- **Member 3 (Frontend Lead)**: Align API client, types, and error handling with the standardized JSON envelope (`ApiResponse[T]`, `ApiErrorResponse`).
+- **Member 4 (DevOps Lead)**: Configure Docker and test runner environments.
+
+#### Required Action for Receiving Agent
+- **Member 2**: Implement `backend/app/main.py` mounting routers and middleware according to `docs/Architecture/backend-architecture.md` and `docs/api/api-contract.md`.
+- **Member 3**: Review `docs/api/api-contract.md` to configure TypeScript API client types and SSE stream listeners.
+- **Member 4**: Ensure backend container entrypoint and health checks match the `/api/v1` routes.

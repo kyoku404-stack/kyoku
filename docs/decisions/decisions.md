@@ -126,6 +126,60 @@ ACCEPTED
 
 ---
 
+### ADR-006 — Backend Layering, Standardized Envelope & Error Handling Protocol
+
+#### Date
+2026-09-30
+
+#### Context
+`devdocs/p1/p1.2.txt` Chapters 10, 14, and 15 mandate a strict 4-tier layered architecture (Router -> Service -> Repository -> Database) and a standardized JSON response format across all endpoints to guarantee predictable frontend consumption and decoupled backend evolution.
+
+#### Decision
+1. Standardize all API responses to follow a uniform envelope:
+   - Success: `{"success": true, "message": str, "data": Any}`
+   - Error: `{"success": false, "error": {"code": str, "message": str, "details": dict}}`
+2. Implement global exception handling middleware that catches domain exceptions (`AppException`, `NotFoundException`, `AuthException`, `ValidationException`, `AIServiceException`) and transforms them into standard error envelopes without exposing internal stack traces.
+3. Enforce strict layered boundaries: Routers only parse HTTP and invoke Services; Services only contain business logic and call Repositories; Repositories only execute database queries with explicit tenant filters.
+
+#### Alternatives Considered
+- Direct raw JSON returns per endpoint: Leads to inconsistent frontend error handling and breaking changes.
+- Placing business logic inside FastAPI route handlers: Causes tight coupling and impedes unit testing.
+
+#### Reason
+Ensures robust contract stability for Member 3 (Frontend), eliminates boilerplate exception handling across endpoints, and enables comprehensive unit testing.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-007 — AI Service Integration Points, Streaming Protocol & Context Hooks
+
+#### Date
+2026-09-30
+
+#### Context
+`devdocs/p1/p1.2.txt` Chapter 19 requires Member 1 (Project Lead & AI Architect) to define AI service interfaces and integration points for the backend. AI features (RAG Q&A, Document Summarization, Semantic Search) require real-time streaming, token usage tracking, and multi-tenant isolation.
+
+#### Decision
+1. Define abstract contracts in `/backend/app/services/rag/` and `/backend/app/services/ai/` for:
+   - `BaseHybridSearchService`, `BaseContextBuilder`, `BaseCitationFormatter`, `BaseRAGEngine`
+   - `BaseLLMService`, `BaseEmbeddingService`, `BasePromptService`, `BaseSemanticCacheService`, `BaseTokenTrackerService`, `BaseAssistantService`
+2. Expose streaming AI completions using Server-Sent Events (SSE) `/api/v1/chat/stream` yielding typed event packets: `{"event": "token"|"citation"|"error"|"done", "data": ...}`.
+3. Embed `AIExecutionContext` (capturing tenant_id, user_id, session_id, latency_ms, token_usage) across all AI calls to guarantee tenant isolation and audit logging.
+
+#### Alternatives Considered
+- Direct synchronous blocking LLM responses: Unacceptable latency (>5s) for user-facing chat interactions.
+- Coupling AI provider SDKs directly into database models: Violates separation of concerns.
+
+#### Reason
+Abstract interfaces insulate the application from LLM provider pricing/API changes, provide native SSE streaming for instant UI feedback, and maintain strict tenant boundaries.
+
+#### Status
+ACCEPTED
+
+---
+
 ## Documented Assumptions
 
 ### Assumption 001 — Knowledge Graph Storage Engine (PostgreSQL MVP -> Neo4j)
