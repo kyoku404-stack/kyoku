@@ -533,3 +533,118 @@ COMPLETED
 - **Member 2**: Implement `backend/app/main.py` mounting routers and middleware according to `docs/Architecture/backend-architecture.md` and `docs/api/api-contract.md`.
 - **Member 3**: Review `docs/api/api-contract.md` to configure TypeScript API client types and SSE stream listeners.
 - **Member 4**: Ensure backend container entrypoint and health checks match the `/api/v1` routes.
+
+---
+
+### Handoff Entry #007: Phase 1.2 — Backend Architecture, Modular API v1 Routers & Service Foundation
+
+#### Date
+2026-09-30
+
+#### Author Agent
+Member 2 — Backend & Database Lead
+
+#### Status
+COMPLETED
+
+#### Implemented Features
+- **Application Core & Metadata**: Configured centralized FastAPI initialization with OpenAPI 3.1 metadata, Swagger tags, and lifespan event logging (`backend/app/main.py`).
+- **Middleware Pipeline**:
+  - `RequestIDMiddleware`: Generates or propagates `X-Request-ID` across all requests/responses for distributed correlation.
+  - `CORSMiddleware`: Robust cross-origin header handling.
+  - `LoggingMiddleware`: Measures endpoint execution duration and adds `X-Process-Time` response header.
+  - Central Exception Handlers: Translates `AppException`, `RequestValidationError`, `HTTPException`, and unhandled 500 errors into the uniform `ApiErrorResponse` envelope (`{"success": false, "error": {"code": "...", "message": "...", "details": ...}}`).
+- **Core Security & Cryptography**: Native salted bcrypt hashing (`get_password_hash`, `verify_password`) and PyJWT token lifecycle (`create_access_token`, `create_refresh_token`, `decode_token`) (`backend/app/core/security.py`).
+- **Domain Exceptions & Error Codes**: Structured hierarchy of exceptions (`AppException`, `NotFoundException`, `UnauthorizedException`, `ForbiddenException`, `ValidationException`, `ConflictException`, `DatabaseException`) mapped to HTTP status codes and `ErrorCode` enums (`backend/app/core/exceptions.py`, `backend/app/core/constants.py`).
+- **Standardized DTO Schemas**: Complete Pydantic v2 schemas (`envelope.py`, `auth.py`, `user.py`, `organization.py`, `document.py`, `search.py`, `chat.py`, `analytics.py`, `health.py`).
+- **Layered Architecture (Router -> Service -> Repository)**:
+  - Base and domain repositories (`BaseRepository`, `UserRepository`, `OrganizationRepository`, `DocumentRepository`).
+  - Base and domain services (`BaseService`, `AuthService`, `UserService`, `OrganizationService`, `DocumentService`, `SearchService`, `ChatService`, `HealthService`).
+- **Modular API v1 Routers**:
+  - `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout`
+  - `GET /api/v1/users`, `GET /api/v1/users/{user_id}` (with RBAC)
+  - `GET /api/v1/organizations/current` (with tenant context isolation)
+  - `POST /api/v1/documents/upload` (multipart with file validation), `GET /api/v1/documents`
+  - `POST /api/v1/search/hybrid` (hybrid vector + keyword search)
+  - `POST /api/v1/chat/query` (synchronous RAG Q&A with citations), `POST /api/v1/chat/stream` (SSE real-time token and citation streaming)
+  - `GET /api/v1/analytics/summary`, `GET /api/v1/analytics/usage`
+  - `GET /api/v1/health`, `GET /api/v1/health/details`
+- **Alembic Environment**: Resolved workspace root path resolution in `backend/migrations/env.py`.
+
+#### Files Modified / Created
+- `backend/app/core/constants.py`
+- `backend/app/core/exceptions.py`
+- `backend/app/core/security.py`
+- `backend/app/core/__init__.py`
+- `backend/app/schemas/envelope.py`
+- `backend/app/schemas/auth.py`
+- `backend/app/schemas/user.py`
+- `backend/app/schemas/organization.py`
+- `backend/app/schemas/document.py`
+- `backend/app/schemas/search.py`
+- `backend/app/schemas/chat.py`
+- `backend/app/schemas/analytics.py`
+- `backend/app/schemas/health.py`
+- `backend/app/schemas/__init__.py`
+- `backend/app/api/middleware/request_id.py`
+- `backend/app/api/middleware/logging_middleware.py`
+- `backend/app/api/middleware/error_handler.py`
+- `backend/app/api/middleware/__init__.py`
+- `backend/app/api/dependencies/database.py`
+- `backend/app/api/dependencies/auth.py`
+- `backend/app/api/dependencies/tenant.py`
+- `backend/app/api/dependencies/__init__.py`
+- `backend/app/repositories/base.py`
+- `backend/app/repositories/user_repo.py`
+- `backend/app/repositories/org_repo.py`
+- `backend/app/repositories/document_repo.py`
+- `backend/app/repositories/__init__.py`
+- `backend/app/services/base.py`
+- `backend/app/services/auth_service.py`
+- `backend/app/services/user_service.py`
+- `backend/app/services/org_service.py`
+- `backend/app/services/document_service.py`
+- `backend/app/services/search_service.py`
+- `backend/app/services/chat_service.py`
+- `backend/app/services/health_service.py`
+- `backend/app/services/__init__.py`
+- `backend/app/api/v1/auth.py`
+- `backend/app/api/v1/users.py`
+- `backend/app/api/v1/organizations.py`
+- `backend/app/api/v1/documents.py`
+- `backend/app/api/v1/search.py`
+- `backend/app/api/v1/chat.py`
+- `backend/app/api/v1/analytics.py`
+- `backend/app/api/v1/health.py`
+- `backend/app/api/v1/router.py`
+- `backend/app/api/v1/__init__.py`
+- `backend/app/main.py`
+- `backend/migrations/env.py`
+- `tests/unit/test_api_v1_architecture.py`
+- `tests/integration/test_api_v1_endpoints.py`
+- `PROJECT_STATE.md`
+- `docs/handoffs/agent-handoffs.md`
+
+#### API Contracts Updated
+- All endpoints fully operational and matching `docs/api/api-contract.md`.
+
+#### Database Changes / Migrations
+- Verified Alembic setup with `python -m alembic heads`. Full table schemas to be defined in Phase 1.3.
+
+#### Verification & Tests Executed
+- [x] Unit test suite passed (`pytest tests/unit/` -> 24/24 tests OK, 100%)
+- [x] Integration test suite passed (`pytest tests/integration/` -> 20/20 tests OK, 100%)
+- [x] Full test matrix passed (`pytest` -> 44/44 tests OK, 100%)
+- [x] Alembic migration engine verified (`python -m alembic heads` -> 0 errors)
+- [x] Git branch isolation verified (`agent/backend/feature/phase-1.2-backend-architecture-api-foundation`)
+- [x] Zero hardcoded secrets, zero unhandled 500 errors
+
+#### Target Receiving Agent
+- **Member 2 (Backend Lead)**: Proceed to Phase 1.3 (Database Schema Models & ORM Entities).
+- **Member 3 (Frontend Lead)**: Integrate with active `/api/v1/` endpoints and standardized `ApiResponse[T]` envelope.
+- **Member 4 (DevOps Lead)**: Verify Dockerized backend health check on `/api/v1/health`.
+
+#### Required Action for Receiving Agent
+- **Member 2**: Prepare SQLAlchemy ORM models (`Organization`, `User`, `Document`, `Chunk`, `Conversation`, `Message`) and Alembic migrations for Phase 1.3.
+- **Member 3**: Consume authenticated `/api/v1/auth/login`, `/api/v1/documents`, and `/api/v1/chat/stream` SSE endpoints.
+
