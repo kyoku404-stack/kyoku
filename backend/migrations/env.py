@@ -6,7 +6,8 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 
-# Ensure backend root is in Python path
+# Ensure workspace root and backend root are in Python path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.app.core.config import settings

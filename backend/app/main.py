@@ -1,20 +1,64 @@
 """KEEP Enterprise Platform — Main FastAPI Application Entrypoint.
 
-Configures application lifespan, middleware, routers, and global exception handlers.
+Configures application lifespan, OpenAPI metadata, middleware pipeline,
+global exception handlers, and versioned modular routers.
 """
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
 from typing import Any
 
+from backend.app.api.middleware import (
+    LoggingMiddleware,
+    RequestIDMiddleware,
+    register_exception_handlers,
+)
+from backend.app.api.v1 import api_v1_router
 from backend.app.core.config import settings
 from backend.app.core.logging import get_logger, setup_logging
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 logger = get_logger("main")
+
+OPENAPI_TAGS = [
+    {
+        "name": "Root",
+        "description": "Root service discovery and application metadata.",
+    },
+    {
+        "name": "Health",
+        "description": "System readiness, liveness, and component health probes.",
+    },
+    {
+        "name": "Authentication",
+        "description": "JWT authentication, token issuance, credential verification, and user profile resolution.",
+    },
+    {
+        "name": "Users",
+        "description": "Tenant user management, role inspection, and profile retrieval.",
+    },
+    {
+        "name": "Organizations",
+        "description": "Multi-tenant boundary management and organization profiles.",
+    },
+    {
+        "name": "Documents",
+        "description": "Multipart document upload, file ingestion pipeline, and catalog pagination.",
+    },
+    {
+        "name": "Search",
+        "description": "Hybrid semantic vector and BM25 keyword search across enterprise documents.",
+    },
+    {
+        "name": "Chat",
+        "description": "Citation-backed RAG question answering and real-time Server-Sent Events (SSE) token streaming.",
+    },
+    {
+        "name": "Analytics",
+        "description": "Enterprise platform usage statistics, operational metrics, and telemetry.",
+    },
+]
 
 
 @asynccontextmanager
@@ -22,7 +66,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manages application startup and graceful shutdown."""
     setup_logging(settings.LOG_LEVEL)
     logger.info(
-        "Starting KEEP Enterprise Platform Backend Engine (v%s)", settings.VERSION
+        "Starting KEEP Enterprise Platform Backend Engine (v%s)",
+        settings.VERSION,
     )
     logger.info("Environment: %s", settings.ENVIRONMENT)
 
@@ -31,18 +76,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Shutting down KEEP Enterprise Platform Backend Engine")
 
 
-# Initialize FastAPI App
+# Initialize FastAPI Application
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Enterprise Knowledge Extraction & Platform API Engine",
+    description="KEEP Enterprise Knowledge Extraction & Platform API Engine — Phase 1.2 API Foundation",
     version=settings.VERSION,
+    openapi_tags=OPENAPI_TAGS,
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
-# Configure CORS Middleware
+# 1. Request ID Middleware
+app.add_middleware(RequestIDMiddleware)
+
+# 2. CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS
@@ -53,29 +102,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 3. Logging & Timing Middleware
+app.add_middleware(LoggingMiddleware)
 
-# Global Exception Handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Catches unhandled exceptions and returns standardized error response."""
-    logger.error(
-        "Unhandled exception processing request %s: %s",
-        request.url,
-        str(exc),
-        exc_info=exc,
-    )
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "error": "InternalServerError",
-            "message": "An unexpected server error occurred.",
-            "detail": str(exc) if settings.ENVIRONMENT == "development" else None,
-        },
-    )
+# 4. Central Exception Handling
+register_exception_handlers(app)
+
+# 5. Mount API v1 Router
+app.include_router(api_v1_router, prefix=settings.API_V1_STR)
 
 
-# Root Endpoint
-@app.get("/", tags=["Root"])
+# Root Discovery Endpoint
+@app.get(
+    "/",
+    tags=["Root"],
+    status_code=status.HTTP_200_OK,
+    summary="Root service discovery",
+    description="Returns platform health, version metadata, and documentation paths.",
+)
 async def root() -> dict[str, Any]:
     """Root health and discovery endpoint."""
     return {
@@ -83,16 +127,4 @@ async def root() -> dict[str, Any]:
         "version": settings.VERSION,
         "status": "online",
         "documentation": "/docs",
-    }
-
-
-# Health Check Endpoint
-@app.get(f"{settings.API_V1_STR}/health", tags=["Health"])
-async def health_check() -> dict[str, Any]:
-    """Central system health-check endpoint."""
-    return {
-        "status": "healthy",
-        "environment": settings.ENVIRONMENT,
-        "version": settings.VERSION,
-        "timestamp": datetime.now(UTC).isoformat(),
     }
