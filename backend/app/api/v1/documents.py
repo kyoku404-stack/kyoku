@@ -1,15 +1,18 @@
 """KEEP Enterprise Platform — Document Endpoints (`/api/v1/documents`)."""
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user, require_roles
+from backend.app.api.dependencies.auth import (
+    AuthenticatedUser,
+    get_current_user,
+    require_roles,
+)
 from backend.app.api.dependencies.database import get_db
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.core.constants import DocumentStatus, UserRole
 from backend.app.schemas.document import DocumentResponse, DocumentUploadResponse
 from backend.app.schemas.envelope import ApiResponse, PaginatedData
 from backend.app.services.document_service import DocumentService
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 doc_service = DocumentService()

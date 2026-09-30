@@ -11,11 +11,10 @@ Verifies:
 
 import unittest
 from datetime import timedelta
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from backend.app.core.constants import DocumentStatus, ErrorCode, UserRole
 from backend.app.core.exceptions import (
-    AppException,
     ConflictException,
     ForbiddenException,
     NotFoundException,
@@ -29,7 +28,7 @@ from backend.app.core.security import (
     get_password_hash,
     verify_password,
 )
-from backend.app.schemas.auth import LoginRequest, RefreshTokenRequest
+from backend.app.schemas.auth import LoginRequest
 from backend.app.schemas.chat import ChatQueryRequest
 from backend.app.schemas.envelope import ApiErrorResponse, ApiResponse, PaginatedData
 from backend.app.schemas.search import HybridSearchRequest
@@ -37,9 +36,7 @@ from backend.app.services.auth_service import AuthService
 from backend.app.services.chat_service import ChatService
 from backend.app.services.document_service import DocumentService
 from backend.app.services.health_service import HealthService
-from backend.app.services.org_service import OrganizationService
 from backend.app.services.search_service import SearchService
-from backend.app.services.user_service import UserService
 
 
 class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):

@@ -4,8 +4,9 @@ Provides structured application exceptions with mapped HTTP statuses and standar
 """
 
 from typing import Any
-from fastapi import status
+
 from backend.app.core.constants import ErrorCode
+from fastapi import status
 
 
 class AppException(Exception):

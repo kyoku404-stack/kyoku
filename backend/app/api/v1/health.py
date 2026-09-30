@@ -1,11 +1,9 @@
 """KEEP Enterprise Platform — Health Diagnostics Endpoints."""
 
-from typing import Any
-from fastapi import APIRouter, status
-
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.schemas.health import DetailedHealthResponse, HealthCheckResponse
 from backend.app.services.health_service import HealthService
+from fastapi import APIRouter, status
 
 router = APIRouter(tags=["Health"])
 health_service = HealthService()

@@ -1,8 +1,6 @@
 """KEEP Enterprise Platform — Chat & RAG Endpoints (`/api/v1/chat`)."""
 
 from uuid import uuid4
-from fastapi import APIRouter, Depends, status
-from fastapi.responses import StreamingResponse
 
 from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
@@ -13,6 +11,8 @@ from backend.app.schemas.chat import (
 )
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.services.chat_service import ChatService
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 chat_service = ChatService()

@@ -3,13 +3,13 @@
 from collections.abc import Callable, Coroutine
 from typing import Any
 from uuid import UUID
-from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
 
 from backend.app.core.config import settings
 from backend.app.core.constants import ErrorCode, UserRole
 from backend.app.core.exceptions import ForbiddenException, UnauthorizedException
 from backend.app.core.security import decode_token
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login",

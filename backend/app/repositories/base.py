@@ -4,11 +4,11 @@ Implements the Repository Pattern abstracting asynchronous database CRUD operati
 """
 
 from typing import Any, Generic, TypeVar
+
+from backend.app.db.base import Base
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from backend.app.db.base import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)

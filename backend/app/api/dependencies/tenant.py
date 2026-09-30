@@ -1,11 +1,11 @@
 """KEEP Enterprise Platform — Multi-Tenant Isolation Dependency."""
 
 from uuid import UUID
-from fastapi import Depends
 
 from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_active_user
 from backend.app.core.constants import ErrorCode
 from backend.app.core.exceptions import ForbiddenException
+from fastapi import Depends
 
 
 class TenantContext:

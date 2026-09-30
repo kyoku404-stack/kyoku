@@ -1,11 +1,10 @@
 """KEEP Enterprise Platform — Analytics Endpoints (`/api/v1/analytics`)."""
 
-from fastapi import APIRouter, Depends, status
-
 from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.schemas.analytics import AnalyticsSummaryResponse, UsageMetricsResponse
 from backend.app.schemas.envelope import ApiResponse
+from fastapi import APIRouter, Depends, status
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 

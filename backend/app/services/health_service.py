@@ -2,8 +2,13 @@
 
 import time
 from datetime import UTC, datetime
+
 from backend.app.core.config import settings
-from backend.app.schemas.health import ComponentHealth, DetailedHealthResponse, HealthCheckResponse
+from backend.app.schemas.health import (
+    ComponentHealth,
+    DetailedHealthResponse,
+    HealthCheckResponse,
+)
 
 START_TIME = time.time()
 

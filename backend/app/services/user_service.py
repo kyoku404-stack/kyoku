@@ -2,13 +2,13 @@
 
 from datetime import UTC, datetime
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.constants import UserRole
 from backend.app.repositories.user_repo import UserRepository
 from backend.app.schemas.envelope import PaginatedData
-from backend.app.schemas.user import UserCreate, UserProfileResponse, UserUpdate
+from backend.app.schemas.user import UserProfileResponse
 from backend.app.services.base import BaseService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class UserService(BaseService[UserRepository]):

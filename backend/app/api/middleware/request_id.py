@@ -5,6 +5,7 @@ Ensures every incoming HTTP request has a unique X-Request-ID for distributed tr
 
 import uuid
 from collections.abc import Callable
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response

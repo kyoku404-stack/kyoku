@@ -1,11 +1,11 @@
 """KEEP Enterprise Platform — Organization Repository."""
 
 from typing import Any
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.repositories.base import BaseRepository
 from backend.app.schemas.organization import OrganizationCreate, OrganizationUpdate
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class OrganizationRepository(BaseRepository[Any, OrganizationCreate, OrganizationUpdate]):

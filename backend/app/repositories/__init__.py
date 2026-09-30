@@ -7,7 +7,7 @@ from backend.app.repositories.user_repo import UserRepository
 
 __all__ = [
     "BaseRepository",
-    "UserRepository",
-    "OrganizationRepository",
     "DocumentRepository",
+    "OrganizationRepository",
+    "UserRepository",
 ]

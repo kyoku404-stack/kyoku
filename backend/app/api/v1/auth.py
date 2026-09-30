@@ -1,8 +1,5 @@
 """KEEP Enterprise Platform — Authentication Endpoints (`/api/v1/auth`)."""
 
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
 from backend.app.api.dependencies.database import get_db
 from backend.app.schemas.auth import (
@@ -14,6 +11,8 @@ from backend.app.schemas.auth import (
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.schemas.user import UserProfileResponse
 from backend.app.services.auth_service import AuthService
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 auth_service = AuthService()

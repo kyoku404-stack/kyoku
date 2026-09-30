@@ -5,7 +5,7 @@ from backend.app.api.middleware.logging_middleware import LoggingMiddleware
 from backend.app.api.middleware.request_id import RequestIDMiddleware
 
 __all__ = [
-    "RequestIDMiddleware",
     "LoggingMiddleware",
+    "RequestIDMiddleware",
     "register_exception_handlers",
 ]

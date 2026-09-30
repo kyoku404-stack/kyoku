@@ -1,12 +1,11 @@
 """KEEP Enterprise Platform — Search Endpoints (`/api/v1/search`)."""
 
-from fastapi import APIRouter, Depends, status
-
 from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.schemas.search import HybridSearchRequest, SearchResponse
 from backend.app.services.search_service import SearchService
+from fastapi import APIRouter, Depends, status
 
 router = APIRouter(prefix="/search", tags=["Search"])
 search_service = SearchService()

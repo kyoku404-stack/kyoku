@@ -5,6 +5,7 @@ Handles password hashing via bcrypt and JWT token issuance and decoding.
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+
 import bcrypt
 import jwt
 from backend.app.core.config import settings
@@ -19,7 +20,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
             plain_password.encode("utf-8"),
             hashed_password.encode("utf-8"),
         )
-    except Exception:
+    except (ValueError, TypeError, RuntimeError):
         return False
 
 

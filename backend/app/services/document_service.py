@@ -2,7 +2,6 @@
 
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.constants import DocumentStatus, ErrorCode
 from backend.app.core.exceptions import ValidationException
@@ -10,6 +9,7 @@ from backend.app.repositories.document_repo import DocumentRepository
 from backend.app.schemas.document import DocumentResponse, DocumentUploadResponse
 from backend.app.schemas.envelope import PaginatedData
 from backend.app.services.base import BaseService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB

@@ -1,9 +1,9 @@
 """KEEP Enterprise Platform — Authentication Schemas."""
 
-from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 from backend.app.core.constants import UserRole
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class LoginRequest(BaseModel):

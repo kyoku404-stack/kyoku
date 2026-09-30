@@ -1,14 +1,13 @@
 """KEEP Enterprise Platform — Organization Endpoints (`/api/v1/organizations`)."""
 
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
 from backend.app.api.dependencies.database import get_db
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.schemas.organization import OrganizationResponse
 from backend.app.services.org_service import OrganizationService
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/organizations", tags=["Organizations"])
 org_service = OrganizationService()

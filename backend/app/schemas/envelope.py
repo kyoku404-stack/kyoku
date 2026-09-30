@@ -5,6 +5,7 @@ and docs/api/api-contract.md.
 """
 
 from typing import Any, Generic, TypeVar
+
 from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar("T")

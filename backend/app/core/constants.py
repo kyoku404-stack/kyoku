@@ -3,7 +3,7 @@
 Defines standardized error codes, role definitions, and system states.
 """
 
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 
 class ErrorCode(StrEnum):

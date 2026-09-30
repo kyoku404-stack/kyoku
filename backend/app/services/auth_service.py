@@ -4,17 +4,15 @@ Handles credential verification, token lifecycle management, and profile resolut
 """
 
 from datetime import UTC, datetime
-from uuid import UUID, uuid4
-from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from backend.app.core.config import settings
 from backend.app.core.constants import ErrorCode, UserRole
-from backend.app.core.exceptions import NotFoundException, UnauthorizedException
+from backend.app.core.exceptions import UnauthorizedException
 from backend.app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    verify_password,
 )
 from backend.app.repositories.user_repo import UserRepository
 from backend.app.schemas.auth import (
@@ -25,6 +23,7 @@ from backend.app.schemas.auth import (
 )
 from backend.app.schemas.user import UserProfileResponse
 from backend.app.services.base import BaseService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AuthService(BaseService[UserRepository]):

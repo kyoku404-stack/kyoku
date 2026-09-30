@@ -56,6 +56,12 @@ python_files = ["test_*.py"]
 line-length = 88
 target-version = "py312"
 
+[tool.ruff.lint]
+ignore = [
+    "B008",   # function-call-in-default-argument — required by FastAPI Depends() DI pattern
+    "UP046",  # non-pep695-generic-class — Generic[T] required for Pydantic BaseModel subclasses
+]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true

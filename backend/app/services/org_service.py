@@ -2,11 +2,11 @@
 
 from datetime import UTC, datetime
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.repositories.org_repo import OrganizationRepository
 from backend.app.schemas.organization import OrganizationResponse
 from backend.app.services.base import BaseService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class OrganizationService(BaseService[OrganizationRepository]):

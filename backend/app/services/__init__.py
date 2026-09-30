@@ -14,12 +14,12 @@ from backend.app.services.search_service import SearchService
 from backend.app.services.user_service import UserService
 
 __all__ = [
-    "BaseService",
     "AuthService",
-    "UserService",
-    "OrganizationService",
-    "DocumentService",
-    "SearchService",
+    "BaseService",
     "ChatService",
+    "DocumentService",
     "HealthService",
+    "OrganizationService",
+    "SearchService",
+    "UserService",
 ]

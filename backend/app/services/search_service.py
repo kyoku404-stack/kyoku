@@ -4,12 +4,12 @@ Integrates REST search requests with underlying hybrid vector and keyword retrie
 """
 
 from uuid import UUID
+
 from backend.app.schemas.search import (
     HybridSearchRequest,
     SearchResponse,
     SearchResultItem,
 )
-from backend.app.services.rag.interfaces import SearchQuery
 
 
 class SearchService:

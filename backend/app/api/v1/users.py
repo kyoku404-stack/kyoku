@@ -1,16 +1,20 @@
 """KEEP Enterprise Platform — User Endpoints (`/api/v1/users`)."""
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user, require_roles
+from backend.app.api.dependencies.auth import (
+    AuthenticatedUser,
+    get_current_user,
+    require_roles,
+)
 from backend.app.api.dependencies.database import get_db
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.core.constants import UserRole
 from backend.app.schemas.envelope import ApiResponse, PaginatedData
 from backend.app.schemas.user import UserProfileResponse
 from backend.app.services.user_service import UserService
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/users", tags=["Users"])
 user_service = UserService()

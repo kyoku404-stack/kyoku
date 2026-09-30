@@ -3,14 +3,13 @@
 Intercepts exceptions and serializes them into the uniform ApiErrorResponse structure.
 """
 
-from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-
 from backend.app.core.config import settings
 from backend.app.core.constants import ErrorCode
 from backend.app.core.exceptions import AppException
 from backend.app.core.logging import get_logger
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 logger = get_logger("api.error_handler")
 

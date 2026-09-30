@@ -2,11 +2,10 @@
 
 from typing import Any
 from uuid import UUID
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.repositories.base import BaseRepository
-from backend.app.schemas.document import DocumentResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class DocumentRepository(BaseRepository[Any, Any, Any]):
