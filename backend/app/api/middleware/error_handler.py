@@ -39,9 +39,10 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 
 async def validation_exception_handler(
-    request: Request, exc: RequestValidationError
+    request: Request, exc: Exception
 ) -> JSONResponse:
     """Handles FastAPI/Pydantic request payload validation errors."""
+    assert isinstance(exc, RequestValidationError)
     request_id = getattr(request.state, "request_id", None)
     logger.warning(
         "[%s] RequestValidationError on %s: %s",
@@ -71,8 +72,9 @@ async def validation_exception_handler(
     )
 
 
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handles standard Starlette/FastAPI HTTPExceptions."""
+    assert isinstance(exc, HTTPException)
     request_id = getattr(request.state, "request_id", None)
     logger.warning(
         "[%s] HTTPException on %s: [%d] %s",
@@ -96,7 +98,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             "success": False,
             "error": {
                 "code": code,
-                "message": str(exc.detail),
+                "message": exc.detail,
                 "details": None,
             },
         },
