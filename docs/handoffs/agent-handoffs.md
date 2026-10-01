@@ -648,3 +648,86 @@ COMPLETED
 - **Member 2**: Prepare SQLAlchemy ORM models (`Organization`, `User`, `Document`, `Chunk`, `Conversation`, `Message`) and Alembic migrations for Phase 1.3.
 - **Member 3**: Consume authenticated `/api/v1/auth/login`, `/api/v1/documents`, and `/api/v1/chat/stream` SSE endpoints.
 
+---
+
+### Handoff Entry #008: Phase 1.2 — Docker Environment Configuration, SSE Proxying, Deployment Automation & Observability Integration
+
+#### Date
+2026-10-01
+
+#### Author Agent
+Member 4 — Integration & DevOps Lead
+
+#### Status
+COMPLETED / READY FOR PHASE 1.3
+
+#### Implemented Features
+- **Container Environment & Compose Configuration (`docker-compose.yml`)**:
+  - Attached standard container logging drivers (`json-file`) with log rotation limits (`max-size: "10m"`, `max-file: "3"`) across `postgres`, `redis`, `backend`, and `frontend` services to protect production nodes from log disk exhaustion.
+  - Injected Phase 1.2 environment variables into the backend container configuration (`PROJECT_NAME`, `API_V1_STR`, `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`).
+  - Validated syntax and configuration integrity with `docker compose config`.
+- **Backend Container Build Hardening (`docker/Dockerfile.backend`)**:
+  - Configured automated installation of required runtime dependencies: `email-validator>=2.0.0` (for Pydantic v2 `EmailStr`), `bcrypt>=4.0.0` (for security password hashing), and `greenlet>=3.0.0` (for SQLAlchemy 2.0 async engine operations).
+- **Reverse Proxy Optimization & SSE Streaming (`docker/nginx.conf`)**:
+  - Configured unbuffered reverse proxying (`proxy_buffering off;`, `proxy_cache off;`, `chunked_transfer_encoding off;`) for `/api/` routing to ensure low-latency real-time token delivery on `/api/v1/chat/stream` Server-Sent Events (SSE).
+- **Local Developer Overrides Template (`docker-compose.override.yml.example`)**:
+  - Enhanced template with Phase 1.2 configuration overrides (`LOG_LEVEL`, `ENVIRONMENT`, `SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`).
+- **Production Backend Deployment Automation Script (`scripts/deploy-backend.sh`)**:
+  - Comprehensive automated deployment script supporting Docker container deployment (`docker compose up -d --build backend`) or native production multi-worker ASGI server deployment (`uvicorn backend.app.main:app --workers 4`).
+  - Pre-flight checks verifying environment variables and executing schema migrations via Alembic (`./scripts/db-migrate.sh upgrade`).
+  - Automated post-deployment health check polling loop verifying `/api/v1/health` and `/api/v1/health/details` with retry timeout.
+  - Supports `--mode [docker|native]`, `--workers [N]`, `--port [PORT]`, `--dry-run`, and `--skip-migrations`.
+- **Developer Script Suite Polish (`scripts/`)**:
+  - Enhanced `scripts/test-backend.sh` to automatically detect and prefer `./backend/.venv/bin/pytest` and `./backend/.venv/bin/python`, eliminating environment path conflicts.
+  - Enhanced `scripts/run-backend.sh` to automatically detect virtualenv `uvicorn` and accept customizable `HOST` and `PORT`.
+  - Expanded `scripts/healthcheck.sh` from 3 to 5 automated diagnostic probes covering root discovery (`/`), health probe (`/api/v1/health`), detailed diagnostics (`/api/v1/health/details`), OpenAPI 3.1 specification (`/api/v1/openapi.json`), and frontend web server (`/`).
+- **CI/CD Pipeline Preparation (`.github/workflows/ci.yml`)**:
+  - Updated `backend-checks` CI job to install `email-validator`, `bcrypt`, `greenlet`, and `pytest-asyncio`.
+  - Configured execution of the full test matrix (`pytest tests/unit/ tests/integration/ -v`) in CI.
+- **Dedicated DevOps & Observability Integration Test Suite (`tests/integration/test_devops_integration.py`)**:
+  - 12 comprehensive integration tests covering container health probe contracts, detailed diagnostic sub-component metrics, inbound `X-Request-ID` propagation and fallback UUID4 generation, latency measurement header (`X-Process-Time`), CORS preflight policies, OpenAPI 3.1 schema paths completeness across all 8 modular routers, and standardized error envelopes on 401 Unauthorized, 422 RequestValidationError, and domain `ValidationException` (such as unsupported file upload formats).
+  - Test matrix pass rate: 56 backend tests (24 unit + 32 integration) passing 100%, 9 frontend Vitest tests passing 100%.
+
+#### Files Modified / Created
+- `docker-compose.yml`
+- `docker/Dockerfile.backend`
+- `docker/nginx.conf`
+- `docker-compose.override.yml.example`
+- `.github/workflows/ci.yml`
+- `scripts/deploy-backend.sh`
+- `scripts/test-backend.sh`
+- `scripts/run-backend.sh`
+- `scripts/healthcheck.sh`
+- `tests/integration/test_devops_integration.py`
+- `PROJECT_STATE.md`
+- `docs/handoffs/agent-handoffs.md`
+
+#### API Contracts Updated
+- No breaking contract changes. Verified all endpoints match `docs/api/api-contract.md`.
+
+#### Database Changes / Migrations
+- Standardized migration execution in `scripts/deploy-backend.sh` ready for Phase 1.3 schema migrations.
+
+#### Verification & Tests Executed
+- [x] Docker Compose syntax validated (`docker compose config --quiet` -> 0 errors)
+- [x] Shell scripts syntax check passed (`bash -n scripts/*.sh` -> 0 errors)
+- [x] Deployment dry-run validated (`./scripts/deploy-backend.sh --dry-run` -> 0 errors)
+- [x] Backend test suite passed (`./scripts/test-backend.sh all` -> 56/56 tests OK, 100%)
+- [x] Frontend test suite passed (`./scripts/test-frontend.sh` -> 9/9 Vitest tests OK, 100%)
+- [x] Monorepo master test runner passed (`./scripts/test-all.sh` -> 100% OK)
+- [x] Code quality and linting verified (`./scripts/lint.sh` -> 0 errors, 0 warnings)
+- [x] Git branch isolation verified (`agent/devops/feature/phase-1.2-docker-ci-integration-testing`)
+- [x] Zero hardcoded secrets, zero debug logs, zero unhandled 500 errors
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**: Proceed to Phase 1.3 Database Models & Persistence Layer (`Organization`, `User`, `Document`, `Chunk`, `Conversation`, `Message` ORM models and Alembic migrations).
+- **Member 3 (Frontend Lead)**: Proceed with Phase 1.7 UI Feature Modules.
+
+#### Required Action for Receiving Agent
+- **Member 2**:
+  1. Add `email-validator>=2.0.0`, `bcrypt>=4.0.0`, `greenlet>=3.0.0`, and `asyncpg>=0.30.0` explicitly to `backend/requirements.txt` and `backend/pyproject.toml`.
+  2. Implement Phase 1.3 SQLAlchemy 2.0 ORM models and create Alembic revisions using `./scripts/db-migrate.sh revision "init_phase_1_3_tables"`.
+- **Member 3**:
+  1. Connect frontend chat UI to `/api/v1/chat/stream` SSE endpoint utilizing the newly configured unbuffered Nginx reverse proxy.
+
+
