@@ -22,25 +22,42 @@ echo -e "${CYAN}================================================================
 echo -e "${CYAN}  Running KEEP Backend Test Suite (${SUITE})                      ${NC}"
 echo -e "${CYAN}================================================================${NC}"
 
-if command -v pytest &> /dev/null; then
+# Detect virtualenv pytest binary or fall back to system
+PYTEST_CMD=""
+if [ -f "${ROOT_DIR}/backend/.venv/bin/pytest" ]; then
+    PYTEST_CMD="${ROOT_DIR}/backend/.venv/bin/pytest"
+elif [ -f "${ROOT_DIR}/.venv/bin/pytest" ]; then
+    PYTEST_CMD="${ROOT_DIR}/.venv/bin/pytest"
+elif command -v pytest &> /dev/null; then
+    PYTEST_CMD="pytest"
+fi
+
+PYTHON_CMD="python3"
+if [ -f "${ROOT_DIR}/backend/.venv/bin/python" ]; then
+    PYTHON_CMD="${ROOT_DIR}/backend/.venv/bin/python"
+elif [ -f "${ROOT_DIR}/.venv/bin/python" ]; then
+    PYTHON_CMD="${ROOT_DIR}/.venv/bin/python"
+fi
+
+if [ -n "${PYTEST_CMD}" ]; then
     if [ "${SUITE}" == "unit" ]; then
-        pytest tests/unit/ -v
+        "${PYTEST_CMD}" tests/unit/ -v
     elif [ "${SUITE}" == "integration" ]; then
-        pytest tests/integration/ -v
+        "${PYTEST_CMD}" tests/integration/ -v
     else
-        pytest tests/unit/ tests/integration/ -v
+        "${PYTEST_CMD}" tests/unit/ tests/integration/ -v
     fi
 else
-    echo -e "${YELLOW}[i] pytest not found in PATH, using python3 -m unittest...${NC}"
+    echo -e "${YELLOW}[i] pytest not found in PATH or venv, using ${PYTHON_CMD} -m unittest...${NC}"
     if [ "${SUITE}" == "unit" ]; then
-        python3 -m unittest discover -s tests/unit -p "test_*.py" -v
+        "${PYTHON_CMD}" -m unittest discover -s tests/unit -p "test_*.py" -v
     elif [ "${SUITE}" == "integration" ]; then
-        python3 -m unittest discover -s tests/integration -p "test_*.py" -v
+        "${PYTHON_CMD}" -m unittest discover -s tests/integration -p "test_*.py" -v
     else
         echo -e "${CYAN}--> Running Unit Tests:${NC}"
-        python3 -m unittest discover -s tests/unit -p "test_*.py" -v
+        "${PYTHON_CMD}" -m unittest discover -s tests/unit -p "test_*.py" -v
         echo -e "${CYAN}--> Running Integration Tests:${NC}"
-        python3 -m unittest discover -s tests/integration -p "test_*.py" -v
+        "${PYTHON_CMD}" -m unittest discover -s tests/integration -p "test_*.py" -v
     fi
 fi
 

@@ -10,10 +10,14 @@ services:
   backend:
     environment:
       - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      # - SECRET_KEY=local_development_secret_key_override
+      # - ACCESS_TOKEN_EXPIRE_MINUTES=60
     # Expose debugpy port if debugging in VS Code
     # ports:
     #   - "5678:5678"
 
   frontend:
     environment:
-      - VITE_ENABLE_MOCK_DATA=false
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000/api/v1
