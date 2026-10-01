@@ -51,10 +51,18 @@ Phase 1.2 is fully COMPLETED across Member 1 (Project Lead & AI Architect), Memb
   - Complete Pydantic v2 DTO schemas (`backend/app/schemas/`).
   - Core security cryptographic utilities (bcrypt password hashing, PyJWT access/refresh token issuance/decoding).
   - Layered service and repository architectures (`backend/app/services/`, `backend/app/repositories/`).
-- Unit and integration test suites expanded and verified (`tests/unit/test_api_v1_architecture.py`, `tests/integration/test_api_v1_endpoints.py` -> 44/44 tests OK, 100% pass rate).
+- Implemented complete Phase 1.2 Frontend API Client Foundation & Contract Alignment (Member 3):
+  - Mapped complete TypeScript DTO definitions (`types/api.ts`, `types/auth.ts`, `types/user.ts`, `types/organization.ts`, `types/document.ts`, `types/search.ts`, `types/chat.ts`, `types/analytics.ts`, `types/health.ts`).
+  - Built centralized Axios client (`services/api.ts`) with Bearer token injection, `X-Request-ID` tracing header, 401 token clearing, and structured `ApiError` mapping.
+  - Built 8 typed domain service clients (`authService`, `userService`, `orgService`, `documentService`, `searchService`, `chatService`, `analyticsService`, `healthService`).
+  - Implemented real-time SSE streaming engine with citation and token decoding and custom React hook `useChatStream`.
+  - Authored Frontend API Integration Guide (`docs/api/frontend-api-integration-guide.md`) and Section 5 in `docs/api/api-contract.md`.
+  - Unit test suite expanded from 9 to 34 tests passing 100% (`npm test`).
+  - Production build clean (`npm run build` -> 1,668 modules transformed, 0 errors).
+- Monorepo test suites passing 100%: 44/44 backend tests + 34/34 frontend tests OK.
 
 ### In Progress
-- Member 3 (Frontend Lead): React/Vite frontend feature modules and alignment with approved API contract envelope.
+- Member 4 (DevOps Lead): CI automation and test execution.
 
 ### Blocked
 - None.
@@ -68,7 +76,7 @@ Status: COMPLETED (Phase 1.2)
 Next Milestone: Phase 1.3 Database Implementation & Persistence Layer (Member 2).
 
 ### Frontend
-Status: COMPLETED (Phase 1.1)  
+Status: COMPLETED (Phase 1.2)  
 Next Milestone: Phase 1.7 Feature Modules & UI Components (Member 3).
 
 ### Database / Persistence
