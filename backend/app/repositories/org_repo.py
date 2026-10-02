@@ -8,7 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class OrganizationRepository(BaseRepository[Any, OrganizationCreate, OrganizationUpdate]):
+class OrganizationRepository(
+    BaseRepository[Any, OrganizationCreate, OrganizationUpdate]
+):
     """Repository handling Organization/Tenant entity operations."""
 
     def __init__(self, model: Any = None) -> None:

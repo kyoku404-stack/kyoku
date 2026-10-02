@@ -63,7 +63,16 @@ class ChatService:
         yield f"event: citation\ndata: {json.dumps(citation_payload)}\n\n"
 
         # Token events
-        tokens = ["Quarterly ", "security ", "reviews ", "are ", "conducted ", "every ", "90 ", "days."]
+        tokens = [
+            "Quarterly ",
+            "security ",
+            "reviews ",
+            "are ",
+            "conducted ",
+            "every ",
+            "90 ",
+            "days.",
+        ]
         for token in tokens:
             token_payload = {"token": token}
             yield f"event: token\ndata: {json.dumps(token_payload)}\n\n"

@@ -54,7 +54,9 @@ class TokenResponse(BaseModel):
     access_token: str = Field(..., description="JWT Bearer access token")
     refresh_token: str | None = Field(default=None, description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token authorization type")
-    expires_in: int = Field(default=3600, description="Access token expiration window in seconds")
+    expires_in: int = Field(
+        default=3600, description="Access token expiration window in seconds"
+    )
     user: UserSummaryResponse = Field(..., description="Authenticated user summary")
 
 
@@ -63,4 +65,6 @@ class RefreshTokenResponse(BaseModel):
 
     access_token: str = Field(..., description="New JWT Bearer access token")
     token_type: str = Field(default="bearer", description="Token authorization type")
-    expires_in: int = Field(default=3600, description="Access token expiration window in seconds")
+    expires_in: int = Field(
+        default=3600, description="Access token expiration window in seconds"
+    )

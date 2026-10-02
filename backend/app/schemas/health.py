@@ -16,7 +16,9 @@ class ComponentHealth(BaseModel):
     """Health indicator of an individual infrastructure component."""
 
     status: str = Field(default="healthy", description="Component status")
-    latency_ms: float | None = Field(default=None, description="Ping latency in milliseconds")
+    latency_ms: float | None = Field(
+        default=None, description="Ping latency in milliseconds"
+    )
     details: str | None = Field(default=None, description="Additional status message")
 
 

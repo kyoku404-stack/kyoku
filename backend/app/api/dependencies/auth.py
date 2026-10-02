@@ -59,7 +59,11 @@ async def get_current_user(
 
     try:
         user_id = UUID(str(user_id_str))
-        organization_id = UUID(str(org_id_str)) if org_id_str else UUID("00000000-0000-0000-0000-000000000000")
+        organization_id = (
+            UUID(str(org_id_str))
+            if org_id_str
+            else UUID("00000000-0000-0000-0000-000000000000")
+        )
         role = UserRole(str(role_str))
     except (ValueError, TypeError) as exc:
         raise UnauthorizedException(
@@ -88,7 +92,9 @@ async def get_current_active_user(
     return current_user
 
 
-def require_roles(*allowed_roles: UserRole) -> Callable[[AuthenticatedUser], Coroutine[Any, Any, AuthenticatedUser]]:
+def require_roles(
+    *allowed_roles: UserRole,
+) -> Callable[[AuthenticatedUser], Coroutine[Any, Any, AuthenticatedUser]]:
     """Dependency factory enforcing Role-Based Access Control (RBAC)."""
 
     async def role_checker(

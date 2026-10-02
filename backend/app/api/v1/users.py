@@ -31,7 +31,9 @@ async def list_users(
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
     tenant: TenantContext = Depends(get_tenant_context),
-    current_user: AuthenticatedUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MANAGER)),
+    current_user: AuthenticatedUser = Depends(
+        require_roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MANAGER)
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[PaginatedData[UserProfileResponse]]:
     """Returns paginated users for tenant."""

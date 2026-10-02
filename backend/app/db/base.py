@@ -53,4 +53,3 @@ class SoftDeleteMixin:
         DateTime(timezone=True),
         nullable=True,
     )
-

@@ -12,7 +12,9 @@ class DocumentUploadResponse(BaseModel):
 
     document_id: UUID = Field(..., description="Document identifier")
     filename: str = Field(..., description="Original filename")
-    status: DocumentStatus = Field(default=DocumentStatus.PROCESSING, description="Current ingestion state")
+    status: DocumentStatus = Field(
+        default=DocumentStatus.PROCESSING, description="Current ingestion state"
+    )
     file_size: int = Field(..., description="File size in bytes")
     created_at: datetime = Field(..., description="Upload timestamp")
 
@@ -27,6 +29,8 @@ class DocumentResponse(BaseModel):
     status: DocumentStatus = Field(..., description="Ingestion processing status")
     chunk_count: int = Field(default=0, description="Extracted chunks count")
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
+    updated_at: datetime | None = Field(
+        default=None, description="Last update timestamp"
+    )
 
     model_config = ConfigDict(from_attributes=True)
