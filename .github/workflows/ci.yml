@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
-          pip install pytest ruff pyright httpx
+          pip install pytest ruff pyright httpx email-validator bcrypt greenlet pytest-asyncio
 
       - name: Run Backend Linting (Ruff)
         run: |
@@ -52,7 +52,7 @@ jobs:
           ENVIRONMENT: test
           SECRET_KEY: test_secret_key_ci_only
         run: |
-          pytest tests/unit/ -v
+          pytest tests/unit/ tests/integration/ -v
 
   # ----------------------------------------------------------------------------
   # Frontend Quality, Typing, Tests & Build

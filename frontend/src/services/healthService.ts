@@ -1,5 +1,10 @@
 import { apiClient } from './api';
-import type { HealthCheckResponse, RootDiscoveryResponse } from '@/types/health';
+import type { ApiResponse } from '@/types/api';
+import type {
+  DetailedHealthResponse,
+  HealthCheckResponse,
+  RootDiscoveryResponse,
+} from '@/types/health';
 import axios from 'axios';
 
 /**
@@ -15,6 +20,14 @@ export const healthService = {
   },
 
   /**
+   * Fetches detailed diagnostic health check (/api/v1/health/details)
+   */
+  async getDetailedHealth(): Promise<ApiResponse<DetailedHealthResponse>> {
+    const response = await apiClient.get<ApiResponse<DetailedHealthResponse>>('/health/details');
+    return response.data;
+  },
+
+  /**
    * Fetches root discovery endpoint (/)
    */
   async getRootDiscovery(): Promise<RootDiscoveryResponse> {
@@ -24,3 +37,5 @@ export const healthService = {
     return response.data;
   },
 };
+
+export default healthService;

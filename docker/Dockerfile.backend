@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Python dependencies
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r /app/backend/requirements.txt
+    pip install --no-cache-dir -r /app/backend/requirements.txt && \
+    pip install --no-cache-dir "email-validator>=2.0.0" "bcrypt>=4.0.0" "greenlet>=3.0.0"
 
 # Create non-root user for security
 RUN addgroup --system appgroup && adduser --system --group appuser

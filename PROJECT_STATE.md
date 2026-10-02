@@ -52,8 +52,9 @@ Phase 1.3 is fully COMPLETED for Member 2 (Backend Lead):
   - Alembic migrations engine wired to dynamic metadata registry via `env.py`.
 
 ### In Progress
-- Member 3 (Frontend Lead): React/Vite frontend feature modules and alignment with approved API contract envelope.
-- Member 4 (DevOps Lead): CI automation and test execution.
+- Member 2 (Backend Lead): Implement SQLAlchemy 2.0 ORM models in `backend/app/models/`, repository classes in `backend/app/repositories/`, and Alembic migrations in `backend/migrations/versions/`.
+- Member 3 (Frontend Lead): Align frontend TypeScript entities with approved schema.
+- Member 4 (DevOps Lead): Configure PostgreSQL 16 + pgvector container and migration testing.
 
 ### Blocked
 - None.
@@ -67,7 +68,7 @@ Status: COMPLETED (Phase 1.3)
 Next Milestone: Phase 1.4 Authentication & Identity Foundation (Member 2).
 
 ### Frontend
-Status: COMPLETED (Phase 1.1)  
+Status: COMPLETED (Phase 1.2)  
 Next Milestone: Phase 1.7 Feature Modules & UI Components (Member 3).
 
 ### Database / Persistence
@@ -79,12 +80,12 @@ Status: SPECIFIED & SCAFFOLDED
 Next Milestone: Phase 2.1 AI Knowledge Ingestion Pipeline & Phase 2.2 RAG Engine.
 
 ### DevOps / Infrastructure
-Status: COMPLETED (Phase 1.1)  
-Next Milestone: Phase 1.2 CI and integration testing.
+Status: COMPLETED (Phase 1.2)  
+Next Milestone: Phase 1.3 Database container and migration execution orchestration.
 
 ### QA / Testing
-Status: COMPLETED (Phase 1.1)  
-Next Milestone: Unit, Integration, and E2E test suite execution.
+Status: PASSING (100% OK)  
+Next Milestone: Phase 1.3 Database integration tests with live PostgreSQL session fixtures.
 
 ---
 
@@ -100,4 +101,4 @@ None.
 2026-10-02
 
 ## Last Updated By
-Member 2 — Backend & Database Lead
+Member 1 — Project Lead & AI Architect

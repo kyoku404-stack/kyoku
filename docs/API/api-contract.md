@@ -343,3 +343,28 @@ data: {"finish_reason": "stop", "total_tokens": 85}
 | `/api/v1/chat/query` | POST | Citation-backed RAG Q&A | Member 1 & Member 2 | Phase 2.2 |
 | `/api/v1/chat/stream` | POST (SSE) | Real-time token streaming Q&A | Member 1 & Member 2 | Phase 2.2 |
 | `/api/v1/graph/query` | POST | Knowledge Graph entity traversal | Member 1 & Member 2 | Phase 2.4 |
+
+---
+
+## 5. Frontend Review & UI Integration Feedback (Phase 1.2 — Member 3)
+
+### 5.1 Contract Conformance Review
+The Frontend Lead (Member 3) completed a comprehensive contract conformance review of all Phase 1.2 endpoints and OpenAPI schemas:
+1. **Standardized Response Envelope (`ApiResponse<T>`)**:
+   - Every success response adheres to `{ success: true, message: string, data: T }`.
+   - The frontend centralized Axios client (`frontend/src/services/api.ts`) and domain service modules have been fully typed with TypeScript generics matching all Pydantic DTOs.
+2. **Standardized Error Envelope (`ApiErrorResponse`)**:
+   - Error responses uniformly follow `{ success: false, error: { code: string, message: string, details?: any } }`.
+   - The frontend response interceptor unwraps this into a strongly-typed `ApiError` class with `ErrorCode` enum mappings.
+3. **Paginated Collections (`PaginatedData<T>`)**:
+   - Collections use 1-indexed `page`, `page_size`, `total`, `total_pages`, and `items: T[]`.
+   - Verified on `GET /api/v1/users` and `GET /api/v1/documents`.
+4. **SSE Real-Time Streaming (`/api/v1/chat/stream`)**:
+   - Protocol verified: `event: citation`, `event: token`, `event: done`.
+   - Frontend implementation utilizes standard `fetch` with `ReadableStream` and UTF-8 line decoding, bypassing `EventSource` limitations for POST bodies and Bearer authorization.
+
+### 5.2 UI Feedback & Recommendations for Backend Leads
+- **Citation Format in Streaming**: The `citation` event currently emits a single citation object or a list of citations. Frontend parser supports both formats seamlessly. Recommendation: ensure chunk text snippets are truncated to < 300 characters to keep SSE stream packet size light.
+- **Upload File Size Limits**: Ensure 413 / `FILE_SIZE_EXCEEDED` returns clear `max_bytes` in `details` for client-side toast notifications.
+- **Token Refresh Expiration Window**: The `expires_in` field is utilized by the frontend to trigger proactive silent token refreshes before expiration.
+
