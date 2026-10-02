@@ -52,7 +52,9 @@ class AuthService(BaseService[UserRepository]):
         user_summary = UserSummaryResponse(
             id=user_id,
             email=login_data.email,
-            full_name="Enterprise Administrator" if "admin" in login_data.email else "Jane Doe",
+            full_name="Enterprise Administrator"
+            if "admin" in login_data.email
+            else "Jane Doe",
             role=UserRole.ORG_ADMIN if "admin" in login_data.email else UserRole.MEMBER,
             organization_id=org_id,
         )

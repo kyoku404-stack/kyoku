@@ -8,15 +8,23 @@ from pydantic import BaseModel, ConfigDict, Field
 class SearchFilter(BaseModel):
     """Optional search filter attributes."""
 
-    document_types: list[str] | None = Field(default=None, description="Filter by file extension")
-    document_ids: list[UUID] | None = Field(default=None, description="Filter by specific document IDs")
+    document_types: list[str] | None = Field(
+        default=None, description="Filter by file extension"
+    )
+    document_ids: list[UUID] | None = Field(
+        default=None, description="Filter by specific document IDs"
+    )
 
 
 class HybridSearchRequest(BaseModel):
     """Payload for hybrid vector + keyword search."""
 
-    query: str = Field(..., min_length=1, max_length=1000, description="User search query")
-    top_k: int = Field(default=10, ge=1, le=100, description="Maximum results to return")
+    query: str = Field(
+        ..., min_length=1, max_length=1000, description="User search query"
+    )
+    top_k: int = Field(
+        default=10, ge=1, le=100, description="Maximum results to return"
+    )
     filters: SearchFilter | None = Field(default=None, description="Metadata filters")
 
     model_config = ConfigDict(
@@ -40,7 +48,9 @@ class SearchResultItem(BaseModel):
     filename: str = Field(..., description="Document source filename")
     page_number: int | None = Field(default=None, description="Document page number")
     content: str = Field(..., description="Matching text excerpt")
-    relevance_score: float = Field(..., ge=0.0, le=1.0, description="Normalized relevance score")
+    relevance_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Normalized relevance score"
+    )
 
 
 class SearchResponse(BaseModel):
@@ -48,4 +58,6 @@ class SearchResponse(BaseModel):
 
     query: str = Field(..., description="Original search query")
     total_results: int = Field(..., description="Count of returned items")
-    results: list[SearchResultItem] = Field(default_factory=list, description="Ranked search results")
+    results: list[SearchResultItem] = Field(
+        default_factory=list, description="Ranked search results"
+    )

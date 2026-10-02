@@ -9,8 +9,12 @@ from pydantic import BaseModel, ConfigDict, Field
 class OrganizationCreate(BaseModel):
     """Payload to create a new tenant organization."""
 
-    name: str = Field(..., min_length=2, max_length=100, description="Organization name")
-    domain: str = Field(..., min_length=3, max_length=100, description="Organization primary domain")
+    name: str = Field(
+        ..., min_length=2, max_length=100, description="Organization name"
+    )
+    domain: str = Field(
+        ..., min_length=3, max_length=100, description="Organization primary domain"
+    )
 
 
 class OrganizationUpdate(BaseModel):

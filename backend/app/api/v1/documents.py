@@ -28,10 +28,14 @@ doc_service = DocumentService()
 async def upload_document(
     file: UploadFile = File(..., description="Binary document file"),
     title: str | None = Form(default=None, description="Document display title"),
-    tags: str | None = Form(default=None, description="Comma-separated categorization tags"),
+    tags: str | None = Form(
+        default=None, description="Comma-separated categorization tags"
+    ),
     tenant: TenantContext = Depends(get_tenant_context),
     current_user: AuthenticatedUser = Depends(
-        require_roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MANAGER, UserRole.MEMBER)
+        require_roles(
+            UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MANAGER, UserRole.MEMBER
+        )
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[DocumentUploadResponse]:
@@ -69,7 +73,9 @@ async def upload_document(
 async def list_documents(
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
-    doc_status: DocumentStatus | None = Query(default=None, alias="status", description="Filter by status"),
+    doc_status: DocumentStatus | None = Query(
+        default=None, alias="status", description="Filter by status"
+    ),
     tenant: TenantContext = Depends(get_tenant_context),
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

@@ -35,6 +35,8 @@ class UserProfileResponse(BaseModel):
     organization_id: UUID = Field(..., description="Associated organization ID")
     is_active: bool = Field(default=True, description="Account active status")
     created_at: datetime = Field(..., description="Account creation timestamp")
-    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
+    updated_at: datetime | None = Field(
+        default=None, description="Last update timestamp"
+    )
 
     model_config = ConfigDict(from_attributes=True)

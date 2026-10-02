@@ -29,8 +29,14 @@ class HealthService:
         """Returns deep component-level diagnostics."""
         uptime = time.time() - START_TIME
         components = {
-            "database": ComponentHealth(status="healthy", latency_ms=1.2, details="PostgreSQL connection pool active"),
-            "redis": ComponentHealth(status="healthy", latency_ms=0.8, details="Redis ping OK"),
+            "database": ComponentHealth(
+                status="healthy",
+                latency_ms=1.2,
+                details="PostgreSQL connection pool active",
+            ),
+            "redis": ComponentHealth(
+                status="healthy", latency_ms=0.8, details="Redis ping OK"
+            ),
         }
         return DetailedHealthResponse(
             status="healthy",
