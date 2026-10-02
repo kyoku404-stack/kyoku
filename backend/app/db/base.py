@@ -40,3 +40,17 @@ class UUIDPrimaryKeyMixin:
         default=uuid.uuid4,
         nullable=False,
     )
+
+
+class SoftDeleteMixin:
+    """Reusable mixin providing soft delete capabilities."""
+
+    is_deleted: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False,
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
