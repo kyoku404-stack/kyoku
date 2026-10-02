@@ -180,6 +180,85 @@ ACCEPTED
 
 ---
 
+### ADR-008 — Multi-Tenant Schema Strategy, pgvector Vector Storage & Chunk Indexing
+
+#### Date
+2026-10-02
+
+#### Context
+`devdocs/p1/p1.3.txt` Chapters 6, 7, 14, and 19 require designing and validating the complete database persistence layer for KEEP, including multi-tenancy, soft deletion, document chunk storage, vector embeddings, and indexing.
+
+#### Decision
+1. Adopt **PostgreSQL 16 + pgvector** as the unified storage engine for both relational entities and vector embeddings (`document_chunks.embedding vector(1536)`).
+2. Use **Hierarchical Navigable Small World (HNSW)** indexing with cosine distance (`vector_cosine_ops`, `m=16`, `ef_construction=64`) for sub-millisecond approximate nearest neighbor (ANN) retrieval.
+3. Add a stored generated `tsvector` column (`tsv_content`) indexed via GIN on `document_chunks` for integrated BM25 full-text keyword retrieval.
+4. Enforce soft deletion via `SoftDeleteMixin` (`is_deleted`, `deleted_at`) across all primary business entities.
+
+#### Alternatives Considered
+- Storing vectors in an external Qdrant container for MVP: Adds operational complexity and requires 2-phase commits between Postgres and Qdrant.
+- IVFFlat vector indexing: Requires pre-training and re-indexing as data grows; HNSW provides higher recall without rebuild overhead.
+
+#### Reason
+Keeps operational architecture lean, ensures transactional consistency between documents and chunks, and provides blazing fast hybrid search capabilities.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-009 — Relational Knowledge Graph Store (Nodes, Edges, Triples) & Hybrid Search Persistence
+
+#### Date
+2026-10-02
+
+#### Context
+Phase 1.3 and Phase 2.4 require relational schema preparation for enterprise Knowledge Graph entity linking and relationship discovery without requiring an immediate dedicated graph database.
+
+#### Decision
+1. Implement MVP Knowledge Graph storage in PostgreSQL using two normalized relational tables:
+   - `kg_entities`: Represents semantic nodes (UUID, `organization_id`, `name`, `entity_type`, `properties` JSONB).
+   - `kg_relationships`: Represents directed semantic edges (UUID, `organization_id`, `source_entity_id`, `target_entity_id`, `relation_type`, `weight`, `confidence_score`, `properties` JSONB).
+2. Index forward and reverse graph lookups using composite B-tree indices on `(organization_id, source_entity_id)` and `(organization_id, target_entity_id)`.
+3. Support multi-hop traversals via PostgreSQL Recursive Common Table Expressions (CTEs).
+
+#### Alternatives Considered
+- Neo4j / Amazon Neptune from Day 1: Adds substantial container footprint and cross-database sync overhead during Phase 1 & 2 development.
+
+#### Reason
+PostgreSQL relational tables with JSONB and recursive CTEs easily satisfy 2-hop to 3-hop enterprise entity traversals while maintaining full ACID guarantees and multi-tenant isolation.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-010 — Conversational State, Message History, Citation Provenance & AI Audit Logging Persistence
+
+#### Date
+2026-10-02
+
+#### Context
+AI chat workflows require persistent conversational memory across browser sessions, token quota tracking, verified citation provenance linking back to source documents, and human feedback collection.
+
+#### Decision
+1. Model conversational persistence with:
+   - `chat_sessions`: Tenant-scoped session container (`id`, `organization_id`, `user_id`, `title`, `is_archived`).
+   - `chat_messages`: Chronological message records (`id`, `session_id`, `role`, `content`, `model_name`, `tokens_prompt`, `tokens_completion`, `latency_ms`, `citations_json`, `tool_calls_json`).
+2. Persist user feedback via `ai_feedback` (`message_id`, `rating`, `comment`) for model fine-tuning and retrieval quality evaluation.
+3. Record all AI generation invocations and access requests into an immutable `activity_logs` table for enterprise audit compliance.
+
+#### Alternatives Considered
+- Storing chat history purely in Redis: Lost upon container restarts, lacks relational joins with documents/projects.
+- Embedding raw citations as unstructured strings in message text: Precludes clickable UI provenance navigation.
+
+#### Reason
+Relational chat and feedback persistence enables seamless historical analysis, token quota monitoring, and verifiable citation traceability.
+
+#### Status
+ACCEPTED
+
+---
+
 ## Documented Assumptions
 
 ### Assumption 001 — Knowledge Graph Storage Engine (PostgreSQL MVP -> Neo4j)

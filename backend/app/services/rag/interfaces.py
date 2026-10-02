@@ -1,8 +1,8 @@
-"""Abstract Interfaces and Data Contracts for KEEP RAG & Hybrid Retrieval Engine.
+"""Abstract Interfaces and Data Contracts for KEEP RAG, Vector & Persistence Layer.
 
 Owner: Member 1 (Project Lead & AI Architect)
 Domain: /backend/app/services/rag
-Specification: devdocs/p1/p1.2.txt (Chapters 10, 11, 12, 19)
+Specification: devdocs/p1/p1.2.txt (Chapters 10, 11, 12, 19) & devdocs/p1/p1.3.txt (Chapters 6, 7, 14, 19)
 """
 
 from abc import ABC, abstractmethod
@@ -106,6 +106,284 @@ class RAGResponse:
     latency_ms: float = 0.0
 
 
+# ---------------------------------------------------------------------------
+# Persistence & Vector / Chunk / Graph Data Contracts (Phase 1.3 Baseline)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class VectorRecord:
+    """Represents a vector embedding entry for vector stores (pgvector / Qdrant)."""
+
+    id: UUID
+    vector: list[float]
+    payload: dict[str, Any]
+    organization_id: UUID
+    document_id: UUID | None = None
+
+
+@dataclass
+class VectorFilter:
+    """Multi-tenant filter criteria for vector similarity search."""
+
+    organization_id: UUID
+    document_id: UUID | None = None
+    metadata_filters: dict[str, Any] | None = None
+
+
+@dataclass
+class DocumentChunkRecord:
+    """Represents a persistent document chunk record."""
+
+    id: UUID
+    organization_id: UUID
+    document_id: UUID
+    chunk_index: int
+    content: str
+    token_count: int = 0
+    page_number: int | None = None
+    section_title: str | None = None
+    embedding: list[float] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class KGEntityRecord:
+    """Represents a persistent Knowledge Graph entity (node)."""
+
+    id: UUID
+    organization_id: UUID
+    name: str
+    entity_type: str
+    description: str | None = None
+    source_document_id: UUID | None = None
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class KGRelationshipRecord:
+    """Represents a persistent Knowledge Graph relationship (directed edge)."""
+
+    id: UUID
+    organization_id: UUID
+    source_entity_id: UUID
+    target_entity_id: UUID
+    relation_type: str
+    weight: float = 1.0
+    confidence_score: float = 1.0
+    source_document_id: UUID | None = None
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ChatMessageRecord:
+    """Represents a persistent chat message with metadata and citations."""
+
+    id: UUID
+    session_id: UUID
+    role: str
+    content: str
+    model_name: str | None = None
+    tokens_prompt: int = 0
+    tokens_completion: int = 0
+    latency_ms: float = 0.0
+    citations: list[CitationMetadata] = field(default_factory=list)
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass
+class ChatSessionRecord:
+    """Represents a persistent conversational chat session."""
+
+    id: UUID
+    organization_id: UUID
+    user_id: UUID
+    title: str = "New Conversation"
+    is_archived: bool = False
+    messages: list[ChatMessageRecord] = field(default_factory=list)
+
+
+@dataclass
+class AIQueryLogRecord:
+    """Audit log entry for AI query executions."""
+
+    id: UUID
+    organization_id: UUID
+    user_id: UUID
+    query: str
+    response: str
+    tokens_used: int
+    latency_ms: float
+    model_name: str
+    citations_count: int = 0
+
+
+# ---------------------------------------------------------------------------
+# Abstract Service & Repository Interfaces
+# ---------------------------------------------------------------------------
+
+
+class BaseVectorStore(ABC):
+    """Abstract interface for dense vector persistence and ANN similarity search."""
+
+    @abstractmethod
+    async def upsert_vectors(self, vectors: list[VectorRecord]) -> int:
+        """Upserts a batch of vector embeddings with payloads."""
+
+    @abstractmethod
+    async def similarity_search(
+        self,
+        query_vector: list[float],
+        top_k: int,
+        filter_criteria: VectorFilter,
+    ) -> list[RetrievalResult]:
+        """Executes tenant-filtered approximate nearest neighbor search."""
+
+    @abstractmethod
+    async def delete_vectors(
+        self,
+        vector_ids: list[UUID],
+        organization_id: UUID,
+    ) -> int:
+        """Deletes vector embeddings by ID scoped to tenant."""
+
+    @abstractmethod
+    async def delete_vectors_by_document(
+        self,
+        document_id: UUID,
+        organization_id: UUID,
+    ) -> int:
+        """Deletes all vector embeddings associated with a document."""
+
+
+class BaseChunkRepository(ABC):
+    """Abstract interface for managing document chunk persistence."""
+
+    @abstractmethod
+    async def create_chunks(
+        self,
+        chunks: list[DocumentChunkRecord],
+    ) -> list[DocumentChunkRecord]:
+        """Persists a batch of text chunks."""
+
+    @abstractmethod
+    async def get_chunks_by_document(
+        self,
+        document_id: UUID,
+        organization_id: UUID,
+    ) -> list[DocumentChunkRecord]:
+        """Retrieves all chunks belonging to a document in sequential order."""
+
+    @abstractmethod
+    async def get_chunk_by_id(
+        self,
+        chunk_id: UUID,
+        organization_id: UUID,
+    ) -> DocumentChunkRecord | None:
+        """Retrieves a single chunk by ID."""
+
+    @abstractmethod
+    async def delete_chunks_by_document(
+        self,
+        document_id: UUID,
+        organization_id: UUID,
+    ) -> int:
+        """Deletes all chunks belonging to a document."""
+
+
+class BaseKnowledgeGraphStore(ABC):
+    """Abstract interface for Knowledge Graph entity and relationship persistence."""
+
+    @abstractmethod
+    async def upsert_entity(self, entity: KGEntityRecord) -> KGEntityRecord:
+        """Creates or updates a knowledge graph entity node."""
+
+    @abstractmethod
+    async def upsert_relationship(
+        self,
+        relationship: KGRelationshipRecord,
+    ) -> KGRelationshipRecord:
+        """Creates or updates a directed knowledge graph relationship edge."""
+
+    @abstractmethod
+    async def get_entity_neighbors(
+        self,
+        entity_id: UUID,
+        organization_id: UUID,
+        max_depth: int = 1,
+    ) -> dict[str, Any]:
+        """Traverses interconnected neighbors up to max_depth hops."""
+
+    @abstractmethod
+    async def find_entity_by_name(
+        self,
+        name: str,
+        entity_type: str,
+        organization_id: UUID,
+    ) -> KGEntityRecord | None:
+        """Looks up an entity node by normalized name and type within tenant."""
+
+
+class BaseChatHistoryRepository(ABC):
+    """Abstract interface for conversational session and message persistence."""
+
+    @abstractmethod
+    async def create_session(self, session: ChatSessionRecord) -> ChatSessionRecord:
+        """Creates a new conversational chat session."""
+
+    @abstractmethod
+    async def get_session(
+        self,
+        session_id: UUID,
+        organization_id: UUID,
+    ) -> ChatSessionRecord | None:
+        """Retrieves a chat session by ID scoped to tenant."""
+
+    @abstractmethod
+    async def list_user_sessions(
+        self,
+        user_id: UUID,
+        organization_id: UUID,
+        limit: int = 50,
+    ) -> list[ChatSessionRecord]:
+        """Lists chat sessions belonging to a user."""
+
+    @abstractmethod
+    async def add_message(self, message: ChatMessageRecord) -> ChatMessageRecord:
+        """Appends a new message to an existing chat session."""
+
+    @abstractmethod
+    async def get_session_messages(
+        self,
+        session_id: UUID,
+        limit: int = 100,
+    ) -> list[ChatMessageRecord]:
+        """Retrieves chronological messages for a session."""
+
+    @abstractmethod
+    async def delete_session(
+        self,
+        session_id: UUID,
+        organization_id: UUID,
+    ) -> bool:
+        """Soft-deletes or archives a chat session."""
+
+
+class BaseAIQueryLogRepository(ABC):
+    """Abstract interface for AI inference audit trail persistence."""
+
+    @abstractmethod
+    async def log_query(self, log_entry: AIQueryLogRecord) -> None:
+        """Appends an AI query audit log entry."""
+
+    @abstractmethod
+    async def get_organization_usage(
+        self,
+        organization_id: UUID,
+    ) -> dict[str, Any]:
+        """Calculates token usage metrics and query count for tenant."""
+
+
 class BaseRetriever(ABC):
     """Abstract interface for dense, sparse, and hybrid retrieval systems."""
 
@@ -117,17 +395,7 @@ class BaseRetriever(ABC):
         top_k: int = 10,
         filters: dict[str, Any] | None = None,
     ) -> list[RetrievalResult]:
-        """Retrieves top-k relevant document chunks scoped to a tenant organization.
-
-        Args:
-            query: The user search or question string.
-            organization_id: Multi-tenant boundary UUID.
-            top_k: Maximum candidate chunks to retrieve.
-            filters: Optional metadata filters (e.g. document_id, tags).
-
-        Returns:
-            List of scored RetrievalResult candidates.
-        """
+        """Retrieves top-k relevant document chunks scoped to a tenant organization."""
 
 
 class BaseReranker(ABC):
@@ -140,16 +408,7 @@ class BaseReranker(ABC):
         candidates: list[RetrievalResult],
         top_n: int = 5,
     ) -> list[RetrievalResult]:
-        """Reranks retrieved candidate chunks based on deep relevance scoring.
-
-        Args:
-            query: The original user search query.
-            candidates: List of initial retrieval candidates from dense/sparse stages.
-            top_n: Number of top reranked chunks to return.
-
-        Returns:
-            Sorted list of top_n RetrievalResult objects with updated scores.
-        """
+        """Reranks retrieved candidate chunks based on deep relevance scoring."""
 
 
 class BaseContextBuilder(ABC):
