@@ -116,7 +116,7 @@ class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):
     def test_standard_envelopes(self) -> None:
         """Verify ApiResponse, ApiErrorResponse, and PaginatedData serialization."""
         from backend.app.schemas.envelope import ErrorDetail
-        
+
         success_resp = ApiResponse(data={"key": "value"})
         self.assertTrue(success_resp.success)
         self.assertEqual(success_resp.data, {"key": "value"})
@@ -137,8 +137,9 @@ class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):
     async def test_auth_service(self) -> None:
         """Verify AuthService login, refresh, and profile retrieval."""
         from datetime import UTC, datetime
-        from unittest.mock import AsyncMock
         from typing import cast
+        from unittest.mock import AsyncMock
+
         from sqlalchemy.ext.asyncio import AsyncSession
 
         from backend.app.core.security import get_password_hash
