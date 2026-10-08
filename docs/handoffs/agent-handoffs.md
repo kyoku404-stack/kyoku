@@ -896,4 +896,94 @@ COMPLETED / READY FOR PHASE 1.4
 - **Member 2**: Wire `UserRepository` and `OrganizationRepository` into `AuthService.authenticate_user()` using seed credentials (`admin@keep.local` / `Password123!`).
 - **Member 3**: Implement authentication form validation connecting to `/api/v1/auth/login`.
 
+---
+
+### Handoff Entry #011: Phase 1.4 — Authentication Architecture, RBAC Specification, AI Security Context & Contracts
+
+#### Date
+2026-10-09
+
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION
+
+#### Implemented Features
+- **Master Authentication, Identity & RBAC Architecture Specification (`docs/Architecture/auth-identity-architecture.md`)**:
+  - Full end-to-end authentication lifecycle specification: User registration, email verification, login, session creation, token refresh, password reset workflow, and secure logout.
+  - Multi-tenant Identity Model: Tenant isolation barrier (`organization_id`), account lifecycle state machine (`INVITED` -> `REGISTERED` -> `ACTIVE` -> `SUSPENDED` -> `ARCHIVED`).
+  - Comprehensive Role-Based Access Control (RBAC) Specification: 4 MVP roles (`Organization Admin`, `Project Manager`, `Employee`, `Viewer`) in strict hierarchical inheritance, plus full permission taxonomy across 20 granular permission keys (`auth:*`, `org:*`, `users:*`, `doc:*`, `project:*`, `team:*`, `meeting:*`, `search:*`, `chat:*`, `kg:*`, `analytics:*`, `audit:*`).
+  - Zero-Trust AI Security & Tenancy Gating: Multi-tenant retrieval gating, vector chunk filtering by permitted document IDs, Knowledge Graph recursive traversal isolation, conversational state privacy, and prompt injection / privilege escalation defenses.
+  - Cryptographic & Session Standards: Salted bcrypt / Argon2id password policy (minimum 8 characters, uppercase, lowercase, digit, symbol), stateless JWT double-token lifecycle (Access 15–30m, Refresh 14–30d with rotation), and active session tracking in `activity_logs`.
+- **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+  - Authored ADR-011: Enterprise RBAC Matrix, Hierarchical Inheritance & Role Resolution Strategy.
+  - Authored ADR-012: Tenant-Scoped Identity Context & Access-Controlled AI Retrieval (RAG & KG).
+  - Authored ADR-013: Stateless JWT Double-Token Lifecycle, Session Revocation & Security Policy.
+- **REST API Contracts Specification Expansion (`docs/api/api-contract.md`)**:
+  - Fully specified all 8 authentication endpoints from `devdocs/p1/p1.4.txt` Chapter 19:
+    - `POST /api/v1/auth/register` (Create user account with tenant assignment)
+    - `POST /api/v1/auth/login` (Issue access token, refresh token, user profile)
+    - `POST /api/v1/auth/logout` (Revoke refresh token, invalidate session)
+    - `POST /api/v1/auth/refresh` (Issue fresh token pair with rotation)
+    - `POST /api/v1/auth/forgot-password` (Trigger password recovery workflow)
+    - `POST /api/v1/auth/reset-password` (One-time token validation and password update)
+    - `GET /api/v1/auth/me` (Authenticated current user profile)
+    - `PATCH /api/v1/auth/change-password` (Authenticated password modification)
+  - Formalized standardized error envelopes and error codes (`AUTH_INVALID_CREDENTIALS`, `AUTH_ACCOUNT_DISABLED`, `AUTH_TOKEN_EXPIRED`, `AUTH_PERMISSION_DENIED`, `AUTH_EMAIL_EXISTS`, `AUTH_INVALID_RESET_TOKEN`, `AUTH_UNVERIFIED_EMAIL`).
+- **Typed AI & RAG Security Domain Contracts (`backend/app/services/ai/` and `backend/app/services/rag/`)**:
+  - `backend/app/services/ai/interfaces.py`: Added `UserRole`, `AIPermission`, `ROLE_PERMISSIONS` hierarchy mapping, `AISecurityContext`, `BaseAIAccessController` abstract interface (`can_execute_query`, `can_access_tool`, `filter_tools_for_user`, `validate_tenant_boundary`), and updated `AIExecutionContext`.
+  - `backend/app/services/rag/interfaces.py`: Added `RAGSecurityContext`, updated `SearchQuery` and `VectorFilter` to support permission and document-level gating (`allowed_document_ids`), and added `BaseRAGAccessController` abstract interface (`filter_retrieval_candidates`, `verify_document_access`, `verify_graph_node_access`).
+  - Exported all new contracts in package `__init__.py` files.
+- **Unit Testing & Verification Suite (`tests/unit/test_auth_ai_security_contracts.py`)**:
+  - Authored 8 comprehensive unit tests covering role definitions, hierarchical permission inheritance, `AISecurityContext`, `AIExecutionContext` auto-population, mock AI tool access controller filtering, `RAGSecurityContext` document gating, mock RAG candidate pruning, and SearchQuery/VectorFilter contracts.
+  - 100% test pass rate across all unit test suites (22/22 AI unit tests passing).
+
+#### Files Modified / Created
+- `docs/Architecture/auth-identity-architecture.md`
+- `docs/decisions/decisions.md`
+- `docs/api/api-contract.md`
+- `backend/app/services/ai/interfaces.py`
+- `backend/app/services/ai/__init__.py`
+- `backend/app/services/rag/interfaces.py`
+- `backend/app/services/rag/__init__.py`
+- `tests/unit/test_auth_ai_security_contracts.py`
+- `PROJECT_STATE.md`
+- `docs/handoffs/agent-handoffs.md`
+
+#### API Contracts Updated
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/logout`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password`
+- `GET /api/v1/auth/me`
+- `PATCH /api/v1/auth/change-password`
+
+#### Database Changes / Migrations
+- No schema changes required for Member 1 architecture phase. Existing `users`, `organizations`, and `activity_logs` models fully support the identity specification.
+
+#### Verification & Tests Executed
+- [x] Python syntax compilation passed (`python -m py_compile`)
+- [x] Auth & AI Security unit tests passed (`python -m unittest tests/unit/test_auth_ai_security_contracts.py` -> 8/8 tests OK, 100%)
+- [x] Full AI unit test matrix passed (`python -m unittest tests/unit/test_ai_interfaces.py tests/unit/test_ai_persistence_contracts.py tests/unit/test_auth_ai_security_contracts.py` -> 22/22 tests OK, 100%)
+- [x] Full unit test discovery passed (`python -m unittest discover -s tests/unit -p "test_*.py"` -> 37/37 unit tests OK)
+- [x] Git branch isolation verified (`agent/backend/feature/phase-1.4-auth-architecture-rbac`)
+- [x] Zero hardcoded secrets, zero unhandled exceptions
+
+#### Target Receiving Agent
+- **Member 2 (Backend Lead)**: Implement Phase 1.4 Authentication endpoints, JWT generation, password reset tokens, and RBAC authorization middleware in `backend/app/api/v1/auth.py`, `backend/app/services/auth_service.py`, and `backend/app/api/dependencies/auth.py`.
+- **Member 3 (Frontend Lead)**: Implement Phase 1.4 Login, Register, Forgot Password, and Profile UI components and connect Zustand `useAuthStore` to updated API contracts.
+- **Member 4 (DevOps Lead)**: Configure JWT secrets and session configuration in environment templates and CI test runners.
+
+#### Required Action for Receiving Agent
+- **Member 2**:
+  1. Implement FastAPI endpoints matching `docs/api/api-contract.md` Section 3.1: `register`, `login`, `logout`, `refresh`, `forgot-password`, `reset-password`, `me`, `change-password`.
+  2. Implement RBAC authorization dependency `require_permission(permission: str)` utilizing `ROLE_PERMISSIONS` defined in `backend/app/services/ai/interfaces.py`.
+  3. Ensure all authentication events are logged to `activity_logs` using the event types in `docs/Architecture/auth-identity-architecture.md`.
+- **Member 3**:
+  1. Review `docs/api/api-contract.md` Section 3.1 and build the frontend Auth DTOs and API clients.
+
+
 

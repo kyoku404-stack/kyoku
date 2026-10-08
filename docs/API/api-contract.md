@@ -55,9 +55,41 @@
 
 ## 3. Core REST API Endpoints
 
-### 3.1 Authentication (`/api/v1/auth`)
+### 3.1 Authentication & Identity Management (`/api/v1/auth`)
 
-#### 3.1.1 User Login
+#### 3.1.1 User Registration
+- **Method**: `POST`
+- **Path**: `/api/v1/auth/register`
+- **Auth**: Public
+- **Request Body**:
+```json
+{
+  "email": "jane.doe@enterprise.com",
+  "password": "SecurePassword123!",
+  "full_name": "Jane Doe",
+  "organization_id": "8bc92d11-3456-4211-89ab-1234567890ab",
+  "role": "Member"
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "User registered successfully.",
+  "data": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "email": "jane.doe@enterprise.com",
+    "full_name": "Jane Doe",
+    "role": "Member",
+    "organization_id": "8bc92d11-3456-4211-89ab-1234567890ab",
+    "is_active": true,
+    "created_at": "2026-10-09T00:30:00Z"
+  }
+}
+```
+- **Error Codes**: `AUTH_EMAIL_EXISTS` (409), `VALIDATION_ERROR` (422)
+
+#### 3.1.2 User Login
 - **Method**: `POST`
 - **Path**: `/api/v1/auth/login`
 - **Auth**: Public
@@ -77,20 +109,43 @@
     "access_token": "eyJhbGciOi...",
     "refresh_token": "dGhpcyBpcy...",
     "token_type": "bearer",
-    "expires_in": 3600,
+    "expires_in": 1800,
     "user": {
       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "email": "user@enterprise.com",
       "full_name": "Jane Doe",
       "role": "OrgAdmin",
-      "organization_id": "8bc92d11-3456-4211-89ab-1234567890ab"
+      "organization_id": "8bc92d11-3456-4211-89ab-1234567890ab",
+      "is_active": true
     }
   }
 }
 ```
-- **Error Codes**: `AUTH_INVALID_CREDENTIALS` (401), `VALIDATION_ERROR` (422)
+- **Error Codes**: `AUTH_INVALID_CREDENTIALS` (401), `AUTH_ACCOUNT_DISABLED` (403), `AUTH_UNVERIFIED_EMAIL` (403), `VALIDATION_ERROR` (422)
 
-#### 3.1.2 Refresh Token
+#### 3.1.3 User Logout
+- **Method**: `POST`
+- **Path**: `/api/v1/auth/logout`
+- **Auth**: Bearer JWT (Optional body with refresh token to revoke)
+- **Request Body** (Optional):
+```json
+{
+  "refresh_token": "dGhpcyBpcy..."
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Logged out successfully.",
+  "data": {
+    "logged_out": true
+  }
+}
+```
+- **Error Codes**: `AUTH_TOKEN_INVALID` (401)
+
+#### 3.1.4 Refresh Token
 - **Method**: `POST`
 - **Path**: `/api/v1/auth/refresh`
 - **Auth**: Public (Requires refresh token in body)
@@ -107,14 +162,60 @@
   "message": "Token refreshed successfully.",
   "data": {
     "access_token": "eyJhbGciOi...",
+    "refresh_token": "eXy01Zz...",
     "token_type": "bearer",
-    "expires_in": 3600
+    "expires_in": 1800
   }
 }
 ```
 - **Error Codes**: `AUTH_TOKEN_EXPIRED` (401), `AUTH_TOKEN_INVALID` (401)
 
-#### 3.1.3 Get Current User Profile
+#### 3.1.5 Request Password Reset (Forgot Password)
+- **Method**: `POST`
+- **Path**: `/api/v1/auth/forgot-password`
+- **Auth**: Public
+- **Request Body**:
+```json
+{
+  "email": "user@enterprise.com"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Password reset instructions sent if email exists.",
+  "data": {
+    "email_sent": true
+  }
+}
+```
+- **Error Codes**: `VALIDATION_ERROR` (422)
+
+#### 3.1.6 Reset Password (With Token)
+- **Method**: `POST`
+- **Path**: `/api/v1/auth/reset-password`
+- **Auth**: Public
+- **Request Body**:
+```json
+{
+  "token": "reset_token_6a1f8...",
+  "new_password": "NewSecurePassword456!"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Password has been successfully reset.",
+  "data": {
+    "reset_completed": true
+  }
+}
+```
+- **Error Codes**: `AUTH_INVALID_RESET_TOKEN` (400), `VALIDATION_ERROR` (422)
+
+#### 3.1.7 Get Current User Profile
 - **Method**: `GET`
 - **Path**: `/api/v1/auth/me`
 - **Auth**: Bearer JWT
@@ -134,7 +235,30 @@
   }
 }
 ```
-- **Error Codes**: `AUTH_TOKEN_INVALID` (401)
+- **Error Codes**: `AUTH_TOKEN_INVALID` (401), `AUTH_ACCOUNT_DISABLED` (403)
+
+#### 3.1.8 Change Password
+- **Method**: `PATCH`
+- **Path**: `/api/v1/auth/change-password`
+- **Auth**: Bearer JWT
+- **Request Body**:
+```json
+{
+  "current_password": "SecurePassword123!",
+  "new_password": "UpdatedSecurePassword789!"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Password changed successfully.",
+  "data": {
+    "password_changed": true
+  }
+}
+```
+- **Error Codes**: `AUTH_INVALID_CREDENTIALS` (401), `VALIDATION_ERROR` (422)
 
 ---
 

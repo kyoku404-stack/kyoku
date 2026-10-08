@@ -259,6 +259,90 @@ ACCEPTED
 
 ---
 
+### ADR-011 — Enterprise RBAC Matrix, Hierarchical Inheritance & Role Resolution Strategy
+
+#### Date
+2026-10-09
+
+#### Context
+`devdocs/p1/p1.4.txt` (Chapter 10) defines a 4-role hierarchy: Organization Admin > Project Manager > Employee (Member) > Viewer. The platform requires a formal permission resolution model that ensures deterministic authorization checks across all API endpoints, prevents privilege leakage, and supports role inheritance cleanly without hardcoded if/else ladders.
+
+#### Decision
+1. Establish a canonical role hierarchy:
+   - `Organization Admin` inherits all permissions of `Project Manager`.
+   - `Project Manager` inherits all permissions of `Employee`.
+   - `Employee` inherits all permissions of `Viewer`.
+2. Formalize granular permission strings (e.g., `doc:read`, `doc:create`, `doc:delete`, `chat:query`, `users:manage`, `kg:write`) mapped to roles in a centralized permission registry.
+3. Enforce authorization via FastAPI dependencies (`require_permission` / `require_role`) and domain security context checks.
+
+#### Alternatives Considered
+- Flat roles with manual permission lists stored per user in the database: Overcomplicates MVP administration and migration overhead.
+- Attribute-Based Access Control (ABAC) engine (e.g., Open Policy Agent): Excessive architectural overhead for Phase 1 MVP requirements.
+
+#### Reason
+Hierarchical RBAC maps directly to enterprise departmental structures while allowing rapid deterministic evaluations in under 1ms.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-012 — Tenant-Scoped Identity Context & Access-Controlled AI Retrieval (RAG & KG)
+
+#### Date
+2026-10-09
+
+#### Context
+KEEP is an AI-first knowledge platform. Unlike standard CRUD APIs where database queries are trivially filtered, AI workflows (Hybrid RAG, Knowledge Graph traversal, semantic vector similarity, autonomous tool calling) can inadvertently leak sensitive enterprise intelligence across tenant boundaries or unauthorized user roles if security is not natively bound to the AI execution context.
+
+#### Decision
+1. Immutably inject `AISecurityContext` and `RAGSecurityContext` into all AI operations (`BaseLLMService`, `BaseRetriever`, `BaseVectorStore`, `BaseKnowledgeGraphStore`, `BaseAssistantService`).
+2. Enforce two-layer retrieval gating:
+   - Layer 1 (Tenant Hard Boundary): All vector queries, BM25 searches, and KG CTE queries strictly filter by `organization_id`.
+   - Layer 2 (Permission & Visibility Gating): Restrict candidate retrieval chunks and graph entity traversals based on user role and permitted document IDs before assembling prompt contexts.
+3. Tool Execution Gating: When the AI agent dispatches tool calls, tools are filtered and verified against `BaseAIAccessController.can_access_tool(tool_name, security_context)`.
+
+#### Alternatives Considered
+- Filtering retrieved context post-generation via LLM prompt instructions ("Please do not reveal info if user is not authorized"): Unreliable, highly vulnerable to prompt injection and jailbreak attacks.
+- Universal unrestricted organizational search for all users: Violates enterprise document confidentiality where certain documents are restricted to management or specific teams.
+
+#### Reason
+Binding security context directly into retrieval and tool execution guarantees zero-leakage enterprise AI safety.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-013 — Stateless JWT Double-Token Lifecycle, Session Revocation & Security Policy
+
+#### Date
+2026-10-09
+
+#### Context
+`devdocs/p1/p1.4.txt` (Chapters 6–9, 14–17) mandates secure user authentication, token-based session management, immediate session invalidation upon logout or password reset, and password complexity defense.
+
+#### Decision
+1. Adopt a stateless JWT double-token protocol:
+   - Short-lived Access Token (15–30 min) containing signed claims (`sub`, `org_id`, `role`, `email`, `type="access"`).
+   - Long-lived Refresh Token (14–30 days) with unique UUID (`jti`) and `type="refresh"`.
+2. Implement Refresh Token Rotation: Each token refresh issues a new access/refresh token pair and invalidates the previous refresh token.
+3. Store active sessions in the database (`activity_logs` / session registry) capturing `user_id`, `organization_id`, `ip_address`, and `user_agent`.
+4. Enforce immediate invalidation upon `POST /api/v1/auth/logout` and password reset by revoking active refresh tokens.
+5. Standardize password complexity: Minimum 8 characters, uppercase, lowercase, digit, and special character, hashed via salted bcrypt (work factor 12) or Argon2id.
+
+#### Alternatives Considered
+- Server-side session store with opaque tokens for all API calls: Requires database/Redis lookups on every single micro-request, degrading API throughput under load.
+- Single long-lived JWT access token: Impossible to revoke securely before expiration.
+
+#### Reason
+The double-token strategy combines maximum API performance with robust session revocation and rotation security.
+
+#### Status
+ACCEPTED
+
+---
+
 ## Documented Assumptions
 
 ### Assumption 001 — Knowledge Graph Storage Engine (PostgreSQL MVP -> Neo4j)

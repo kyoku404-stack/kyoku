@@ -23,6 +23,105 @@ class MessageRole(str, Enum):
     TOOL = "tool"
 
 
+class UserRole(str, Enum):
+    """Supported organizational roles within KEEP (Phase 1.4 RBAC)."""
+
+    SUPER_ADMIN = "SuperAdmin"
+    ORGANIZATION_ADMIN = "OrgAdmin"
+    PROJECT_MANAGER = "ProjectManager"
+    EMPLOYEE = "Member"
+    VIEWER = "Viewer"
+
+
+class AIPermission(str, Enum):
+    """Granular permissions governing AI, search, and knowledge operations."""
+
+    CHAT_QUERY = "chat:query"
+    CHAT_STREAM = "chat:stream"
+    CHAT_HISTORY = "chat:history"
+    CHAT_MANAGE_ALL = "chat:manage_all"
+    SEARCH_QUERY = "search:query"
+    DOC_READ = "doc:read"
+    DOC_CREATE = "doc:create"
+    DOC_UPDATE = "doc:update"
+    DOC_DELETE = "doc:delete"
+    KG_READ = "kg:read"
+    KG_WRITE = "kg:write"
+    TOOL_EXECUTE = "tool:execute"
+    ANALYTICS_READ = "analytics:read"
+    USERS_MANAGE = "users:manage"
+    ORG_MANAGE = "org:manage"
+
+
+# Hierarchical Permission Mapping (Higher roles inherit lower permissions)
+VIEWER_PERMISSIONS: set[str] = {
+    AIPermission.SEARCH_QUERY.value,
+    AIPermission.DOC_READ.value,
+    AIPermission.KG_READ.value,
+}
+
+EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
+    AIPermission.CHAT_QUERY.value,
+    AIPermission.CHAT_STREAM.value,
+    AIPermission.CHAT_HISTORY.value,
+    AIPermission.DOC_CREATE.value,
+    AIPermission.DOC_UPDATE.value,
+    AIPermission.TOOL_EXECUTE.value,
+}
+
+PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
+    AIPermission.DOC_DELETE.value,
+    AIPermission.KG_WRITE.value,
+}
+
+ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
+    AIPermission.CHAT_MANAGE_ALL.value,
+    AIPermission.ANALYTICS_READ.value,
+    AIPermission.USERS_MANAGE.value,
+    AIPermission.ORG_MANAGE.value,
+}
+
+ROLE_PERMISSIONS: dict[str, set[str]] = {
+    UserRole.VIEWER.value: VIEWER_PERMISSIONS,
+    UserRole.EMPLOYEE.value: EMPLOYEE_PERMISSIONS,
+    UserRole.PROJECT_MANAGER.value: PROJECT_MANAGER_PERMISSIONS,
+    UserRole.ORGANIZATION_ADMIN.value: ORG_ADMIN_PERMISSIONS,
+    UserRole.SUPER_ADMIN.value: ORG_ADMIN_PERMISSIONS,
+    "Viewer": VIEWER_PERMISSIONS,
+    "Member": EMPLOYEE_PERMISSIONS,
+    "ProjectManager": PROJECT_MANAGER_PERMISSIONS,
+    "OrgAdmin": ORG_ADMIN_PERMISSIONS,
+    "SuperAdmin": ORG_ADMIN_PERMISSIONS,
+}
+
+
+@dataclass
+class AISecurityContext:
+    """Security context establishing user identity and tenancy boundaries for AI requests."""
+
+    organization_id: UUID
+    user_id: UUID
+    role: str = UserRole.EMPLOYEE.value
+    email: str = ""
+    permissions: set[str] = field(default_factory=set)
+    is_authenticated: bool = True
+    session_id: str | None = None
+    ip_address: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.permissions:
+            self.permissions = set(ROLE_PERMISSIONS.get(self.role, set()))
+
+    def has_permission(self, permission: str | AIPermission) -> bool:
+        """Verifies if the security context includes a required permission."""
+        perm_value = permission.value if isinstance(permission, AIPermission) else str(permission)
+        return perm_value in self.permissions
+
+    def is_in_tenant(self, tenant_id: UUID) -> bool:
+        """Ensures request target matches the authenticated organization tenancy barrier."""
+        return self.organization_id == tenant_id
+
+
 @dataclass
 class LLMMessage:
     """Represents a single message in an LLM conversation prompt."""
@@ -68,6 +167,15 @@ class AIExecutionContext:
     max_tokens: int | None = 2048
     enable_cache: bool = True
     metadata: dict[str, Any] = field(default_factory=dict)
+    security_context: AISecurityContext | None = None
+
+    def __post_init__(self) -> None:
+        if self.security_context is None:
+            self.security_context = AISecurityContext(
+                organization_id=self.organization_id,
+                user_id=self.user_id,
+                session_id=self.session_id,
+            )
 
 
 @dataclass
@@ -244,3 +352,32 @@ class BaseAssistantService(ABC):
         available_tools: list[ToolDefinition] | None = None,
     ) -> LLMGenerationResult:
         """Processes intent, coordinates tool calling, and generates final answer."""
+
+
+class BaseAIAccessController(ABC):
+    """Abstract interface for policy enforcement, tool gating, and tenant boundary verification."""
+
+    @abstractmethod
+    def can_execute_query(self, query: str, context: AISecurityContext) -> bool:
+        """Verifies if the security context is authorized to submit an AI prompt or query."""
+
+    @abstractmethod
+    def can_access_tool(self, tool_name: str, context: AISecurityContext) -> bool:
+        """Verifies if the user's role and permissions permit executing the specified tool."""
+
+    @abstractmethod
+    def filter_tools_for_user(
+        self,
+        tools: list[ToolDefinition],
+        context: AISecurityContext,
+    ) -> list[ToolDefinition]:
+        """Prunes tool definitions based on user RBAC permissions before LLM dispatch."""
+
+    @abstractmethod
+    def validate_tenant_boundary(
+        self,
+        target_org_id: UUID,
+        context: AISecurityContext,
+    ) -> bool:
+        """Enforces hard isolation boundary ensuring target resource matches caller tenant."""
+
