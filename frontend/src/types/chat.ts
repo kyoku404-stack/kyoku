@@ -1,6 +1,6 @@
 /**
- * KEEP Enterprise Platform — Chat & RAG Types.
- * Aligned with backend schemas (backend/app/schemas/chat.py).
+ * KEEP Enterprise Platform — Chat, RAG & Feedback Types.
+ * Aligned with backend schemas and `chat_sessions`, `chat_messages`, `ai_feedback` tables.
  */
 
 export interface ChatCitation {
@@ -15,6 +15,7 @@ export interface ChatCitation {
 export interface ChatQueryRequest {
   query: string;
   conversation_id?: string | null;
+  project_id?: string | null;
   top_k?: number;
   include_citations?: boolean;
 }
@@ -32,6 +33,47 @@ export interface ChatQueryResponse {
 export interface ChatStreamRequest {
   query: string;
   conversation_id?: string | null;
+  project_id?: string | null;
+}
+
+export interface ChatSessionResponse {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  project_id?: string | null;
+  title: string;
+  is_archived: boolean;
+  message_count?: number;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface ChatMessageResponse {
+  id: string;
+  session_id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  model_name?: string | null;
+  tokens_prompt: number;
+  tokens_completion: number;
+  latency_ms: number;
+  citations: ChatCitation[];
+  created_at: string;
+}
+
+export interface AIFeedbackCreate {
+  message_id: string;
+  rating: 1 | -1;
+  comment?: string;
+}
+
+export interface AIFeedbackResponse {
+  id: string;
+  message_id: string;
+  user_id: string;
+  rating: number;
+  comment?: string | null;
+  created_at: string;
 }
 
 /**
