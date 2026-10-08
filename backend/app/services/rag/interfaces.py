@@ -58,6 +58,27 @@ class RetrievalResult:
 
 
 @dataclass
+class RAGSecurityContext:
+    """Multi-tenant security context applied to RAG retrieval and citation filtering."""
+
+    user_id: UUID
+    organization_id: UUID
+    role: str = "Member"
+    allowed_document_ids: set[UUID] | None = None
+    accessible_project_ids: set[UUID] | None = None
+
+    def can_access_document(self, document_id: UUID) -> bool:
+        """Verifies if the user is authorized to read chunks from the document."""
+        if self.allowed_document_ids is None:
+            return True
+        return document_id in self.allowed_document_ids
+
+    def is_in_tenant(self, tenant_id: UUID) -> bool:
+        """Enforces hard organizational tenant boundary."""
+        return self.organization_id == tenant_id
+
+
+@dataclass
 class SearchQuery:
     """Structured parameters for hybrid and vector search requests."""
 
@@ -68,6 +89,8 @@ class SearchQuery:
     sparse_weight: float = 0.3
     filters: dict[str, Any] | None = None
     min_score_threshold: float = 0.0
+    allowed_document_ids: list[UUID] | None = None
+    security_context: RAGSecurityContext | None = None
 
 
 @dataclass
@@ -128,6 +151,8 @@ class VectorFilter:
 
     organization_id: UUID
     document_id: UUID | None = None
+    allowed_document_ids: list[UUID] | None = None
+    user_role: str | None = None
     metadata_filters: dict[str, Any] | None = None
 
 
@@ -501,3 +526,32 @@ class BaseRAGService(ABC):
         conversation_id: UUID | None = None,
     ) -> AsyncIterator[StreamEvent]:
         """High-level entry point for streaming Q&A requests."""
+
+
+class BaseRAGAccessController(ABC):
+    """Abstract interface for RAG document gating, candidate pruning, and KG security."""
+
+    @abstractmethod
+    def filter_retrieval_candidates(
+        self,
+        candidates: list[RetrievalResult],
+        security_context: RAGSecurityContext,
+    ) -> list[RetrievalResult]:
+        """Prunes candidate document chunks not authorized for the requesting user."""
+
+    @abstractmethod
+    def verify_document_access(
+        self,
+        document_id: UUID,
+        security_context: RAGSecurityContext,
+    ) -> bool:
+        """Checks if a user is permitted to retrieve content from a specific document."""
+
+    @abstractmethod
+    def verify_graph_node_access(
+        self,
+        entity: KGEntityRecord,
+        security_context: RAGSecurityContext,
+    ) -> bool:
+        """Checks if a user is permitted to view or traverse an entity node."""
+
