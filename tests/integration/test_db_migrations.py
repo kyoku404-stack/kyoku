@@ -23,8 +23,8 @@ class TestDatabaseMigrations:
         assert alembic_ini.exists(), "backend/alembic.ini must exist"
 
         config = Config(str(alembic_ini))
-        config.set_main_option("script_location", str(root_dir / "backend" / "migrations"))
-        config.set_main_option("version_locations", str(root_dir / "backend" / "migrations" / "versions"))
+        config.set_main_option("script_location", str(root_dir / "backend" / "migrations").replace("\\", "/"))
+        config.set_main_option("version_locations", str(root_dir / "backend" / "migrations" / "versions").replace("\\", "/"))
         script = ScriptDirectory.from_config(config)
 
         # Get all revisions
