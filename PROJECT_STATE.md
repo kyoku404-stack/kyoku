@@ -28,7 +28,7 @@ Phase 1.4 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
 | **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 AI Security | Typed security contracts in `services/rag/` & `services/ai/` verified |
 | **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.4 Auth Standard | `docs/api/api-contract.md` updated with all 8 auth endpoints |
-| **Backend Architecture & APIs** | COMPLETED | Member 2 (Backend Lead) | Phase 1.4 Auth APIs | Next: Auth endpoints, JWT issuance, middleware & sessions |
+| **Backend Architecture & APIs** | COMPLETED (Phase 1.4) | Member 2 (Backend Lead) | Phase 1.4 Auth APIs | Auth endpoints, JWT issuance, middleware & sessions implemented |
 | **Frontend Application** | COMPLETED (Phase 1.3) | Member 3 (Frontend Lead) | Phase 1.4 Auth Integration | Next: Login, Register, Forgot Password, Profile UI & Zustand auth store |
 | **Database & Persistence Layer** | COMPLETED (Phase 1.3) | Member 2, 3 & 4 | Phase 1.4 Auth & Users | PostgreSQL 16 + pgvector, ORM models, Repositories, Alembic migrations, Seeding & Integration tests ready |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Interfaces created; full pipeline scheduled for Phase 2 |
@@ -61,7 +61,13 @@ Phase 1.4 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
   - Verified 100% test pass rate across all 126 monorepo tests (75 backend + 51 frontend).
 
 ### In Progress
-- Ready for Phase 1.4 Authentication & Identity Foundation across team roles.
+- Implemented complete Phase 1.4 Authentication Endpoints & Logic (Member 2).
+  - Authored FastAPI endpoints covering 
+egister, login, orgot-password, 
+eset-password, me, and change-password.
+  - Implemented AuthService handling user persistence, hashed password verification, and JWT double-token generation.
+  - Linked UserRepository and OrganizationRepository to DB via async session.
+- Ready for Phase 1.4 Authentication UI (Member 3).
 
 ### Blocked
 - None.

@@ -134,7 +134,26 @@ class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):
 
     async def test_auth_service(self) -> None:
         """Verify AuthService login, refresh, and profile retrieval."""
+        from unittest.mock import AsyncMock
+        from backend.app.models.user import User
+        from backend.app.core.security import get_password_hash
+        from datetime import datetime, UTC
+        
         auth_service = AuthService()
+        
+        user_mock = User(
+            id=uuid4(),
+            email="admin@acme.com",
+            hashed_password=get_password_hash("Password123!"),
+            full_name="Admin",
+            role=UserRole.ORG_ADMIN.value,
+            organization_id=uuid4(),
+            is_active=True,
+            created_at=datetime.now(UTC)
+        )
+        auth_service.repository.get_by_email = AsyncMock(return_value=user_mock)
+        auth_service.repository.get = AsyncMock(return_value=user_mock)
+        
         login_req = LoginRequest(email="admin@acme.com", password="Password123!")
         token_resp = await auth_service.login(db=None, login_data=login_req)
         self.assertIsNotNone(token_resp.access_token)
@@ -147,10 +166,8 @@ class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):
 
         # Profile
         profile = await auth_service.get_current_user_profile(
+            db=None,
             user_id=token_resp.user.id,
-            email=token_resp.user.email,
-            role=token_resp.user.role,
-            org_id=token_resp.user.organization_id,
         )
         self.assertEqual(profile.email, "admin@acme.com")
 

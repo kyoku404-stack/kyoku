@@ -2,19 +2,20 @@
 
 from typing import Any
 
+from backend.app.models.user import User
 from backend.app.repositories.base import BaseRepository
 from backend.app.schemas.user import UserCreate, UserUpdate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class UserRepository(BaseRepository[Any, UserCreate, UserUpdate]):
+class UserRepository(BaseRepository[User, UserCreate, UserUpdate]):
     """Repository handling User entity persistence operations."""
 
-    def __init__(self, model: Any = None) -> None:
+    def __init__(self, model: type[User] = User) -> None:
         super().__init__(model)
 
-    async def get_by_email(self, db: AsyncSession, email: str) -> Any | None:
+    async def get_by_email(self, db: AsyncSession, email: str) -> User | None:
         """Retrieves a user record by unique email."""
         if not self.model:
             return None
