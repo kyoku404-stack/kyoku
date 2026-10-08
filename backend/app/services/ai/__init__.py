@@ -5,6 +5,7 @@ token usage tracking, semantic caching, and AI assistants.
 """
 
 from backend.app.services.ai.interfaces import (
+    ROLE_PERMISSIONS,
     AIExecutionContext,
     AIPermission,
     AISecurityContext,
@@ -19,7 +20,6 @@ from backend.app.services.ai.interfaces import (
     LLMMessage,
     MessageRole,
     PromptTemplate,
-    ROLE_PERMISSIONS,
     TokenUsage,
     ToolCallResult,
     ToolDefinition,
@@ -27,6 +27,7 @@ from backend.app.services.ai.interfaces import (
 )
 
 __all__ = [
+    "ROLE_PERMISSIONS",
     "AIExecutionContext",
     "AIPermission",
     "AISecurityContext",
@@ -41,7 +42,6 @@ __all__ = [
     "LLMMessage",
     "MessageRole",
     "PromptTemplate",
-    "ROLE_PERMISSIONS",
     "TokenUsage",
     "ToolCallResult",
     "ToolDefinition",

@@ -18,11 +18,11 @@ import unittest
 from uuid import UUID, uuid4
 
 from backend.app.services.ai import (
+    ROLE_PERMISSIONS,
     AIExecutionContext,
     AIPermission,
     AISecurityContext,
     BaseAIAccessController,
-    ROLE_PERMISSIONS,
     ToolDefinition,
     UserRole,
 )
