@@ -1,7 +1,11 @@
+from backend.app.db.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class Organization(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):

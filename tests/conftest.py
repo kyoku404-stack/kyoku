@@ -22,8 +22,23 @@ os.environ["POSTGRES_DB"] = "keep_test_db"
 os.environ["REDIS_HOST"] = "localhost"
 os.environ["REDIS_PORT"] = "6379"
 
+# Register SQLite dialect fallbacks for PostgreSQL types (JSONB, Vector)
+from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.compiler import compiles
+
 from backend.app.core.config import Settings, settings
 from backend.app.main import app
+
+
+@compiles(JSONB, "sqlite")
+def compile_jsonb_sqlite(type_, compiler, **kw):
+    return "JSON"
+
+
+@compiles(Vector, "sqlite")
+def compile_vector_sqlite(type_, compiler, **kw):
+    return "TEXT"
 
 
 @pytest.fixture(scope="session")
@@ -37,3 +52,4 @@ def client() -> Generator[TestClient, None, None]:
     """Fixture providing FastAPI test client with lifespan context."""
     with TestClient(app) as test_client:
         yield test_client
+

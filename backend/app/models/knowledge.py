@@ -1,11 +1,15 @@
 import uuid
 
+from backend.app.db.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class DocumentChunk(Base, UUIDPrimaryKeyMixin, TimestampMixin):
