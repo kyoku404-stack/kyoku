@@ -3,12 +3,15 @@
 Handles credential verification, token lifecycle management, and profile resolution.
 """
 
-from datetime import UTC, datetime
 from uuid import UUID
 
 from backend.app.core.config import settings
 from backend.app.core.constants import ErrorCode, UserRole
-from backend.app.core.exceptions import UnauthorizedException, ConflictException, NotFoundException
+from backend.app.core.exceptions import (
+    ConflictException,
+    NotFoundException,
+    UnauthorizedException,
+)
 from backend.app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -16,19 +19,19 @@ from backend.app.core.security import (
     get_password_hash,
     verify_password,
 )
-from backend.app.models.user import User
 from backend.app.models.organization import Organization
-from backend.app.repositories.user_repo import UserRepository
+from backend.app.models.user import User
 from backend.app.repositories.org_repo import OrganizationRepository
+from backend.app.repositories.user_repo import UserRepository
 from backend.app.schemas.auth import (
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     RefreshTokenResponse,
+    RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserSummaryResponse,
-    RegisterRequest,
-    ForgotPasswordRequest,
-    ResetPasswordRequest,
-    ChangePasswordRequest
 )
 from backend.app.schemas.user import UserProfileResponse
 from backend.app.services.base import BaseService
@@ -39,7 +42,9 @@ class AuthService(BaseService[UserRepository]):
     """Service implementing user authentication and authorization logic."""
 
     def __init__(self, repository: UserRepository | None = None) -> None:
-        super().__init__(repository or UserRepository())
+        repo = repository or UserRepository()
+        super().__init__(repo)
+        self.repository: UserRepository = repo
         self.org_repo = OrganizationRepository()
 
     async def login(
@@ -173,7 +178,6 @@ class AuthService(BaseService[UserRepository]):
 
     async def reset_password(self, db: AsyncSession, request: ResetPasswordRequest) -> None:
         """Resets password using token."""
-        pass
 
     async def change_password(
         self, 

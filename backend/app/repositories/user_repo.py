@@ -1,6 +1,5 @@
 """KEEP Enterprise Platform — User Repository."""
 
-from typing import Any
 
 from backend.app.models.user import User
 from backend.app.repositories.base import BaseRepository

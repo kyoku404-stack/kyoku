@@ -1,6 +1,5 @@
 """KEEP Enterprise Platform — Organization Repository."""
 
-from typing import Any
 
 from backend.app.models.organization import Organization
 from backend.app.repositories.base import BaseRepository

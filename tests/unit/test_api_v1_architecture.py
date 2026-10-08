@@ -115,15 +115,17 @@ class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):
 
     def test_standard_envelopes(self) -> None:
         """Verify ApiResponse, ApiErrorResponse, and PaginatedData serialization."""
+        from backend.app.schemas.envelope import ErrorDetail
+        
         success_resp = ApiResponse(data={"key": "value"})
         self.assertTrue(success_resp.success)
         self.assertEqual(success_resp.data, {"key": "value"})
 
         error_resp = ApiErrorResponse(
-            error={
-                "code": ErrorCode.AUTH_INVALID_CREDENTIALS.value,
-                "message": "Bad credentials",
-            }
+            error=ErrorDetail(
+                code=ErrorCode.AUTH_INVALID_CREDENTIALS.value,
+                message="Bad credentials",
+            )
         )
         self.assertFalse(error_resp.success)
         self.assertEqual(error_resp.error.code, "AUTH_INVALID_CREDENTIALS")
@@ -134,13 +136,16 @@ class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):
 
     async def test_auth_service(self) -> None:
         """Verify AuthService login, refresh, and profile retrieval."""
+        from datetime import UTC, datetime
         from unittest.mock import AsyncMock
-        from backend.app.models.user import User
+        from typing import cast
+        from sqlalchemy.ext.asyncio import AsyncSession
+
         from backend.app.core.security import get_password_hash
-        from datetime import datetime, UTC
-        
+        from backend.app.models.user import User
+
         auth_service = AuthService()
-        
+
         user_mock = User(
             id=uuid4(),
             email="admin@acme.com",
@@ -151,22 +156,22 @@ class TestApiV1Architecture(unittest.IsolatedAsyncioTestCase):
             is_active=True,
             created_at=datetime.now(UTC)
         )
-        auth_service.repository.get_by_email = AsyncMock(return_value=user_mock)
-        auth_service.repository.get = AsyncMock(return_value=user_mock)
-        
+        auth_service.repository.get_by_email = AsyncMock(return_value=user_mock) # type: ignore
+        auth_service.repository.get = AsyncMock(return_value=user_mock) # type: ignore
+
         login_req = LoginRequest(email="admin@acme.com", password="Password123!")
-        token_resp = await auth_service.login(db=None, login_data=login_req)
+        token_resp = await auth_service.login(db=cast(AsyncSession, None), login_data=login_req)
         self.assertIsNotNone(token_resp.access_token)
         self.assertIsNotNone(token_resp.refresh_token)
         self.assertEqual(token_resp.user.email, "admin@acme.com")
 
         # Refresh
-        refresh_resp = await auth_service.refresh_token(token_resp.refresh_token)
+        refresh_resp = await auth_service.refresh_token(str(token_resp.refresh_token))
         self.assertIsNotNone(refresh_resp.access_token)
 
         # Profile
         profile = await auth_service.get_current_user_profile(
-            db=None,
+            db=cast(AsyncSession, None),
             user_id=token_resp.user.id,
         )
         self.assertEqual(profile.email, "admin@acme.com")

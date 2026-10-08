@@ -23,7 +23,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     async def get(self, db: AsyncSession, id: Any) -> ModelType | None:
         """Retrieves a single entity by primary key."""
-        result = await db.execute(select(self.model).where(self.model.id == id))
+        result = await db.execute(select(self.model).where(getattr(self.model, "id") == id))
         return result.scalars().first()
 
     async def get_multi(

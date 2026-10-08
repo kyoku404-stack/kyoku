@@ -290,6 +290,7 @@ class TestAIPersistenceContracts(unittest.IsolatedAsyncioTestCase):
         await repo.create_chunks([chunk])
 
         retrieved = await repo.get_chunk_by_id(chunk_id, org_id)
+        assert retrieved is not None
         self.assertIsNotNone(retrieved)
         self.assertEqual(retrieved.chunk_index, 0)
         self.assertEqual(retrieved.section_title, "Overview")
@@ -330,6 +331,7 @@ class TestAIPersistenceContracts(unittest.IsolatedAsyncioTestCase):
         await kg_store.upsert_relationship(rel)
 
         found = await kg_store.find_entity_by_name("Alpha Project", "Project", org_id)
+        assert found is not None
         self.assertIsNotNone(found)
         self.assertEqual(found.id, entity_a.id)
 

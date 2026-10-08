@@ -3,15 +3,15 @@
 from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
 from backend.app.api.dependencies.database import get_db
 from backend.app.schemas.auth import (
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     RefreshTokenRequest,
     RefreshTokenResponse,
-    TokenResponse,
     RegisterRequest,
-    ForgotPasswordRequest,
     ResetPasswordRequest,
-    ChangePasswordRequest,
-    UserSummaryResponse
+    TokenResponse,
+    UserSummaryResponse,
 )
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.schemas.user import UserProfileResponse

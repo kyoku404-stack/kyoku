@@ -189,6 +189,7 @@ class TestAuthAISecurityContracts(unittest.TestCase):
         )
 
         self.assertIsNotNone(exec_context.security_context)
+        assert exec_context.security_context is not None
         self.assertEqual(exec_context.security_context.organization_id, self.org_a)
         self.assertEqual(exec_context.security_context.user_id, self.user_pm)
         self.assertEqual(exec_context.security_context.session_id, "session_123")
