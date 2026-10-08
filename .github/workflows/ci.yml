@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
-          pip install pytest ruff pyright httpx email-validator bcrypt greenlet pytest-asyncio
+          pip install pytest ruff pyright httpx email-validator bcrypt greenlet pytest-asyncio pgvector aiosqlite alembic
 
       - name: Run Backend Linting (Ruff)
         run: |
@@ -46,6 +46,11 @@ jobs:
         run: |
           pyright backend/ || echo "Pyright warnings reported"
 
+      - name: Verify Database Migrations & Alembic Heads
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/verify-migrations.sh
+
       - name: Run Backend Unit & Integration Tests
         env:
           PYTHONPATH: ${{ github.workspace }}
@@ -53,6 +58,7 @@ jobs:
           SECRET_KEY: test_secret_key_ci_only
         run: |
           pytest tests/unit/ tests/integration/ -v
+
 
   # ----------------------------------------------------------------------------
   # Frontend Quality, Typing, Tests & Build

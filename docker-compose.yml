@@ -5,12 +5,13 @@
 
 services:
   # ----------------------------------------------------------------------------
-  # PostgreSQL 16 Relational Persistence
+  # PostgreSQL 16 Relational Persistence with pgvector Support
   # ----------------------------------------------------------------------------
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: keep-postgres
     restart: unless-stopped
+    command: postgres -c shared_buffers=256MB -c max_connections=100 -c work_mem=16MB
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-keep_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-keep_password}
@@ -33,6 +34,7 @@ services:
         max-file: "3"
     networks:
       - keep-network
+
 
   # ----------------------------------------------------------------------------
   # Redis 7 Caching & Task Broker

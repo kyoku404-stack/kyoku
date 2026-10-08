@@ -1,10 +1,14 @@
 import uuid
 from datetime import datetime
 
+from backend.app.db.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class Task(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
