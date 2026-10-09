@@ -132,7 +132,7 @@ describe('Domain API Services', () => {
       vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockResponse });
 
       const result = await authService.logout();
-      expect(apiClient.post).toHaveBeenCalledWith('/auth/logout');
+      expect(apiClient.post).toHaveBeenCalledWith('/auth/logout', {});
       expect(result.data.user_id).toBe('u1');
     });
   });

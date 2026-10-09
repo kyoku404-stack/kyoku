@@ -1,13 +1,17 @@
 /**
  * Auth Feature Module
- * Authentication, multi-tenant organization switching, and RBAC authorization.
+ * User authentication, JWT sessions, password management, and RBAC profile management.
  */
 
-export * from '@/types/auth';
-export { authService } from '@/services/authService';
+export * from './LoginForm';
+export * from './RegisterForm';
+export * from './ForgotPasswordForm';
+export * from './ResetPasswordForm';
+export * from './ChangePasswordForm';
+export * from './UserProfileView';
 
 export const AUTH_FEATURE = {
   name: 'auth',
-  version: '1.2.0',
-  description: 'Enterprise authentication and multi-tenancy access control',
+  version: '1.4.0',
+  description: 'Enterprise authentication, JWT session lifecycle, and RBAC authorization',
 };

@@ -1040,3 +1040,84 @@ eset_password, change_password, and get_current_user_profile.
 #### Required Action for Receiving Agent
 - **Member 3**: Implement frontend auth UI elements.
 - **Member 4**: Integrate database services for CI testing.
+
+---
+
+### Handoff Entry #012: Phase 1.4 — Frontend Authentication UI, Session Lifecycle & RBAC Route Protection
+
+#### Date
+2026-10-09
+
+#### Author Agent
+Member 3 — Frontend Lead
+
+#### Status
+COMPLETED / READY FOR INTEGRATION
+
+#### Implemented Features
+- **Authentication & Identity Data Types**:
+  - rontend/src/types/auth.ts: Created RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ForgotPasswordResponse, ResetPasswordResponse, ChangePasswordResponse, LogoutResponse, UserSummaryResponse, UserProfileResponse.
+- **Domain API Client Service**:
+  - rontend/src/services/authService.ts: Implemented egister, login, logout, efreshToken, orgotPassword, esetPassword, changePassword, getCurrentUser.
+- **Zustand Session Management & Token Storage**:
+  - rontend/src/store/useAuthStore.ts: Configured dual token tracking (keep_auth_token, keep_refresh_token), session hydration (initializeSession), logout cleanup, and role-based access checks (hasRole).
+- **Authentication UI Components & Views**:
+  - RegisterForm.tsx: Full registration form with corporate email validation, password complexity indicator, organization ID, and RBAC role assignment.
+  - LoginForm.tsx: Credentials authentication form with password visibility toggle, error handling (AUTH_INVALID_CREDENTIALS), and navigation links.
+  - ForgotPasswordForm.tsx: Password reset dispatch form taking corporate email with confirmation feedback.
+  - ResetPasswordForm.tsx: Token-based password reset form with password confirmation and automated redirect.
+  - UserProfileView.tsx: User profile view displaying full name, corporate email, organization ID, RBAC role badge, and verification status.
+  - ChangePasswordForm.tsx: Authenticated password change form with validation and success toasts.
+- **Route Protection & RBAC Guard**:
+  - rontend/src/routes/ProtectedRoute.tsx: Route wrapper validating authenticated session state and authorized RBAC roles (SuperAdmin, OrgAdmin, Manager, Member, Viewer).
+- **Page Views & Routing**:
+  - Created RegisterPage.tsx, ForgotPasswordPage.tsx, ResetPasswordPage.tsx, ProfilePage.tsx.
+  - Updated outes/paths.ts and outes/index.tsx with lazy loading and route paths.
+- **Comprehensive Unit Testing**:
+  - Added uthService.test.ts (6 tests), uthStore.test.ts (4 tests), uthComponents.test.tsx (7 tests). Full frontend test suite expanded to 68/68 tests passing 100%.
+  - Verified production build (
+pm run build -> 1,683 modules transformed, 0 errors).
+
+#### Files Modified / Created
+- rontend/src/types/auth.ts
+- rontend/src/services/authService.ts
+- rontend/src/store/useAuthStore.ts
+- rontend/src/features/auth/RegisterForm.tsx
+- rontend/src/features/auth/LoginForm.tsx
+- rontend/src/features/auth/ForgotPasswordForm.tsx
+- rontend/src/features/auth/ResetPasswordForm.tsx
+- rontend/src/features/auth/ChangePasswordForm.tsx
+- rontend/src/features/auth/UserProfileView.tsx
+- rontend/src/features/auth/index.ts
+- rontend/src/routes/ProtectedRoute.tsx
+- rontend/src/routes/paths.ts
+- rontend/src/routes/index.tsx
+- rontend/src/pages/RegisterPage.tsx
+- rontend/src/pages/ForgotPasswordPage.tsx
+- rontend/src/pages/ResetPasswordPage.tsx
+- rontend/src/pages/ProfilePage.tsx
+- rontend/src/tests/authService.test.ts
+- rontend/src/tests/authStore.test.ts
+- rontend/src/tests/authComponents.test.tsx
+- rontend/src/tests/domainServices.test.ts
+- docs/handoffs/agent-handoffs.md
+
+#### API Contracts Updated
+- Aligned frontend API service client with /api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/logout, /api/v1/auth/refresh, /api/v1/auth/forgot-password, /api/v1/auth/reset-password, /api/v1/auth/change-password, /api/v1/auth/me.
+
+#### Database Changes / Migrations
+- None. Member 3 domain is strictly /frontend/.
+
+#### Verification & Tests Executed
+- [x] Unit test suite passed (
+pm test -> 68/68 tests OK, 100%)
+- [x] Production build verified (
+pm run build -> 1,683 modules transformed, 0 errors)
+- [x] Git branch isolation verified (gent/frontend/feature/phase-1.4-auth-ui-session-management)
+
+#### Target Receiving Agent
+- Member 4 (DevOps Lead): E2E authentication flow verification.
+- Member 1 (Project Lead): Review of RBAC routing alignment with security architecture.
+
+#### Required Action for Receiving Agent
+- **Member 4**: Execute Playwright E2E tests for login, registration, and logout flows.
