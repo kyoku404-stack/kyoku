@@ -987,3 +987,56 @@ COMPLETED / READY FOR BACKEND IMPLEMENTATION
 
 
 
+
+---
+
+### Handoff Entry #012: Phase 1.4 — Authentication Endpoints & Logic
+
+#### Date
+2026-10-09
+
+#### Author Agent
+Member 2 — Backend Lead
+
+#### Status
+COMPLETED / READY FOR INTEGRATION
+
+#### Implemented Features
+- Real database-driven implementation of AuthService covering login, 
+egister, orgot_password, 
+eset_password, change_password, and get_current_user_profile.
+- Complete set of API endpoints in ackend/app/api/v1/auth.py matching the API contracts specification.
+- Required modifications to ackend/app/schemas/auth.py with all Request models.
+- Updated OrganizationRepository and UserRepository to initialize with proper ORM models.
+- Added missing security ErrorCodes in ackend/app/core/constants.py.
+- Corrected unit test mock in 	est_api_v1_architecture.py.
+
+#### Files Modified / Created
+- ackend/app/schemas/auth.py
+- ackend/app/core/constants.py
+- ackend/app/repositories/user_repo.py
+- ackend/app/repositories/org_repo.py
+- ackend/app/services/auth_service.py
+- ackend/app/api/v1/auth.py
+- 	ests/unit/test_api_v1_architecture.py
+
+#### API Contracts Updated
+- /api/v1/auth/register (POST)
+- /api/v1/auth/forgot-password (POST)
+- /api/v1/auth/reset-password (POST)
+- /api/v1/auth/change-password (PATCH)
+
+#### Database Changes / Migrations
+- None
+
+#### Verification & Tests Executed
+- [x] Unit tests passed (pytest tests/unit/)
+- [x] Integration tests skipped (Depends on Postgres Docker instance).
+
+#### Target Receiving Agent
+- Member 3 (Frontend Lead)
+- Member 4 (DevOps Lead)
+
+#### Required Action for Receiving Agent
+- **Member 3**: Implement frontend auth UI elements.
+- **Member 4**: Integrate database services for CI testing.

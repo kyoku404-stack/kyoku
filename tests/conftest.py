@@ -22,13 +22,22 @@ os.environ["POSTGRES_DB"] = "keep_test_db"
 os.environ["REDIS_HOST"] = "localhost"
 os.environ["REDIS_PORT"] = "6379"
 
-# Register SQLite dialect fallbacks for PostgreSQL types (JSONB, Vector)
-from pgvector.sqlalchemy import Vector
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.compiler import compiles
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+os.environ["SYNC_DATABASE_URL"] = "sqlite:///./test.db"
 
-from backend.app.core.config import Settings, settings
-from backend.app.main import app
+# Register SQLite dialect fallbacks for PostgreSQL types (JSONB, Vector)
+from pgvector.sqlalchemy import Vector  # noqa: E402
+from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy.dialects.postgresql import JSONB  # noqa: E402
+from sqlalchemy.ext.compiler import compiles  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
+
+from backend.app.core.config import Settings, settings  # noqa: E402
+from backend.app.core.security import get_password_hash  # noqa: E402
+from backend.app.db.base import Base  # noqa: E402
+from backend.app.main import app  # noqa: E402
+from backend.app.models.organization import Organization  # noqa: E402
+from backend.app.models.user import User  # noqa: E402
 
 
 @compiles(JSONB, "sqlite")
@@ -39,6 +48,35 @@ def compile_jsonb_sqlite(type_, compiler, **kw):
 @compiles(Vector, "sqlite")
 def compile_vector_sqlite(type_, compiler, **kw):
     return "TEXT"
+
+
+# Ensure tables are created for integration tests using the app's global engine
+sync_test_engine = create_engine("sqlite:///./test.db")
+Base.metadata.drop_all(bind=sync_test_engine)
+Base.metadata.create_all(bind=sync_test_engine)
+
+with Session(sync_test_engine) as db_session:
+    if not db_session.query(Organization).first():
+        org = Organization(name="Enterprise", domain="enterprise.com")
+        db_session.add(org)
+        db_session.commit()
+        user = User(
+            email="admin@enterprise.com",
+            hashed_password=get_password_hash("SecurePassword123!"),
+            full_name="Admin User",
+            organization_id=org.id,
+            role="OrgAdmin",
+        )
+        user2 = User(
+            email="user@enterprise.com",
+            hashed_password=get_password_hash("SecurePassword123!"),
+            full_name="Standard User",
+            organization_id=org.id,
+            role="Member",
+        )
+        db_session.add(user)
+        db_session.add(user2)
+        db_session.commit()
 
 
 @pytest.fixture(scope="session")
@@ -52,4 +90,5 @@ def client() -> Generator[TestClient, None, None]:
     """Fixture providing FastAPI test client with lifespan context."""
     with TestClient(app) as test_client:
         yield test_client
+
 

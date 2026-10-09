@@ -12,16 +12,23 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+db_url = settings.DATABASE_URL or "postgresql+asyncpg://keep_user:keep_password@localhost:5432/keep_db"
+is_sqlite = db_url.startswith("sqlite")
+
+engine_kwargs = {
+    "echo": (settings.LOG_LEVEL.upper() == "DEBUG"),
+    "future": True,
+}
+
+if not is_sqlite:
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20,
+    })
+
 # Create async engine with connection pooling
-async_engine = create_async_engine(
-    settings.DATABASE_URL
-    or "postgresql+asyncpg://keep_user:keep_password@localhost:5432/keep_db",
-    echo=(settings.LOG_LEVEL.upper() == "DEBUG"),
-    future=True,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-)
+async_engine = create_async_engine(db_url, **engine_kwargs)
 
 # Async session factory
 async_session_factory = async_sessionmaker(

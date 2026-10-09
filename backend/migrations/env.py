@@ -24,7 +24,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Set database URL dynamically from app settings
-config.set_main_option("sqlalchemy.url", settings.SYNC_DATABASE_URL)
+config.set_main_option("sqlalchemy.url", str(settings.SYNC_DATABASE_URL))
 
 target_metadata = Base.metadata
 

@@ -68,3 +68,28 @@ class RefreshTokenResponse(BaseModel):
     expires_in: int = Field(
         default=3600, description="Access token expiration window in seconds"
     )
+
+class RegisterRequest(BaseModel):
+    """Payload for user registration."""
+
+    email: EmailStr = Field(..., description="User corporate email address")
+    password: str = Field(..., min_length=8, description="User secret password")
+    full_name: str = Field(..., description="User full display name")
+    organization_id: UUID | None = Field(default=None, description="Organization ID to join")
+
+class ForgotPasswordRequest(BaseModel):
+    """Payload for password reset request."""
+
+    email: EmailStr = Field(..., description="User corporate email address")
+
+class ResetPasswordRequest(BaseModel):
+    """Payload for resetting password."""
+
+    token: str = Field(..., description="Password reset token")
+    new_password: str = Field(..., min_length=8, description="New password")
+
+class ChangePasswordRequest(BaseModel):
+    """Payload for changing password."""
+
+    current_password: str = Field(..., description="Current password")
+    new_password: str = Field(..., min_length=8, description="New password")
