@@ -17,6 +17,18 @@ const DashboardPage = lazy(() =>
 const LoginPage = lazy(() =>
   import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage }))
 );
+const RegisterPage = lazy(() =>
+  import('@/pages/RegisterPage').then((m) => ({ default: m.RegisterPage }))
+);
+const ForgotPasswordPage = lazy(() =>
+  import('@/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage }))
+);
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage }))
+);
+const ProfilePage = lazy(() =>
+  import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
+);
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 );
@@ -59,6 +71,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <DashboardPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'profile',
+        element: (
+          <SuspenseWrapper>
+            <ProfilePage />
           </SuspenseWrapper>
         ),
       },
@@ -141,6 +161,30 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'register',
+        element: (
+          <SuspenseWrapper>
+            <RegisterPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'forgot-password',
+        element: (
+          <SuspenseWrapper>
+            <ForgotPasswordPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'reset-password',
+        element: (
+          <SuspenseWrapper>
+            <ResetPasswordPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         index: true,
         element: <Navigate to="/auth/login" replace />,
       },
@@ -149,5 +193,9 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Navigate to="/auth/login" replace />,
+  },
+  {
+    path: '/register',
+    element: <Navigate to="/auth/register" replace />,
   },
 ]);
