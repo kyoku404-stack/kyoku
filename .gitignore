@@ -59,6 +59,9 @@ backend/.venv/
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+*.db
+*.sqlite
+*.sqlite3
 
 # ==============================================================================
 # Node.js & Frontend Build Artifacts

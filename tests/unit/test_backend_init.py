@@ -52,11 +52,14 @@ class TestBackendInitialization(unittest.TestCase):
             POSTGRES_SERVER="localhost",
             POSTGRES_PORT=5432,
             POSTGRES_DB="test_db",
+            DATABASE_URL=None,
+            SYNC_DATABASE_URL=None,
             BACKEND_CORS_ORIGINS=["http://localhost:3000"],
         )
         self.assertEqual(settings.ENVIRONMENT, "test")
         self.assertIsNotNone(settings.DATABASE_URL)
         assert settings.DATABASE_URL is not None
+
         self.assertIn(
             "postgresql+asyncpg://test_user:test_password@localhost:5432/test_db",
             settings.DATABASE_URL,
