@@ -29,24 +29,25 @@ export const PendingInvitationsList: React.FC<PendingInvitationsListProps> = ({
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchInvitations = async () => {
+  const fetchInvitations = React.useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
       const res = await invitationService.listInvitations(0, 100);
       setInvitations(res.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to load invitations.'
+        errorObj?.response?.data?.error?.message || 'Failed to load invitations.'
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchInvitations();
-  }, [refreshTrigger]);
+  }, [fetchInvitations, refreshTrigger]);
 
   const handleCopyLink = (token: string) => {
     const inviteUrl = `${window.location.origin}/invitations/accept?token=${token}`;
@@ -59,9 +60,10 @@ export const PendingInvitationsList: React.FC<PendingInvitationsListProps> = ({
     try {
       await invitationService.revokeInvitation(id);
       await fetchInvitations();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to revoke invitation.'
+        errorObj?.response?.data?.error?.message || 'Failed to revoke invitation.'
       );
     }
   };

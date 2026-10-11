@@ -44,9 +44,10 @@ export const DepartmentManager: React.FC = () => {
     try {
       const res = await departmentService.listDepartments(0, 100);
       setDepartments(res.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to retrieve department listings.'
+        errorObj?.response?.data?.error?.message || 'Failed to retrieve department listings.'
       );
     } finally {
       setLoading(false);
@@ -81,9 +82,10 @@ export const DepartmentManager: React.FC = () => {
       await departmentService.createDepartment(formData);
       setCreateModalOpen(false);
       await fetchDepartments();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to create department.'
+        errorObj?.response?.data?.error?.message || 'Failed to create department.'
       );
     } finally {
       setSubmitting(false);
@@ -102,9 +104,10 @@ export const DepartmentManager: React.FC = () => {
       await departmentService.updateDepartment(selectedDept.id, updatePayload);
       setEditModalOpen(false);
       await fetchDepartments();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to update department.'
+        errorObj?.response?.data?.error?.message || 'Failed to update department.'
       );
     } finally {
       setSubmitting(false);
@@ -118,9 +121,10 @@ export const DepartmentManager: React.FC = () => {
       await departmentService.deleteDepartment(selectedDept.id);
       setDeleteModalOpen(false);
       await fetchDepartments();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message ||
+        errorObj?.response?.data?.error?.message ||
           'Failed to remove department. Ensure all associated teams and members are reassigned.'
       );
     } finally {

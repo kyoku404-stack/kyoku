@@ -55,7 +55,7 @@ export const OrgSettingsView: React.FC = () => {
     ai_temperature: 0.2,
   });
 
-  const fetchOrgDetails = async () => {
+  const fetchOrgDetails = React.useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
@@ -91,19 +91,20 @@ export const OrgSettingsView: React.FC = () => {
         ai_memory_scope: settings.ai_memory_scope || 'Organization',
         ai_temperature: settings.ai_temperature ?? 0.2,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message ||
+        errorObj?.response?.data?.error?.message ||
           'Failed to load organization settings. Using local tenant state.'
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchOrgDetails();
-  }, []);
+  }, [fetchOrgDetails]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,9 +147,10 @@ export const OrgSettingsView: React.FC = () => {
       setOrg(res.data);
       setSuccessMessage('Organization workspace settings successfully updated.');
       setTimeout(() => setSuccessMessage(null), 4000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to persist organization settings.'
+        errorObj?.response?.data?.error?.message || 'Failed to persist organization settings.'
       );
     } finally {
       setSaving(false);

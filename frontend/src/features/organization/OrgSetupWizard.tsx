@@ -122,10 +122,14 @@ export const OrgSetupWizard: React.FC<OrgSetupWizardProps> = ({ onCompleted }) =
 
       setStep(4);
       onCompleted?.(createdOrg.id);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as {
+        response?: { data?: { error?: { message?: string } } };
+        message?: string;
+      };
       setErrorMessage(
-        err?.response?.data?.error?.message ||
-          err?.message ||
+        errorObj?.response?.data?.error?.message ||
+          errorObj?.message ||
           'Failed to initialize organization workspace. Please check domain uniqueness and required fields.'
       );
     } finally {

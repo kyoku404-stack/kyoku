@@ -4,8 +4,10 @@
  */
 
 import { apiClient } from './api';
-import type { ApiResponse } from '@/types/api';
+import type { ApiResponse, PaginatedData } from '@/types/api';
 import type { Team, TeamCreate, TeamUpdate } from '@/types/team';
+
+export type TeamListResult = PaginatedData<Team> | Team[];
 
 export const teamService = {
   /**
@@ -15,11 +17,11 @@ export const teamService = {
     department_id?: string;
     skip?: number;
     limit?: number;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<TeamListResult>> {
     const config = params ? { params } : undefined;
     const response = await (config
-      ? apiClient.get<ApiResponse<any>>('/teams', config)
-      : apiClient.get<ApiResponse<any>>('/teams'));
+      ? apiClient.get<ApiResponse<TeamListResult>>('/teams', config)
+      : apiClient.get<ApiResponse<TeamListResult>>('/teams'));
     return response.data;
   },
 

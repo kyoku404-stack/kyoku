@@ -59,7 +59,7 @@ export const ProjectWorkspaceView: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
@@ -75,21 +75,25 @@ export const ProjectWorkspaceView: React.FC = () => {
 
       const items = Array.isArray(projRes.data)
         ? projRes.data
-        : (projRes.data as any)?.items || [];
+        : (projRes.data as { items?: Project[] })?.items || [];
       setProjects(items);
-      setTeams(teamsRes.data);
-    } catch (err: any) {
+      const teamItems = Array.isArray(teamsRes.data)
+        ? teamsRes.data
+        : teamsRes.data?.items || [];
+      setTeams(teamItems);
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to load project workspaces.'
+        errorObj?.response?.data?.error?.message || 'Failed to load project workspaces.'
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, priorityFilter, teamFilter, searchQuery]);
 
   useEffect(() => {
     fetchData();
-  }, [statusFilter, priorityFilter, teamFilter, searchQuery]);
+  }, [fetchData]);
 
   const handleOpenCreate = () => {
     setFormData({
@@ -128,9 +132,10 @@ export const ProjectWorkspaceView: React.FC = () => {
       await projectService.createProject(formData);
       setCreateModalOpen(false);
       await fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to create project workspace.'
+        errorObj?.response?.data?.error?.message || 'Failed to create project workspace.'
       );
     } finally {
       setSubmitting(false);
@@ -153,9 +158,10 @@ export const ProjectWorkspaceView: React.FC = () => {
       await projectService.updateProject(selectedProject.id, payload);
       setEditModalOpen(false);
       await fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to update project workspace.'
+        errorObj?.response?.data?.error?.message || 'Failed to update project workspace.'
       );
     } finally {
       setSubmitting(false);
@@ -169,9 +175,10 @@ export const ProjectWorkspaceView: React.FC = () => {
       await projectService.deleteProject(selectedProject.id);
       setDeleteModalOpen(false);
       await fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to delete project.'
+        errorObj?.response?.data?.error?.message || 'Failed to delete project.'
       );
     } finally {
       setSubmitting(false);

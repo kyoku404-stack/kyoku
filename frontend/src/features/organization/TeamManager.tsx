@@ -44,7 +44,7 @@ export const TeamManager: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
@@ -54,20 +54,24 @@ export const TeamManager: React.FC = () => {
         ),
         departmentService.listDepartments(0, 100),
       ]);
-      setTeams(teamsRes.data);
+      const teamItems = Array.isArray(teamsRes.data)
+        ? teamsRes.data
+        : teamsRes.data?.items || [];
+      setTeams(teamItems);
       setDepartments(deptRes.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to load team and department data.'
+        errorObj?.response?.data?.error?.message || 'Failed to load team and department data.'
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDeptFilter]);
 
   useEffect(() => {
     fetchData();
-  }, [selectedDeptFilter]);
+  }, [fetchData]);
 
   const handleOpenCreate = () => {
     setFormData({
@@ -103,9 +107,10 @@ export const TeamManager: React.FC = () => {
       await teamService.createTeam(formData);
       setCreateModalOpen(false);
       await fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to create team.'
+        errorObj?.response?.data?.error?.message || 'Failed to create team.'
       );
     } finally {
       setSubmitting(false);
@@ -126,9 +131,10 @@ export const TeamManager: React.FC = () => {
       await teamService.updateTeam(selectedTeam.id, payload);
       setEditModalOpen(false);
       await fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to update team.'
+        errorObj?.response?.data?.error?.message || 'Failed to update team.'
       );
     } finally {
       setSubmitting(false);
@@ -142,9 +148,10 @@ export const TeamManager: React.FC = () => {
       await teamService.deleteTeam(selectedTeam.id);
       setDeleteModalOpen(false);
       await fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } } };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to delete team.'
+        errorObj?.response?.data?.error?.message || 'Failed to delete team.'
       );
     } finally {
       setSubmitting(false);

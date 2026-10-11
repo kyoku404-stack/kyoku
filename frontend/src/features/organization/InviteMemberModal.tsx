@@ -45,7 +45,10 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
       ])
         .then(([deptRes, teamsRes]) => {
           setDepartments(deptRes.data);
-          setTeams(teamsRes.data);
+          const teamItems = Array.isArray(teamsRes.data)
+            ? teamsRes.data
+            : teamsRes.data?.items || [];
+          setTeams(teamItems);
         })
         .catch(() => {});
     }
@@ -69,10 +72,11 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
       await invitationService.createInvitation(payload);
       onInvited?.();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message ||
-          err?.message ||
+        errorObj?.response?.data?.error?.message ||
+          errorObj?.message ||
           'Failed to dispatch invitation. Please check the email address and permissions.'
       );
     } finally {

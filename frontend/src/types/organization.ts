@@ -14,7 +14,7 @@ export interface OrganizationSettings {
   ai_temperature?: number;
   storage_quota_bytes?: number;
   max_user_limit?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface OrganizationResponse {
@@ -32,7 +32,7 @@ export interface OrganizationResponse {
   max_storage_bytes?: number;
   ai_monthly_token_quota?: number;
   is_active: boolean;
-  settings?: OrganizationSettings | Record<string, any> | null;
+  settings?: OrganizationSettings | Record<string, unknown> | null;
   is_deleted?: boolean;
   deleted_at?: string | null;
   created_at: string;
@@ -65,7 +65,7 @@ export interface OrganizationUpdate {
   logo_url?: string | null;
   description?: string | null;
   is_active?: boolean | null;
-  settings?: OrganizationSettings | Record<string, any> | null;
+  settings?: OrganizationSettings | Record<string, unknown> | null;
   subscription_tier?: string;
   max_users?: number;
   max_storage_bytes?: number;

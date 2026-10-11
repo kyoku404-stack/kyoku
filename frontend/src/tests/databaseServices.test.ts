@@ -125,7 +125,7 @@ describe('Phase 1.3 Persistence Domain Services', () => {
 
       const res = await teamService.listTeams();
       expect(apiClient.get).toHaveBeenCalledWith('/teams');
-      expect(res.data.items[0].name).toBe('Engineering');
+      expect((res.data as PaginatedData<Team>).items[0].name).toBe('Engineering');
     });
   });
 

@@ -48,8 +48,14 @@ export const OrganizationPage: React.FC = () => {
         if (orgRes?.data) setOrg(orgRes.data);
         setCounts({
           departments: deptRes?.data?.length || 0,
-          teams: teamRes?.data?.length || 0,
-          projects: Array.isArray(projRes?.data) ? projRes.data.length : (projRes?.data as any)?.total || 0,
+          teams: Array.isArray(teamRes?.data)
+            ? teamRes.data.length
+            : teamRes?.data?.total || 0,
+          projects: Array.isArray(projRes?.data)
+            ? projRes.data.length
+            : (projRes?.data && typeof projRes.data === 'object' && 'total' in projRes.data)
+            ? Number((projRes.data as { total?: number }).total || 0)
+            : 0,
           members: memRes?.data?.total || 0,
         });
       } catch {

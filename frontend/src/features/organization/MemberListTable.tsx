@@ -64,7 +64,7 @@ export const MemberListTable: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [invitesRefreshTrigger, setInvitesRefreshTrigger] = useState(0);
 
-  const fetchMembers = async () => {
+  const fetchMembers = React.useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
@@ -79,14 +79,15 @@ export const MemberListTable: React.FC = () => {
       setMembers(res.data.items);
       setTotalCount(res.data.total);
       setTotalPages(res.data.total_pages);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to load enterprise members list.'
+        errorObj?.response?.data?.error?.message || 'Failed to load enterprise members list.'
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, roleFilter, deptFilter, teamFilter, searchQuery]);
 
   useEffect(() => {
     Promise.all([
@@ -95,7 +96,10 @@ export const MemberListTable: React.FC = () => {
     ])
       .then(([deptRes, teamRes]) => {
         setDepartments(deptRes.data);
-        setTeams(teamRes.data);
+        const teamItems = Array.isArray(teamRes.data)
+          ? teamRes.data
+          : teamRes.data?.items || [];
+        setTeams(teamItems);
       })
       .catch(() => {});
   }, []);
@@ -104,7 +108,7 @@ export const MemberListTable: React.FC = () => {
     if (activeTab === 'members') {
       fetchMembers();
     }
-  }, [page, roleFilter, deptFilter, teamFilter, searchQuery, activeTab]);
+  }, [activeTab, fetchMembers]);
 
   const handleOpenEdit = (member: MemberResponse) => {
     setSelectedMember(member);
@@ -130,9 +134,10 @@ export const MemberListTable: React.FC = () => {
       await memberService.updateMember(selectedMember.id, editForm);
       setEditModalOpen(false);
       await fetchMembers();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to update member role or assignment.'
+        errorObj?.response?.data?.error?.message || 'Failed to update member role or assignment.'
       );
     } finally {
       setSubmitting(false);
@@ -146,9 +151,10 @@ export const MemberListTable: React.FC = () => {
       await memberService.removeMember(selectedMember.id);
       setRemoveModalOpen(false);
       await fetchMembers();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message || 'Failed to remove member from organization.'
+        errorObj?.response?.data?.error?.message || 'Failed to remove member from organization.'
       );
     } finally {
       setSubmitting(false);

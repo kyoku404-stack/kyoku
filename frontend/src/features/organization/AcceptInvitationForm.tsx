@@ -48,10 +48,11 @@ export const AcceptInvitationForm: React.FC<AcceptInvitationFormProps> = ({
       await invitationService.acceptInvitation(payload);
       setIsAccepted(true);
       onSuccess?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.error?.message ||
-          err?.message ||
+        errorObj?.response?.data?.error?.message ||
+          errorObj?.message ||
           'Failed to accept invitation. The link may have expired or is invalid.'
       );
     } finally {
