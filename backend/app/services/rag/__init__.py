@@ -21,6 +21,7 @@ from backend.app.services.rag.interfaces import (
     BaseReranker,
     BaseRetriever,
     BaseVectorStore,
+    BaseWorkspaceMemoryRouter,
     ChatMessageRecord,
     ChatSessionRecord,
     CitationMetadata,
@@ -37,6 +38,7 @@ from backend.app.services.rag.interfaces import (
     StreamEventType,
     VectorFilter,
     VectorRecord,
+    WorkspaceMemoryScope,
 )
 
 __all__ = [
@@ -55,6 +57,7 @@ __all__ = [
     "BaseReranker",
     "BaseRetriever",
     "BaseVectorStore",
+    "BaseWorkspaceMemoryRouter",
     "ChatMessageRecord",
     "ChatSessionRecord",
     "CitationMetadata",
@@ -71,4 +74,6 @@ __all__ = [
     "StreamEventType",
     "VectorFilter",
     "VectorRecord",
+    "WorkspaceMemoryScope",
 ]
+

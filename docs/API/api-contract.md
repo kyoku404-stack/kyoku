@@ -262,9 +262,46 @@
 
 ---
 
-### 3.2 Organizations & Tenants (`/api/v1/organizations`)
+### 3.2 Organization, Workspace & Hierarchy Management (Phase 1.5)
 
-#### 3.2.1 Get Current Organization Details
+#### 3.2.1 Create Organization
+- **Method**: `POST`
+- **Path**: `/api/v1/organizations`
+- **Auth**: SuperAdmin or Initial Onboarding
+- **Request Body**:
+```json
+{
+  "name": "Acme Global Enterprise",
+  "domain": "acme.com",
+  "industry": "Software & Technology",
+  "company_size": "250-1000",
+  "time_zone": "America/New_York",
+  "default_language": "en-US",
+  "logo_url": "https://assets.acme.com/logo.png",
+  "description": "Enterprise cloud platform and AI intelligence."
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Organization created successfully.",
+  "data": {
+    "id": "8bc92d11-3456-4211-89ab-1234567890ab",
+    "name": "Acme Global Enterprise",
+    "domain": "acme.com",
+    "industry": "Software & Technology",
+    "company_size": "250-1000",
+    "time_zone": "America/New_York",
+    "default_language": "en-US",
+    "is_active": true,
+    "created_at": "2026-10-10T10:00:00Z"
+  }
+}
+```
+- **Error Codes**: `ORG_NAME_EXISTS` (409), `ORG_DOMAIN_EXISTS` (409), `VALIDATION_ERROR` (422)
+
+#### 3.2.2 Get Current Organization Details
 - **Method**: `GET`
 - **Path**: `/api/v1/organizations/current`
 - **Auth**: Bearer JWT
@@ -277,11 +314,117 @@
     "id": "8bc92d11-3456-4211-89ab-1234567890ab",
     "name": "Acme Global Enterprise",
     "domain": "acme.com",
+    "industry": "Software & Technology",
+    "company_size": "250-1000",
+    "time_zone": "America/New_York",
+    "default_language": "en-US",
     "is_active": true,
     "created_at": "2026-08-17T10:00:00Z"
   }
 }
 ```
+
+#### 3.2.3 Get Organization by ID
+- **Method**: `GET`
+- **Path**: `/api/v1/organizations/{id}`
+- **Auth**: Bearer JWT (`OrgAdmin` or matching `organization_id`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Organization retrieved.",
+  "data": {
+    "id": "8bc92d11-3456-4211-89ab-1234567890ab",
+    "name": "Acme Global Enterprise",
+    "domain": "acme.com",
+    "is_active": true
+  }
+}
+```
+- **Error Codes**: `ORG_NOT_FOUND` (404), `TENANT_ACCESS_DENIED` (403)
+
+#### 3.2.4 Update Organization Settings
+- **Method**: `PATCH`
+- **Path**: `/api/v1/organizations/{id}`
+- **Auth**: Bearer JWT (`OrgAdmin`)
+- **Request Body**:
+```json
+{
+  "name": "Acme International Enterprises",
+  "time_zone": "UTC",
+  "theme": "dark",
+  "default_language": "en-US",
+  "settings": {
+    "max_upload_size_mb": 50,
+    "default_llm": "gpt-4o",
+    "embedding_model": "text-embedding-3-small",
+    "citation_preferences": "in-text-brackets"
+  }
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Organization updated successfully.",
+  "data": {
+    "id": "8bc92d11-3456-4211-89ab-1234567890ab",
+    "name": "Acme International Enterprises",
+    "updated_at": "2026-10-10T12:00:00Z"
+  }
+}
+```
+- **Error Codes**: `ORG_NOT_FOUND` (404), `AUTH_FORBIDDEN` (403)
+
+#### 3.2.5 Archive / Delete Organization
+- **Method**: `DELETE`
+- **Path**: `/api/v1/organizations/{id}`
+- **Auth**: Bearer JWT (`SuperAdmin` or Root `OrgAdmin`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Organization archived successfully.",
+  "data": {
+    "id": "8bc92d11-3456-4211-89ab-1234567890ab",
+    "is_deleted": true
+  }
+}
+```
+
+#### 3.2.6 Department Management (`/api/v1/departments`)
+- **Create Department**: `POST /api/v1/departments` (Body: `{"name": "Engineering", "description": "Core product engineering", "manager_id": "<uuid>"}`)
+- **List Departments**: `GET /api/v1/departments` (Returns array of department cards with member and team counts)
+- **Get Department**: `GET /api/v1/departments/{id}`
+- **Update Department**: `PATCH /api/v1/departments/{id}`
+- **Delete Department**: `DELETE /api/v1/departments/{id}`
+
+#### 3.2.7 Team Management (`/api/v1/teams`)
+- **Create Team**: `POST /api/v1/teams` (Body: `{"name": "AI & RAG Team", "department_id": "<uuid>", "lead_user_id": "<uuid>", "description": "Machine learning engineering"}`)
+- **List Teams**: `GET /api/v1/teams?department_id=<uuid>`
+- **Get Team**: `GET /api/v1/teams/{id}`
+- **Update Team**: `PATCH /api/v1/teams/{id}`
+- **Delete Team**: `DELETE /api/v1/teams/{id}`
+
+#### 3.2.8 Project Workspace Management (`/api/v1/projects`)
+- **Create Project**: `POST /api/v1/projects` (Body: `{"name": "Project Helios", "team_id": "<uuid>", "description": "Enterprise AI search rollout", "priority": "HIGH"}`)
+- **List Projects**: `GET /api/v1/projects?team_id=<uuid>&status=ACTIVE`
+- **Get Project**: `GET /api/v1/projects/{id}`
+- **Update Project**: `PATCH /api/v1/projects/{id}`
+- **Archive Project**: `DELETE /api/v1/projects/{id}`
+
+#### 3.2.9 User Invitation System (`/api/v1/invitations`)
+- **Send Invitation**: `POST /api/v1/invitations`
+  - Body: `{"email": "engineer@acme.com", "role": "Member", "department_id": "<uuid>", "team_id": "<uuid>"}`
+- **List Pending Invitations**: `GET /api/v1/invitations`
+- **Revoke Invitation**: `DELETE /api/v1/invitations/{id}`
+- **Accept Invitation**: `POST /api/v1/invitations/accept`
+  - Body: `{"token": "inv_token_99...", "full_name": "Alex Mercer", "password": "SecurePassword123!"}`
+
+#### 3.2.10 Member Management (`/api/v1/members`)
+- **List Members**: `GET /api/v1/members?department_id=<uuid>&role=Member&page=1&page_size=20`
+- **Update Member**: `PATCH /api/v1/members/{user_id}` (Body: `{"role": "ProjectManager", "department_id": "<uuid>", "is_active": true}`)
+- **Remove Member**: `DELETE /api/v1/members/{user_id}`
 
 ---
 
@@ -460,7 +603,19 @@ data: {"finish_reason": "stop", "total_tokens": 85}
 | `/api/v1/auth/refresh` | POST | Refresh expired access token | Member 2 | Phase 1.4 |
 | `/api/v1/auth/me` | GET | Retrieve authenticated profile | Member 2 | Phase 1.4 |
 | `/api/v1/users` | GET / POST | Manage enterprise users | Member 2 | Phase 1.4 |
+| `/api/v1/organizations` | POST | Create enterprise organization | Member 2 | Phase 1.5 |
 | `/api/v1/organizations/current` | GET | Retrieve tenant details | Member 2 | Phase 1.5 |
+| `/api/v1/organizations/{id}` | GET / PATCH / DELETE | Manage enterprise tenant | Member 2 | Phase 1.5 |
+| `/api/v1/departments` | GET / POST | Manage departments | Member 2 | Phase 1.5 |
+| `/api/v1/departments/{id}` | GET / PATCH / DELETE | Department details & operations | Member 2 | Phase 1.5 |
+| `/api/v1/teams` | GET / POST | Manage department teams | Member 2 | Phase 1.5 |
+| `/api/v1/teams/{id}` | GET / PATCH / DELETE | Team details & operations | Member 2 | Phase 1.5 |
+| `/api/v1/projects` | GET / POST | Manage collaborative projects | Member 2 | Phase 1.5 |
+| `/api/v1/projects/{id}` | GET / PATCH / DELETE | Project details & operations | Member 2 | Phase 1.5 |
+| `/api/v1/invitations` | GET / POST | Manage user invitations | Member 2 | Phase 1.5 |
+| `/api/v1/invitations/accept` | POST | Accept invitation & activate user | Member 2 | Phase 1.5 |
+| `/api/v1/members` | GET | List enterprise members | Member 2 | Phase 1.5 |
+| `/api/v1/members/{user_id}` | PATCH / DELETE | Member role & status updates | Member 2 | Phase 1.5 |
 | `/api/v1/documents/upload` | POST | Multipart file ingestion | Member 2 & Member 1 | Phase 1.8 |
 | `/api/v1/documents` | GET | List tenant documents | Member 2 | Phase 1.8 |
 | `/api/v1/search/hybrid` | POST | Hybrid semantic + BM25 search | Member 1 & Member 2 | Phase 2.2 |

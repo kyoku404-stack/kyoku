@@ -43,9 +43,18 @@ class CitationMetadata:
     extra_metadata: dict[str, Any] = field(default_factory=dict)
 
 
+class WorkspaceMemoryScope(str, Enum):
+    """Hierarchical memory scopes for RAG retrieval routing."""
+
+    ORG_WIDE = "org_wide"
+    DEPARTMENT_WIDE = "department_wide"
+    TEAM_WIDE = "team_wide"
+    PROJECT_LOCAL = "project_local"
+
+
 @dataclass
 class RetrievalResult:
-    """Represents a single retrieved chunk candidate with similarity score."""
+    """Represents a single retrieved chunk candidate with similarity score and hierarchy context."""
 
     chunk_id: UUID
     document_id: UUID
@@ -55,6 +64,9 @@ class RetrievalResult:
     page_number: int | None = None
     chunk_index: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
+    department_id: UUID | None = None
+    team_id: UUID | None = None
+    project_id: UUID | None = None
 
 
 @dataclass
@@ -66,6 +78,8 @@ class RAGSecurityContext:
     role: str = "Member"
     allowed_document_ids: set[UUID] | None = None
     accessible_project_ids: set[UUID] | None = None
+    department_id: UUID | None = None
+    team_ids: set[UUID] = field(default_factory=set)
 
     def can_access_document(self, document_id: UUID) -> bool:
         """Verifies if the user is authorized to read chunks from the document."""
@@ -73,9 +87,22 @@ class RAGSecurityContext:
             return True
         return document_id in self.allowed_document_ids
 
+    def can_access_project(self, project_id: UUID) -> bool:
+        """Verifies if the user is authorized to retrieve knowledge scoped to the project."""
+        if self.accessible_project_ids is None:
+            return True
+        return project_id in self.accessible_project_ids
+
+    def can_access_department(self, department_id: UUID) -> bool:
+        """Verifies if the user is authorized to retrieve knowledge from the department."""
+        if self.department_id is None:
+            return True
+        return self.department_id == department_id
+
     def is_in_tenant(self, tenant_id: UUID) -> bool:
         """Enforces hard organizational tenant boundary."""
         return self.organization_id == tenant_id
+
 
 
 @dataclass
@@ -554,4 +581,26 @@ class BaseRAGAccessController(ABC):
         security_context: RAGSecurityContext,
     ) -> bool:
         """Checks if a user is permitted to view or traverse an entity node."""
+
+
+class BaseWorkspaceMemoryRouter(ABC):
+    """Abstract interface for routing RAG retrieval across organizational memory spaces."""
+
+    @abstractmethod
+    def route_query_scopes(
+        self,
+        query: str,
+        security_context: RAGSecurityContext,
+        requested_scope: WorkspaceMemoryScope | None = None,
+    ) -> list[WorkspaceMemoryScope]:
+        """Determines which hierarchical memory spaces to query based on user intent and active context."""
+
+    @abstractmethod
+    def filter_candidates_by_workspace(
+        self,
+        candidates: list[RetrievalResult],
+        security_context: RAGSecurityContext,
+    ) -> list[RetrievalResult]:
+        """Prunes candidate document chunks not authorized for the requesting user's workspace scope."""
+
 

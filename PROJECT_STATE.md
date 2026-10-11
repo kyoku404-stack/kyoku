@@ -4,19 +4,21 @@
 Phase 1 — Core Platform Foundation
 
 ## Current Sub-Phase
-Phase 1.4 — Authentication & Identity Management
+Phase 1.5 — Organization, Team & Workspace Management
 
 ## Repository Health
 GREEN
 
 ## Overall Status
-Phase 1.1, Phase 1.2, and Phase 1.3 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
-Phase 1.4 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
-- Authored master Authentication, Identity Management, RBAC & AI Security Architecture Specification (`docs/Architecture/auth-identity-architecture.md`) defining the end-to-end authentication lifecycle, account states, 4-role hierarchy, permission matrix, and zero-trust AI context gating.
-- Authored Architecture Decision Records ADR-011 (Enterprise RBAC Matrix & Role Resolution), ADR-012 (Tenant-Scoped Identity Context & Access-Controlled AI Retrieval), and ADR-013 (Stateless JWT Double-Token Lifecycle & Session Revocation) in `docs/decisions/decisions.md`.
-- Expanded official REST API Contract (`docs/api/api-contract.md`) specifying all 8 authentication endpoints (`/register`, `/login`, `/logout`, `/refresh`, `/forgot-password`, `/reset-password`, `/me`, `/change-password`) and standard error codes.
-- Implemented typed AI & RAG Security Domain Contracts (`backend/app/services/ai/` and `backend/app/services/rag/`), including `UserRole`, `AIPermission`, `ROLE_PERMISSIONS`, `AISecurityContext`, `BaseAIAccessController`, `RAGSecurityContext`, and `BaseRAGAccessController`.
-- Authored dedicated unit test suite (`tests/unit/test_auth_ai_security_contracts.py`) passing 100%. Ready for Member 2 (Backend Lead) to implement authentication endpoints, session handling, and authorization middleware.
+Phase 1.1, Phase 1.2, Phase 1.3, and Phase 1.4 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+
+Phase 1.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Organizational Hierarchy, Multi-Tenancy & AI Workspace Architecture Specification (`docs/Architecture/organization-hierarchy-architecture.md`) defining the 4-tier hierarchy (Org -> Depts -> Teams -> Projects), zero-trust multi-tenant quarantine, multi-tier contextual AI memory scoping, and RBAC permission governance.
+- Authored Architecture Decision Records ADR-014 (Multi-Tier Organizational Hierarchy & Context-Aware Knowledge Retrieval), ADR-015 (Multi-Tenant Workspace Isolation Barrier & AI Context Quarantine), and ADR-016 (Department & Team Scoped AI Permissions & Retrieval Inheritance) in `docs/decisions/decisions.md`.
+- Expanded official REST API Contract (`docs/API/api-contract.md`) specifying all Phase 1.5 endpoints (`/organizations`, `/departments`, `/teams`, `/projects`, `/invitations`, `/members`) with full JSON envelopes and error codes.
+- Expanded official Database Schema Specification (`docs/Database/database-schema.md`) with `departments` and `invitations` schemas, updated `teams` with `department_id`, updated ERD, and indexing matrix.
+- Implemented typed AI & RAG Workspace Scoping Domain Contracts (`backend/app/services/ai/` and `backend/app/services/rag/`), including `WorkspaceScopeLevel`, `WorkspaceScopeContext`, `AIWorkspaceSettings`, `BaseWorkspaceContextResolver`, `BaseTenantIsolationValidator`, `WorkspaceMemoryScope`, `BaseWorkspaceMemoryRouter`, and expanded `AISecurityContext` / `RAGSecurityContext`.
+- Authored dedicated unit test suite (`tests/unit/test_workspace_ai_contracts.py`) passing 100% (8/8 tests OK, 30/30 total AI tests OK). Ready for Member 2 (Backend Lead) to implement organization, department, team, project, and invitation APIs.
 
 ---
 
@@ -117,8 +119,9 @@ None.
 ---
 
 ## Last Updated
-2026-10-09
+2026-10-10
 
 ## Last Updated By
 Member 1 — Project Lead & AI Architect
+
 

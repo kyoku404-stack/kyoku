@@ -1126,6 +1126,129 @@ COMPLETED / VERIFIED GREEN
 - [x] Full Monorepo Tests: `./scripts/test-all.sh` passed 100% (133 backend + 51 frontend = 184/184 tests passed)
 
 #### Target Receiving Agent
-- Member 3 (Frontend Lead) â€” Ready for frontend auth UI implementation against fully tested, verified endpoints.
-- Member 1 (Project Lead) â€” Phase 1.4 integration and security verified.
+- Member 3 (Frontend Lead) — Ready for frontend auth UI implementation against fully tested, verified endpoints.
+- Member 1 (Project Lead) — Phase 1.4 integration and security verified.
+
+---
+
+### Handoff Entry #014: Phase 1.5 — Organization Hierarchy, Multi-Tenancy Architecture, AI Workspace Scoping & Governance
+
+#### Date
+2026-10-10
+
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION
+
+#### Implemented Deliverables
+- **Master Organizational Hierarchy, Multi-Tenancy & AI Workspace Architecture Specification (`docs/Architecture/organization-hierarchy-architecture.md`)**:
+  - Full architectural design of the 4-tier enterprise hierarchy: `Organization -> Departments -> Teams -> Projects -> Resources`.
+  - Zero-trust multi-tenant isolation model with row-level logical partitioning, cryptographic JWT claim validation (`org_id`), and repository guardrails.
+  - Multi-tier contextual AI memory scoping (project-local, team, department, and org-wide fallback) with token quotas and AI workspace settings (`default_llm`, `embedding_model`, `citation_preferences`, `enable_department_isolation`).
+  - Comprehensive RBAC governance review defining granular operational permissions (`org:*`, `dept:*`, `team:*`, `project:*`, `invitation:*`, `member:*`) across all 5 roles.
+  - Complete audit tracking event specifications for organizational mutations.
+- **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+  - Authored ADR-014: Multi-Tier Organizational Hierarchy & Context-Aware Knowledge Retrieval.
+  - Authored ADR-015: Multi-Tenant Workspace Isolation Barrier & AI Context Quarantine.
+  - Authored ADR-016: Department & Team Scoped AI Permissions & Retrieval Inheritance.
+- **REST API Contracts Specification Expansion (`docs/API/api-contract.md`)**:
+  - Formalized full endpoint contracts for Phase 1.5:
+    - `/api/v1/organizations` (POST create, GET list/id, PATCH update settings, DELETE archive)
+    - `/api/v1/departments` (POST create, GET list/id, PATCH update, DELETE remove)
+    - `/api/v1/teams` (POST create, GET list/id, PATCH update, DELETE remove)
+    - `/api/v1/projects` (POST create, GET list/id, PATCH update, DELETE archive)
+    - `/api/v1/invitations` (POST send, GET list, DELETE revoke, POST accept)
+    - `/api/v1/members` (GET list, PATCH role/status, DELETE remove)
+  - Updated API Endpoints Registry table in Section 4.
+- **Database Schema Specification Expansion (`docs/Database/database-schema.md`)**:
+  - Documented complete relational schemas for `departments` and `invitations` tables.
+  - Updated `teams` table schema to include `department_id` foreign key.
+  - Updated Mermaid Entity Relationship Diagram (ERD) with department and invitation relationships.
+  - Updated Indexing Matrix with composite uniqueness and performance indexes.
+- **Typed AI & RAG Domain Contracts (`backend/app/services/ai/` and `backend/app/services/rag/`)**:
+  - `backend/app/services/ai/interfaces.py`:
+    - Added Phase 1.5 permissions to `AIPermission` enum and updated `ROLE_PERMISSIONS` matrix for all 5 roles.
+    - Added `WorkspaceScopeLevel` enum and `WorkspaceScopeContext` dataclass.
+    - Added `AIWorkspaceSettings` dataclass for governance policies.
+    - Expanded `AISecurityContext` with `department_id`, `team_ids`, `project_ids`, and `can_access_workspace()` method.
+    - Added `BaseWorkspaceContextResolver` and `BaseTenantIsolationValidator` abstract interfaces.
+  - `backend/app/services/rag/interfaces.py`:
+    - Expanded `RetrievalResult` with `department_id`, `team_id`, and `project_id`.
+    - Expanded `RAGSecurityContext` with `department_id`, `team_ids`, `can_access_project()`, and `can_access_department()`.
+    - Added `WorkspaceMemoryScope` enum and `BaseWorkspaceMemoryRouter` abstract interface.
+  - Exported all new contracts in package `__init__.py` files with strict alphabetical sorting.
+- **Unit Testing & Verification Suite (`tests/unit/test_workspace_ai_contracts.py`)**:
+  - Authored 8 comprehensive unit tests covering scope levels, workspace settings, role permission inheritance, workspace traversal gating, mock context resolvers, tenant validators, RAG project/department gating, and memory candidate pruning.
+  - 100% test pass rate across all 30 AI unit tests (`python -m unittest`).
+  - Code quality verified with `ruff check` (0 errors).
+
+#### Files Modified / Created
+- `docs/Architecture/organization-hierarchy-architecture.md` (Created)
+- `docs/decisions/decisions.md` (Modified)
+- `docs/API/api-contract.md` (Modified)
+- `docs/Database/database-schema.md` (Modified)
+- `backend/app/services/ai/interfaces.py` (Modified)
+- `backend/app/services/ai/__init__.py` (Modified)
+- `backend/app/services/rag/interfaces.py` (Modified)
+- `backend/app/services/rag/__init__.py` (Modified)
+- `tests/unit/test_workspace_ai_contracts.py` (Created)
+- `PROJECT_STATE.md` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+#### API Contracts Updated
+- `POST /api/v1/organizations`
+- `GET /api/v1/organizations/{id}`
+- `PATCH /api/v1/organizations/{id}`
+- `DELETE /api/v1/organizations/{id}`
+- `GET /api/v1/organizations/current`
+- `POST /api/v1/departments`
+- `GET /api/v1/departments`
+- `GET /api/v1/departments/{id}`
+- `PATCH /api/v1/departments/{id}`
+- `DELETE /api/v1/departments/{id}`
+- `POST /api/v1/teams`
+- `GET /api/v1/teams`
+- `GET /api/v1/teams/{id}`
+- `PATCH /api/v1/teams/{id}`
+- `DELETE /api/v1/teams/{id}`
+- `POST /api/v1/projects`
+- `GET /api/v1/projects`
+- `GET /api/v1/projects/{id}`
+- `PATCH /api/v1/projects/{id}`
+- `DELETE /api/v1/projects/{id}`
+- `POST /api/v1/invitations`
+- `GET /api/v1/invitations`
+- `DELETE /api/v1/invitations/{id}`
+- `POST /api/v1/invitations/accept`
+- `GET /api/v1/members`
+- `PATCH /api/v1/members/{user_id}`
+- `DELETE /api/v1/members/{user_id}`
+
+#### Database Changes / Migrations
+- Formally specified schemas for `departments` and `invitations` tables, plus `department_id` on `teams`. Member 2 will generate the Alembic migration in Phase 1.5.
+
+#### Verification & Tests Executed
+- [x] Python syntax compilation passed (`python -m py_compile`)
+- [x] Ruff code quality check passed (`python -m ruff check` -> 0 errors)
+- [x] New workspace unit tests passed (`python -m unittest tests/unit/test_workspace_ai_contracts.py` -> 8/8 tests OK, 100%)
+- [x] Full AI contract test matrix passed (`python -m unittest tests/unit/test_ai_interfaces.py tests/unit/test_ai_persistence_contracts.py tests/unit/test_auth_ai_security_contracts.py tests/unit/test_workspace_ai_contracts.py` -> 30/30 tests OK, 100%)
+- [x] Git branch isolation verified (`agent/backend/feature/phase-1.5-org-hierarchy-ai-architecture`)
+- [x] Zero hardcoded secrets, zero debug logs
+
+#### Target Receiving Agent
+- **Member 2 (Backend Lead)**: Implement Phase 1.5 Organization, Department, Team, Project, Invitation, and Member endpoints, SQLAlchemy ORM models, Alembic migration, and repositories.
+- **Member 3 (Frontend Lead)**: Implement Phase 1.5 Organization setup wizard, workspace management screens, member invitation modals, and settings views.
+- **Member 4 (DevOps Lead)**: Configure Phase 1.5 seed data with sample departments, teams, projects, invitations, and multi-tenant test suites.
+
+#### Required Action for Receiving Agent
+- **Member 2**:
+  1. Create SQLAlchemy ORM models for `Department` and `Invitation` in `backend/app/models/` and add `department_id` foreign key to `Team`.
+  2. Generate and apply Alembic migration for the new tables.
+  3. Implement routers matching `docs/API/api-contract.md` Section 3.2.
+- **Member 3**:
+  1. Build TypeScript DTOs matching `docs/API/api-contract.md` Section 3.2.
+  2. Implement frontend screens for Organization Settings, Departments, Teams, and Invitations.
+
 

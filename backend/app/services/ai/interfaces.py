@@ -52,12 +52,43 @@ class AIPermission(str, Enum):
     USERS_MANAGE = "users:manage"
     ORG_MANAGE = "org:manage"
 
+    # Phase 1.5 Organization, Workspace & Hierarchy Governance
+    ORG_CREATE = "org:create"
+    ORG_READ = "org:read"
+    ORG_UPDATE = "org:update"
+    ORG_DELETE = "org:delete"
+    ORG_SETTINGS = "org:settings"
+    DEPT_CREATE = "dept:create"
+    DEPT_READ = "dept:read"
+    DEPT_UPDATE = "dept:update"
+    DEPT_DELETE = "dept:delete"
+    TEAM_CREATE = "team:create"
+    TEAM_READ = "team:read"
+    TEAM_UPDATE = "team:update"
+    TEAM_DELETE = "team:delete"
+    PROJECT_CREATE = "project:create"
+    PROJECT_READ = "project:read"
+    PROJECT_UPDATE = "project:update"
+    PROJECT_DELETE = "project:delete"
+    PROJECT_MEMBERSHIP = "project:membership"
+    INVITATION_CREATE = "invitation:create"
+    INVITATION_READ = "invitation:read"
+    INVITATION_REVOKE = "invitation:revoke"
+    MEMBER_READ = "member:read"
+    MEMBER_UPDATE = "member:update"
+    MEMBER_REMOVE = "member:remove"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
     AIPermission.SEARCH_QUERY.value,
     AIPermission.DOC_READ.value,
     AIPermission.KG_READ.value,
+    AIPermission.ORG_READ.value,
+    AIPermission.DEPT_READ.value,
+    AIPermission.TEAM_READ.value,
+    AIPermission.PROJECT_READ.value,
+    AIPermission.MEMBER_READ.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -67,11 +98,19 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     AIPermission.DOC_CREATE.value,
     AIPermission.DOC_UPDATE.value,
     AIPermission.TOOL_EXECUTE.value,
+    AIPermission.PROJECT_CREATE.value,
+    AIPermission.PROJECT_UPDATE.value,
+    AIPermission.INVITATION_READ.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.DOC_DELETE.value,
     AIPermission.KG_WRITE.value,
+    AIPermission.TEAM_CREATE.value,
+    AIPermission.TEAM_UPDATE.value,
+    AIPermission.PROJECT_DELETE.value,
+    AIPermission.PROJECT_MEMBERSHIP.value,
+    AIPermission.INVITATION_CREATE.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
@@ -79,6 +118,20 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.ANALYTICS_READ.value,
     AIPermission.USERS_MANAGE.value,
     AIPermission.ORG_MANAGE.value,
+    AIPermission.ORG_UPDATE.value,
+    AIPermission.ORG_DELETE.value,
+    AIPermission.ORG_SETTINGS.value,
+    AIPermission.DEPT_CREATE.value,
+    AIPermission.DEPT_UPDATE.value,
+    AIPermission.DEPT_DELETE.value,
+    AIPermission.TEAM_DELETE.value,
+    AIPermission.INVITATION_REVOKE.value,
+    AIPermission.MEMBER_UPDATE.value,
+    AIPermission.MEMBER_REMOVE.value,
+}
+
+SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
+    AIPermission.ORG_CREATE.value,
 }
 
 ROLE_PERMISSIONS: dict[str, set[str]] = {
@@ -86,13 +139,46 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     UserRole.EMPLOYEE.value: EMPLOYEE_PERMISSIONS,
     UserRole.PROJECT_MANAGER.value: PROJECT_MANAGER_PERMISSIONS,
     UserRole.ORGANIZATION_ADMIN.value: ORG_ADMIN_PERMISSIONS,
-    UserRole.SUPER_ADMIN.value: ORG_ADMIN_PERMISSIONS,
+    UserRole.SUPER_ADMIN.value: SUPER_ADMIN_PERMISSIONS,
     "Viewer": VIEWER_PERMISSIONS,
     "Member": EMPLOYEE_PERMISSIONS,
     "ProjectManager": PROJECT_MANAGER_PERMISSIONS,
     "OrgAdmin": ORG_ADMIN_PERMISSIONS,
-    "SuperAdmin": ORG_ADMIN_PERMISSIONS,
+    "SuperAdmin": SUPER_ADMIN_PERMISSIONS,
 }
+
+
+class WorkspaceScopeLevel(str, Enum):
+    """Hierarchical containment levels for multi-tenant workspace context."""
+
+    ORGANIZATION = "organization"
+    DEPARTMENT = "department"
+    TEAM = "team"
+    PROJECT = "project"
+
+
+@dataclass
+class WorkspaceScopeContext:
+    """Represents an active multi-tier workspace scope for query routing and memory isolation."""
+
+    organization_id: UUID
+    department_id: UUID | None = None
+    team_id: UUID | None = None
+    project_id: UUID | None = None
+    scope_level: WorkspaceScopeLevel = WorkspaceScopeLevel.ORGANIZATION
+
+
+@dataclass
+class AIWorkspaceSettings:
+    """Workspace-level AI configurations and governance policies."""
+
+    default_llm: str = "gpt-4o"
+    embedding_model: str = "text-embedding-3-small"
+    temperature: float = 0.2
+    max_tokens_per_query: int = 2048
+    citation_preferences: str = "in-text-brackets"
+    token_quota_monthly: int = 10_000_000
+    enable_department_isolation: bool = False
 
 
 @dataclass
@@ -107,6 +193,9 @@ class AISecurityContext:
     is_authenticated: bool = True
     session_id: str | None = None
     ip_address: str | None = None
+    department_id: UUID | None = None
+    team_ids: set[UUID] = field(default_factory=set)
+    project_ids: set[UUID] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         if not self.permissions:
@@ -120,6 +209,39 @@ class AISecurityContext:
     def is_in_tenant(self, tenant_id: UUID) -> bool:
         """Ensures request target matches the authenticated organization tenancy barrier."""
         return self.organization_id == tenant_id
+
+    def can_access_workspace(self, workspace_context: WorkspaceScopeContext) -> bool:
+        """Verifies if the user is authorized to execute queries within the target workspace scope."""
+        if not self.is_in_tenant(workspace_context.organization_id):
+            return False
+
+        # SuperAdmin and OrgAdmin possess organization-wide traversal authority
+        if self.role in {UserRole.SUPER_ADMIN.value, UserRole.ORGANIZATION_ADMIN.value, "SuperAdmin", "OrgAdmin"}:
+            return True
+
+        # Organization-level scope is accessible to all active tenant members
+        if workspace_context.scope_level == WorkspaceScopeLevel.ORGANIZATION:
+            return True
+
+        # Department scope check
+        if workspace_context.scope_level == WorkspaceScopeLevel.DEPARTMENT:
+            if workspace_context.department_id is None:
+                return True
+            return self.department_id == workspace_context.department_id
+
+        # Team scope check
+        if workspace_context.scope_level == WorkspaceScopeLevel.TEAM:
+            if workspace_context.team_id is None:
+                return True
+            return workspace_context.team_id in self.team_ids
+
+        # Project scope check
+        if workspace_context.scope_level == WorkspaceScopeLevel.PROJECT:
+            if workspace_context.project_id is None:
+                return True
+            return workspace_context.project_id in self.project_ids
+
+        return False
 
 
 @dataclass
@@ -380,4 +502,38 @@ class BaseAIAccessController(ABC):
         context: AISecurityContext,
     ) -> bool:
         """Enforces hard isolation boundary ensuring target resource matches caller tenant."""
+
+
+class BaseWorkspaceContextResolver(ABC):
+    """Abstract interface for resolving hierarchical workspace contexts for active users."""
+
+    @abstractmethod
+    def resolve_context(
+        self,
+        user_id: UUID,
+        organization_id: UUID,
+        target_project_id: UUID | None = None,
+    ) -> WorkspaceScopeContext:
+        """Resolves active department, team, and project hierarchy for the user request."""
+
+
+class BaseTenantIsolationValidator(ABC):
+    """Abstract interface for strict multi-tenant validation and workspace boundary enforcement."""
+
+    @abstractmethod
+    def validate_tenant_access(
+        self,
+        context: AISecurityContext,
+        target_org_id: UUID,
+    ) -> bool:
+        """Validates that caller's tenant boundary strictly matches target resource organization."""
+
+    @abstractmethod
+    def validate_scope_access(
+        self,
+        context: AISecurityContext,
+        scope: WorkspaceScopeContext,
+    ) -> bool:
+        """Validates that caller possesses explicit access to target department/team/project scope."""
+
 
