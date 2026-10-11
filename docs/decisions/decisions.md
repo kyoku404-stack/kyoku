@@ -343,6 +343,101 @@ ACCEPTED
 
 ---
 
+### ADR-014 — Multi-Tier Organizational Hierarchy & Context-Aware Knowledge Retrieval
+
+#### Date
+2026-10-10
+
+#### Context
+`devdocs/p1/p1.5.txt` (Chapters 1–8, 13, 20) defines the enterprise management layer of KEEP, requiring organizations to manage workspaces, departments, teams, projects, user memberships, and hierarchy. This hierarchy forms the foundation for enterprise search, organizational memory, and AI knowledge retrieval.
+
+#### Decision
+1. Model the enterprise structure as a 4-tier hierarchy:
+   - Organization (Root tenant boundary)
+   - Departments (Functional divisions: Engineering, Sales, HR, etc.)
+   - Teams (Collaborative units within departments)
+   - Projects (Workspaces containing documents, meetings, tasks, and discussions)
+2. Support dynamic multi-tier context scoping for AI operations:
+   - Local Project Scope: High-precision retrieval for project-specific tasks and queries.
+   - Team & Department Scope: Fallback for operational workflows, team standards, and divisional policies.
+   - Organization-Wide Scope: Fallback for enterprise handbooks, compliance manuals, and general corporate knowledge.
+3. Every knowledge resource (document, vector chunk, meeting transcript, KG entity) tracks its hierarchical ownership (`organization_id`, `department_id`, `team_id`, `project_id`).
+
+#### Alternatives Considered
+- Flat workspace model (all projects belong directly to an organization without departments or teams): Simpler, but insufficient for large enterprise tenants with hundreds of users and distinct divisional boundaries.
+- Ad-hoc tag-based organization: Lacks strict governance, deterministic access control, and structured search relevance.
+
+#### Reason
+Hierarchical modeling matches real-world corporate structure and allows the AI retrieval engine to balance precision and recall intelligently without polluting project contexts with irrelevant departmental data.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-015 — Multi-Tenant Workspace Isolation Barrier & AI Context Quarantine
+
+#### Date
+2026-10-10
+
+#### Context
+`devdocs/p1/p1.5.txt` (Chapter 16) mandates absolute multi-tenant data isolation across documents, projects, teams, meetings, AI chats, analytics, and search results. Data leakage across tenants represents a catastrophic enterprise security violation.
+
+#### Decision
+1. Enforce a cryptographic and relational zero-trust isolation barrier:
+   - Tenant Identity: Verified server-side via the signed JWT `org_id` claim on every incoming request.
+   - Database Scope: Every database query executed via repositories and ORM must explicitly filter by `organization_id`.
+   - Vector Store Scope: All vector similarity and hybrid search queries (`pgvector` / Qdrant) must enforce hard metadata filtering on `organization_id`.
+   - Knowledge Graph Scope: Recursive CTE graph traversals must strictly constrain candidate nodes and edges to `organization_id`.
+2. AI Prompt & Context Quarantine:
+   - Retrieval candidates must be pre-filtered by `organization_id` before entering prompt assembly pipelines.
+   - Semantic cache entries are strictly keyed by `(organization_id, query_hash)`.
+
+#### Alternatives Considered
+- Database-per-tenant architecture: Maximum isolation, but excessive operational overhead, high connection pool starvation, and migration complexity for hundreds of tenants.
+- Schema-per-tenant architecture: High maintenance overhead with Alembic migrations across dynamic schemas.
+
+#### Reason
+Row-level multi-tenancy with strict composite indexes, foreign key constraints, and application-layer gatekeeping provides enterprise security with optimal hardware utilization and simplified operational maintenance.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-016 — Department & Team Scoped AI Permissions & Retrieval Inheritance
+
+#### Date
+2026-10-10
+
+#### Context
+`devdocs/p1/p1.5.txt` (Chapters 14 & 20) requires extending the permission model established in Phase 1.4 to govern departments, teams, projects, invitations, and membership management, while ensuring AI operations respect departmental boundaries.
+
+#### Decision
+1. Expand `AIPermission` enum with granular workspace management permissions:
+   - `org:create`, `org:read`, `org:update`, `org:delete`, `org:settings`
+   - `dept:create`, `dept:read`, `dept:update`, `dept:delete`
+   - `team:create`, `team:read`, `team:update`, `team:delete`
+   - `project:create`, `project:read`, `project:update`, `project:delete`, `project:membership`
+   - `invitation:create`, `invitation:read`, `invitation:revoke`
+   - `member:read`, `member:update`, `member:remove`
+2. Integrate department, team, and project scoping into `AISecurityContext` and `RAGSecurityContext`:
+   - `AISecurityContext`: Tracks caller's `department_id`, set of active `team_ids`, and set of accessible `project_ids`.
+   - `RAGSecurityContext`: Implements `can_access_project()`, `can_access_department()`, and `can_access_document()`.
+3. Provide abstract interfaces for context resolution (`BaseWorkspaceContextResolver`) and tenant validation (`BaseTenantIsolationValidator`).
+
+#### Alternatives Considered
+- Static role-based checks without resource scoping: Fails to enforce that a Project Manager can only manage projects they actually own or belong to.
+- Complex attribute-based access control (ABAC) engine with runtime policy DSL: Overengineered for the current phase, adds unnecessary latency to AI inference pipelines.
+
+#### Reason
+Extending the typed security context with hierarchical scope identifiers provides deterministic, high-performance authorization for both REST endpoints and AI retrieval pipelines.
+
+#### Status
+ACCEPTED
+
+---
+
 ## Documented Assumptions
 
 ### Assumption 001 — Knowledge Graph Storage Engine (PostgreSQL MVP -> Neo4j)

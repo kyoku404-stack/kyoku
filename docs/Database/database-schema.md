@@ -79,7 +79,50 @@ Stores enterprise user credentials, profile information, and role assignments.
 
 ---
 
-### 3.3 `teams` & `team_members` Tables
+### 3.3 `departments` Table (Phase 1.5 Hierarchy)
+Functional business units grouping teams, projects, and organizational domains.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique department identifier |
+| `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` ON DELETE CASCADE | Tenant boundary foreign key |
+| `name` | `VARCHAR(255)` | NOT NULL | Department name (e.g. `Engineering`, `Human Resources`) |
+| `description` | `TEXT` | NULL | Department mission charter |
+| `manager_id` | `UUID` | NULL, FK -> `users.id` | Department head / manager |
+| `is_deleted` | `BOOLEAN` | NOT NULL, Default `FALSE` | Soft delete flag |
+| `deleted_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Soft delete timestamp |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Creation timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Last modification timestamp |
+
+**Table Constraints**:
+- `CONSTRAINT uq_departments_org_name UNIQUE (organization_id, name)`
+
+---
+
+### 3.4 `invitations` Table (Phase 1.5 User Onboarding)
+Tracks pending, accepted, and revoked enterprise member invitations.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique invitation identifier |
+| `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` ON DELETE CASCADE | Tenant boundary foreign key |
+| `department_id` | `UUID` | NULL, FK -> `departments.id` ON DELETE SET NULL | Pre-assigned department |
+| `team_id` | `UUID` | NULL, FK -> `teams.id` ON DELETE SET NULL | Pre-assigned team |
+| `email` | `VARCHAR(255)` | NOT NULL | Invitee destination email |
+| `role` | `VARCHAR(50)` | NOT NULL, Default `'Member'` | Pre-assigned role (`OrgAdmin`, `ProjectManager`, `Member`, `Viewer`) |
+| `token` | `VARCHAR(255)` | NOT NULL, Unique | Secure one-time onboarding token |
+| `status` | `VARCHAR(50)` | NOT NULL, Default `'PENDING'` | Invitation status (`PENDING`, `ACCEPTED`, `REVOKED`, `EXPIRED`) |
+| `invited_by_id` | `UUID` | NOT NULL, FK -> `users.id` | Inviting admin or manager |
+| `expires_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | Token expiration timestamp (default 7 days) |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Invitation dispatch timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Last status update |
+
+**Table Constraints**:
+- `CONSTRAINT uq_invitations_org_email_pending UNIQUE (organization_id, email, status)`
+
+---
+
+### 3.5 `teams` & `team_members` Tables
 Models departmental divisions and collaborative workspaces.
 
 #### `teams` Table:
@@ -87,7 +130,8 @@ Models departmental divisions and collaborative workspaces.
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique team identifier |
 | `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` | Tenant boundary foreign key |
-| `name` | `VARCHAR(255)` | NOT NULL | Department / Team name (e.g. `Engineering`) |
+| `department_id` | `UUID` | NULL, FK -> `departments.id` ON DELETE SET NULL | Parent department (Phase 1.5 hierarchy) |
+| `name` | `VARCHAR(255)` | NOT NULL | Department / Team name (e.g. `Backend Team`) |
 | `description` | `TEXT` | NULL | Team charter or description |
 | `lead_user_id` | `UUID` | NULL, FK -> `users.id` | Assigned team lead |
 | `is_deleted` | `BOOLEAN` | NOT NULL, Default `FALSE` | Soft delete flag |
@@ -321,6 +365,8 @@ Immutable security and audit event logging.
 
 ```mermaid
 erDiagram
+    ORGANIZATION ||--o{ DEPARTMENT : "divides_into"
+    ORGANIZATION ||--o{ INVITATION : "issues"
     ORGANIZATION ||--o{ USER : "has"
     ORGANIZATION ||--o{ TEAM : "has"
     ORGANIZATION ||--o{ PROJECT : "contains"
@@ -329,7 +375,11 @@ erDiagram
     ORGANIZATION ||--o{ CHAT_SESSION : "scopes"
     ORGANIZATION ||--o{ ACTIVITY_LOG : "records"
 
+    DEPARTMENT ||--o{ TEAM : "contains"
+    DEPARTMENT ||--o{ INVITATION : "assigns"
+
     TEAM ||--o{ TEAM_MEMBER : "includes"
+    TEAM ||--o{ PROJECT : "executes"
     USER ||--o{ TEAM_MEMBER : "belongs_to"
 
     PROJECT ||--o{ DOCUMENT : "groups"
@@ -353,6 +403,10 @@ erDiagram
 
 | Table | Index Name | Index Method | Target Columns | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
+| `departments` | `idx_depts_org_name` | B-tree (Unique) | `organization_id, name` | Tenant department uniqueness |
+| `invitations` | `idx_invites_org_email` | B-tree | `organization_id, email, status` | Invitation token and status lookups |
+| `invitations` | `idx_invites_token` | B-tree (Unique) | `token` | Rapid invitation redemption |
+| `teams` | `idx_teams_dept` | B-tree | `organization_id, department_id` | Departmental team filtering |
 | `users` | `idx_users_org_email` | B-tree (Unique) | `organization_id, email` | Multi-tenant auth lookup |
 | `documents` | `idx_docs_org_status` | B-tree | `organization_id, status, created_at` | Ingestion status filtering |
 | `document_chunks` | `idx_chunks_embedding_hnsw` | HNSW | `embedding (vector_cosine_ops)` | High-speed vector similarity |
