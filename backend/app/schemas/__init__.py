@@ -14,6 +14,11 @@ from backend.app.schemas.chat import (
     ChatQueryResponse,
     ChatStreamRequest,
 )
+from backend.app.schemas.department import (
+    DepartmentCreate,
+    DepartmentResponse,
+    DepartmentUpdate,
+)
 from backend.app.schemas.document import (
     DocumentResponse,
     DocumentUploadResponse,
@@ -29,16 +34,35 @@ from backend.app.schemas.health import (
     DetailedHealthResponse,
     HealthCheckResponse,
 )
+from backend.app.schemas.invitation import (
+    InvitationAccept,
+    InvitationCreate,
+    InvitationResponse,
+)
+from backend.app.schemas.member import (
+    MemberResponse,
+    MemberUpdate,
+)
 from backend.app.schemas.organization import (
     OrganizationCreate,
     OrganizationResponse,
     OrganizationUpdate,
+)
+from backend.app.schemas.project import (
+    ProjectCreate,
+    ProjectResponse,
+    ProjectUpdate,
 )
 from backend.app.schemas.search import (
     HybridSearchRequest,
     SearchFilter,
     SearchResponse,
     SearchResultItem,
+)
+from backend.app.schemas.team import (
+    TeamCreate,
+    TeamResponse,
+    TeamUpdate,
 )
 from backend.app.schemas.user import (
     UserCreate,
@@ -55,22 +79,36 @@ __all__ = [
     "ChatQueryResponse",
     "ChatStreamRequest",
     "ComponentHealth",
+    "DepartmentCreate",
+    "DepartmentResponse",
+    "DepartmentUpdate",
     "DetailedHealthResponse",
     "DocumentResponse",
     "DocumentUploadResponse",
     "ErrorDetail",
     "HealthCheckResponse",
     "HybridSearchRequest",
+    "InvitationAccept",
+    "InvitationCreate",
+    "InvitationResponse",
     "LoginRequest",
+    "MemberResponse",
+    "MemberUpdate",
     "OrganizationCreate",
     "OrganizationResponse",
     "OrganizationUpdate",
     "PaginatedData",
+    "ProjectCreate",
+    "ProjectResponse",
+    "ProjectUpdate",
     "RefreshTokenRequest",
     "RefreshTokenResponse",
     "SearchFilter",
     "SearchResponse",
     "SearchResultItem",
+    "TeamCreate",
+    "TeamResponse",
+    "TeamUpdate",
     "TokenResponse",
     "UsageMetricsResponse",
     "UserCreate",

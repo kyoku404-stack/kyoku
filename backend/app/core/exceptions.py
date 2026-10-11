@@ -26,6 +26,23 @@ class AppException(Exception):
         super().__init__(self.message)
 
 
+class BadRequestException(AppException):
+    """Raised when a request is malformed or invalid."""
+
+    def __init__(
+        self,
+        message: str = "Invalid request.",
+        code: str | ErrorCode = ErrorCode.INVALID_REQUEST,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
 class NotFoundException(AppException):
     """Raised when a requested resource does not exist."""
 
