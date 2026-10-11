@@ -1,5 +1,6 @@
 /**
  * Centralized strongly-typed route definitions.
+ * Updated for Phase 1.5 Organization & Workspace Management.
  */
 
 export const ROUTES = {
@@ -14,7 +15,14 @@ export const ROUTES = {
   DOCUMENTS: '/documents',
   UPLOAD: '/upload',
   CHAT: '/chat',
+  ORGANIZATION: '/organization',
+  ORGANIZATION_SETUP: '/organization/setup',
+  DEPARTMENTS: '/departments',
+  TEAMS: '/teams',
   PROJECTS: '/projects',
+  MEMBERS: '/members',
+  ORG_SETTINGS: '/organization/settings',
+  INVITATION_ACCEPT: '/invitations/accept',
   MEETINGS: '/meetings',
   ANALYTICS: '/analytics',
   HEALTH: '/health',

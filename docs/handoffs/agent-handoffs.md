@@ -1374,5 +1374,113 @@ Member 2 has completed the implementation of all Phase 1.5 backend deliverables.
   3. Implement project workspace listing consuming `/api/v1/projects`.
   4. Implement member invitation modal and accept invitation page consuming `/api/v1/invitations`.
 
+---
+
+### 2026-10-11 — Phase 1.5 Handoff: Organization, Workspace & Member Management UI (Member 3)
+
+#### Author
+- **Agent Role**: Member 3 (Frontend Lead)
+- **Domain**: `/frontend/src/`
+- **Sub-phase**: Phase 1.5 — Organization, Team & Workspace Management
+
+#### Executive Summary
+Member 3 has completed all Phase 1.5 frontend deliverables. This includes the complete TypeScript DTO domain types, domain API client services, reusable organizational feature components, dedicated management pages, route registration, responsive sidebar navigation updates, and comprehensive test suites for Organization Setup, Department Management, Team Hierarchy, Member Management, User Invitations & Onboarding, Collaborative Project Workspaces, and Workspace Settings & AI Governance.
+
+#### Completed Deliverables
+1. **TypeScript Domain Models (`frontend/src/types/`)**:
+   - `Department`, `DepartmentCreate`, `DepartmentUpdate`, `DepartmentResponse` (`types/department.ts`).
+   - `Team`, `TeamCreate`, `TeamUpdate`, `TeamResponse`, `TeamRole` (`types/team.ts`).
+   - `Project`, `ProjectCreate`, `ProjectUpdate`, `ProjectResponse`, `ProjectStatus`, `ProjectPriority` (`types/project.ts`).
+   - `Invitation`, `InvitationCreate`, `InvitationAccept`, `InvitationResponse`, `InvitationStatus` (`types/invitation.ts`).
+   - `MemberResponse`, `MemberUpdate`, `MemberListQuery` (`types/member.ts`).
+   - `OrganizationResponse`, `OrganizationCreate`, `OrganizationUpdate`, `OrganizationSettings` (`types/organization.ts`).
+   - Centralized barrel exports in `types/index.ts`.
+2. **Domain API Client Services (`frontend/src/services/`)**:
+   - `departmentService` (`services/departmentService.ts`): CRUD operations for enterprise departments.
+   - `teamService` (`services/teamService.ts`): CRUD operations with department filtering and lead assignment.
+   - `projectService` (`services/projectService.ts`): Collaborative workspace operations with search and status filtering.
+   - `invitationService` (`services/invitationService.ts`): Dispatching, revoking, and accepting invitations.
+   - `memberService` (`services/memberService.ts`): Paginated directory listing, role updates, and suspension.
+   - `orgService` (`services/orgService.ts`): Tenant profile, multi-tab settings persistence, and tenant lifecycle.
+   - Centralized exports in `services/index.ts`.
+3. **Feature UI Components (`frontend/src/features/organization/`)**:
+   - `OrgSetupWizard`: Multi-step onboarding wizard for corporate profile, initial departments, team invites, and review.
+   - `DepartmentManager`: Department card grid with team/member counts, search, and Add/Edit/Delete modals.
+   - `TeamManager`: Team hierarchy view with department filtering, team lead tracking, and Add/Edit/Delete modals.
+   - `MemberListTable`: Enterprise member directory with search, role and department filtering, pagination, status badges, and edit/remove actions.
+   - `InviteMemberModal`: Invitation dispatcher modal with email validation and role/department/team selectors.
+   - `PendingInvitationsList`: Real-time invitation tracker with copy invitation token/link and revocation actions.
+   - `ProjectWorkspaceView`: Collaborative project grid with priority badges, status filters, timeline tags, and workspace creation.
+   - `OrgSettingsView`: Workspace settings view with General, Security (2FA, session timeout), AI Governance (models, token quotas, memory scopes), and Storage Limit tabs.
+   - `AcceptInvitationForm`: User invitation acceptance and password activation form.
+   - Barrel export in `features/organization/index.ts`.
+4. **Pages & Routing Architecture (`frontend/src/pages/`, `frontend/src/routes/`)**:
+   - `OrganizationPage`: Centralized multi-tab workspace hub (Overview, Departments, Teams, Projects, Members, Settings).
+   - Dedicated pages: `DepartmentsPage`, `TeamsPage`, `ProjectsPage`, `MembersPage`, `OrgSettingsPage`, `OrgSetupPage`, `AcceptInvitationPage`.
+   - Updated `ROUTES` constant in `routes/paths.ts` and registered code-split lazy routes in `routes/index.tsx`.
+   - Updated `Sidebar.tsx` with dedicated navigation links for Organization & Teams, Workspaces & Projects, and Members & Access.
+5. **Testing & Build Verification**:
+   - Authored unit test suite for all Phase 1.5 domain services (`frontend/src/tests/orgServices.test.ts` - 17 tests).
+   - Authored UI component test suite (`frontend/src/tests/organizationComponents.test.tsx` - 8 tests).
+   - Verified 100% test pass rate across the full frontend test suite (13 test files, 93/93 tests passing).
+   - Verified clean TypeScript compilation and production bundle build (`tsc && vite build`).
+
+#### Files Modified / Created
+- `frontend/src/types/department.ts` (Created)
+- `frontend/src/types/invitation.ts` (Created)
+- `frontend/src/types/member.ts` (Created)
+- `frontend/src/types/organization.ts` (Modified)
+- `frontend/src/types/team.ts` (Modified)
+- `frontend/src/types/project.ts` (Modified)
+- `frontend/src/types/index.ts` (Modified)
+- `frontend/src/services/departmentService.ts` (Created)
+- `frontend/src/services/invitationService.ts` (Created)
+- `frontend/src/services/memberService.ts` (Created)
+- `frontend/src/services/orgService.ts` (Modified)
+- `frontend/src/services/teamService.ts` (Modified)
+- `frontend/src/services/index.ts` (Modified)
+- `frontend/src/features/organization/OrgSetupWizard.tsx` (Created)
+- `frontend/src/features/organization/DepartmentManager.tsx` (Created)
+- `frontend/src/features/organization/TeamManager.tsx` (Created)
+- `frontend/src/features/organization/MemberListTable.tsx` (Created)
+- `frontend/src/features/organization/InviteMemberModal.tsx` (Created)
+- `frontend/src/features/organization/PendingInvitationsList.tsx` (Created)
+- `frontend/src/features/organization/ProjectWorkspaceView.tsx` (Created)
+- `frontend/src/features/organization/OrgSettingsView.tsx` (Created)
+- `frontend/src/features/organization/AcceptInvitationForm.tsx` (Created)
+- `frontend/src/features/organization/index.ts` (Created)
+- `frontend/src/pages/OrganizationPage.tsx` (Created)
+- `frontend/src/pages/DepartmentsPage.tsx` (Created)
+- `frontend/src/pages/TeamsPage.tsx` (Created)
+- `frontend/src/pages/ProjectsPage.tsx` (Created)
+- `frontend/src/pages/MembersPage.tsx` (Created)
+- `frontend/src/pages/OrgSettingsPage.tsx` (Created)
+- `frontend/src/pages/OrgSetupPage.tsx` (Created)
+- `frontend/src/pages/AcceptInvitationPage.tsx` (Created)
+- `frontend/src/routes/paths.ts` (Modified)
+- `frontend/src/routes/index.tsx` (Modified)
+- `frontend/src/components/common/Sidebar.tsx` (Modified)
+- `frontend/src/tests/orgServices.test.ts` (Created)
+- `frontend/src/tests/organizationComponents.test.tsx` (Created)
+- `PROJECT_STATE.md` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+#### Verification & Tests Executed
+- [x] TypeScript strict compilation passed (`tsc --noEmit` -> 0 errors)
+- [x] Vite production build passed (`vite build` -> 0 errors, optimal chunking)
+- [x] Full Vitest test suite passed (`npm test` -> 13/13 test files, 93/93 tests OK, 100%)
+- [x] Git branch isolation verified (`agent/frontend/feature/phase-1.5-org-workspace-management`)
+- [x] Zero hardcoded secrets, zero debug logs
+
+#### Target Receiving Agent
+- **Member 4 (DevOps Lead)**: End-to-end Playwright tests and container validation for Organization, Department, Team, Project, and Invitation workflows.
+- **Member 1 (AI Lead) & Member 2 (Backend Lead)**: Ready for Phase 1.8 Document Processing & Ingestion Pipeline.
+
+#### Required Action for Receiving Agent
+- **Member 4**:
+  1. Add Playwright E2E tests validating the Organization Setup Wizard, Member Invitation flow, and Project creation.
+  2. Verify seed data with departments, teams, and sample members is visible in the frontend UI.
+
+
 
 
