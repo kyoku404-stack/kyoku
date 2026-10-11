@@ -29,6 +29,30 @@ const ResetPasswordPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
 );
+const OrganizationPage = lazy(() =>
+  import('@/pages/OrganizationPage').then((m) => ({ default: m.OrganizationPage }))
+);
+const OrgSetupPage = lazy(() =>
+  import('@/pages/OrgSetupPage').then((m) => ({ default: m.OrgSetupPage }))
+);
+const DepartmentsPage = lazy(() =>
+  import('@/pages/DepartmentsPage').then((m) => ({ default: m.DepartmentsPage }))
+);
+const TeamsPage = lazy(() =>
+  import('@/pages/TeamsPage').then((m) => ({ default: m.TeamsPage }))
+);
+const ProjectsPage = lazy(() =>
+  import('@/pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage }))
+);
+const MembersPage = lazy(() =>
+  import('@/pages/MembersPage').then((m) => ({ default: m.MembersPage }))
+);
+const OrgSettingsPage = lazy(() =>
+  import('@/pages/OrgSettingsPage').then((m) => ({ default: m.OrgSettingsPage }))
+);
+const AcceptInvitationPage = lazy(() =>
+  import('@/pages/AcceptInvitationPage').then((m) => ({ default: m.AcceptInvitationPage }))
+);
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 );
@@ -83,6 +107,62 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'organization',
+        element: (
+          <SuspenseWrapper>
+            <OrganizationPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'organization/setup',
+        element: (
+          <SuspenseWrapper>
+            <OrgSetupPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'organization/settings',
+        element: (
+          <SuspenseWrapper>
+            <OrgSettingsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'departments',
+        element: (
+          <SuspenseWrapper>
+            <DepartmentsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'teams',
+        element: (
+          <SuspenseWrapper>
+            <TeamsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'projects',
+        element: (
+          <SuspenseWrapper>
+            <ProjectsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'members',
+        element: (
+          <SuspenseWrapper>
+            <MembersPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'search',
         element: (
           <SuspenseWrapper>
@@ -115,14 +195,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'projects',
-        element: (
-          <SuspenseWrapper>
-            <DashboardPage />
-          </SuspenseWrapper>
-        ),
-      },
-      {
         path: 'meetings',
         element: (
           <SuspenseWrapper>
@@ -145,6 +217,24 @@ export const router = createBrowserRouter([
             <NotFoundPage />
           </SuspenseWrapper>
         ),
+      },
+    ],
+  },
+  {
+    path: '/invitations',
+    element: <AuthLayout />,
+    children: [
+      {
+        path: 'accept',
+        element: (
+          <SuspenseWrapper>
+            <AcceptInvitationPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        index: true,
+        element: <Navigate to="/auth/login" replace />,
       },
     ],
   },

@@ -7,12 +7,21 @@ import { apiClient } from './api';
 import type { ApiResponse, PaginatedData } from '@/types/api';
 import type { Team, TeamCreate, TeamUpdate } from '@/types/team';
 
+export type TeamListResult = PaginatedData<Team> | Team[];
+
 export const teamService = {
   /**
-   * List enterprise teams in tenant.
+   * List enterprise teams in tenant with optional filtering by department.
    */
-  async listTeams(): Promise<ApiResponse<PaginatedData<Team>>> {
-    const response = await apiClient.get<ApiResponse<PaginatedData<Team>>>('/teams');
+  async listTeams(params?: {
+    department_id?: string;
+    skip?: number;
+    limit?: number;
+  }): Promise<ApiResponse<TeamListResult>> {
+    const config = params ? { params } : undefined;
+    const response = await (config
+      ? apiClient.get<ApiResponse<TeamListResult>>('/teams', config)
+      : apiClient.get<ApiResponse<TeamListResult>>('/teams'));
     return response.data;
   },
 
@@ -25,7 +34,7 @@ export const teamService = {
   },
 
   /**
-   * Create team department.
+   * Create team.
    */
   async createTeam(data: TeamCreate): Promise<ApiResponse<Team>> {
     const response = await apiClient.post<ApiResponse<Team>>('/teams', data);
@@ -33,10 +42,22 @@ export const teamService = {
   },
 
   /**
-   * Update team department.
+   * Update team.
    */
   async updateTeam(id: string, data: TeamUpdate): Promise<ApiResponse<Team>> {
     const response = await apiClient.patch<ApiResponse<Team>>(`/teams/${id}`, data);
     return response.data;
   },
+
+  /**
+   * Delete team.
+   */
+  async deleteTeam(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    const response = await apiClient.delete<ApiResponse<{ success: boolean }>>(
+      `/teams/${id}`
+    );
+    return response.data;
+  },
 };
+
+export default teamService;

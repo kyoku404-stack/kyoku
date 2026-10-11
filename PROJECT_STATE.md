@@ -31,7 +31,7 @@ Phase 1.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 | **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 AI Security | Typed security contracts in `services/rag/` & `services/ai/` verified |
 | **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.4 Auth Standard | `docs/api/api-contract.md` updated with all 8 auth endpoints |
 | **Backend Architecture & APIs** | COMPLETED (Phase 1.4) | Member 2 (Backend Lead) | Phase 1.4 Auth APIs | Auth endpoints, JWT issuance, middleware & sessions implemented |
-| **Frontend Application** | COMPLETED (Phase 1.4) | Member 3 (Frontend Lead) | Phase 1.5 Tenant & Org | Authentication UI (Login, Register, Forgot/Reset Password, Profile), Zustand auth store, RBAC route guards (68/68 tests OK) |
+| **Frontend Application** | COMPLETED (Phase 1.5) | Member 3 (Frontend Lead) | Phase 1.8 Ingestion & Knowledge | Org Setup Wizard, Department & Team Managers, Member Directory, Project Workspaces, Settings & AI Governance, Invitation Acceptance (93/93 tests OK) |
 | **Database & Persistence Layer** | COMPLETED (Phase 1.3) | Member 2, 3 & 4 | Phase 1.4 Auth & Users | PostgreSQL 16 + pgvector, ORM models, Repositories, Alembic migrations, Seeding & Integration tests ready |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Interfaces created; full pipeline scheduled for Phase 2 |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
@@ -83,7 +83,20 @@ Phase 1.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
   - Implemented domain services with business logic validation, 7-day cryptographic invite token lifecycle, account activation, and automated immutable audit logging (`ActivityService`).
   - Implemented and mounted FastAPI routers in `backend/app/api/v1/router.py`: `/organizations`, `/departments`, `/teams`, `/projects`, `/invitations`, `/members`.
   - Authored comprehensive unit test suite (`tests/unit/test_organization_management.py`) and integration test suite (`tests/integration/test_organization_hierarchy_endpoints.py`).
-  - Verified 100% test pass rate (162/162 tests OK, 0 lint errors). Ready for Phase 1.5 Frontend UI (Member 3).
+  - Verified 100% test pass rate (162/162 tests OK, 0 lint errors).
+- Implemented complete Phase 1.5 Organization, Team, Workspace & Member UI (Member 3):
+  - Built multi-step Organization Setup Wizard (`OrgSetupWizard`) covering organization metadata, department provisioning, initial invite dispatch, and review.
+  - Built Department Management UI (`DepartmentManager`) supporting department creation, edits, deletions, team/member counts, and search.
+  - Built Team Hierarchy UI (`TeamManager`) supporting team creation, edits, deletions, department affiliations, and lead user assignments.
+  - Built Member Management UI (`MemberListTable`) with role filtering, department filtering, pagination, account suspension/reactivation, and role/assignment updates.
+  - Built Member Invitation modal (`InviteMemberModal`) and pending invitations tracker (`PendingInvitationsList`) with copy token/link and revocation actions.
+  - Built Onboarding & Invitation Acceptance form (`AcceptInvitationForm`, `AcceptInvitationPage`) with password confirmation and account activation.
+  - Built Collaborative Project Workspaces UI (`ProjectWorkspaceView`) with priority badges, status filters, team tagging, and project workspace creation/edits.
+  - Built Organization Settings & AI Governance UI (`OrgSettingsView`) with General, Security & 2FA, AI Model/Token Quotas, and Resource Limit tabs.
+  - Created domain API client services (`departmentService`, `teamService`, `projectService`, `invitationService`, `memberService`, `orgService`) and aligned TypeScript types in `frontend/src/types/`.
+  - Registered routes (`/organization`, `/organization/setup`, `/organization/settings`, `/departments`, `/teams`, `/projects`, `/members`, `/invitations/accept`) and updated navigation in `Sidebar.tsx`.
+  - Authored comprehensive test suites (`orgServices.test.ts`, `organizationComponents.test.tsx`) with 100% pass rate (93/93 Vitest tests OK).
+  - Verified clean TypeScript compilation and production build (`tsc && vite build`).
 
 ### Blocked
 - None.
@@ -97,12 +110,12 @@ Status: COMPLETED (Phase 1.5)
 Next Milestone: Phase 1.8 Document Processing & Ingestion Pipeline (Member 2).
 
 ### Frontend
-Status: COMPLETED (Phase 1.3)  
-Next Milestone: Phase 1.4 Auth UI & Login Workflows (Member 3).
+Status: COMPLETED (Phase 1.5)  
+Next Milestone: Phase 1.8 Document Processing & Ingestion UI (Member 3).
 
 ### Database / Persistence
-Status: COMPLETED (Phase 1.3)  
-Next Milestone: Phase 1.4 Auth & User persistence integration.
+Status: COMPLETED (Phase 1.5)  
+Next Milestone: Phase 1.8 Document metadata schema and vector indexing.
 
 ### AI / ML
 Status: SPECIFIED & SCAFFOLDED  

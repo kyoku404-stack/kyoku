@@ -7,7 +7,9 @@ import {
   Search,
   UploadCloud,
   MessageSquare,
+  Building2,
   FolderKanban,
+  Users,
   Video,
   BarChart3,
   Activity,
@@ -24,10 +26,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Overview', path: ROUTES.HOME, icon: LayoutDashboard },
+  { label: 'Organization & Teams', path: ROUTES.ORGANIZATION, icon: Building2 },
+  { label: 'Workspaces & Projects', path: ROUTES.PROJECTS, icon: FolderKanban },
+  { label: 'Members & Access', path: ROUTES.MEMBERS, icon: Users },
   { label: 'Semantic Search', path: ROUTES.SEARCH, icon: Search },
   { label: 'Document Ingestion', path: ROUTES.UPLOAD, icon: UploadCloud },
   { label: 'RAG Knowledge Chat', path: ROUTES.CHAT, icon: MessageSquare },
-  { label: 'Projects & Hubs', path: ROUTES.PROJECTS, icon: FolderKanban },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3 },
   { label: 'System Health', path: ROUTES.HEALTH, icon: Activity, badge: 'Live' },
@@ -101,7 +105,7 @@ export const Sidebar: React.FC = () => {
         <div className="border-t border-border p-4">
           <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
             <div className="font-medium text-foreground">KEEP Platform</div>
-            <div className="mt-0.5">Phase 1.1 Architecture Baseline</div>
+            <div className="mt-0.5">Phase 1.5 Organization & Workspaces</div>
           </div>
         </div>
       </aside>

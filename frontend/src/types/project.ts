@@ -1,6 +1,6 @@
 /**
  * KEEP Enterprise Platform — Project Domain Types.
- * Aligned with database schema `projects` table (docs/database/database-schema.md).
+ * Aligned with database schema `projects` table (docs/database/database-schema.md) and backend project schemas.
  */
 
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'COMPLETED';
@@ -10,33 +10,39 @@ export interface Project {
   id: string;
   organization_id: string;
   team_id?: string | null;
-  owner_id: string;
+  owner_id?: string | null;
   name: string;
   description?: string | null;
+  department?: string | null;
   status: ProjectStatus;
   priority: ProjectPriority;
+  timeline?: string | null;
   document_count?: number;
   meeting_count?: number;
   task_count?: number;
-  is_deleted: boolean;
+  is_deleted?: boolean;
   created_at: string;
   updated_at?: string | null;
 }
 
+export type ProjectResponse = Project;
+
 export interface ProjectCreate {
   name: string;
-  description?: string;
-  team_id?: string;
+  description?: string | null;
+  team_id?: string | null;
   status?: ProjectStatus;
   priority?: ProjectPriority;
+  timeline?: string | null;
 }
 
 export interface ProjectUpdate {
-  name?: string;
-  description?: string;
-  team_id?: string;
+  name?: string | null;
+  description?: string | null;
+  team_id?: string | null;
   status?: ProjectStatus;
   priority?: ProjectPriority;
+  timeline?: string | null;
 }
 
 export interface ProjectFilterParams {
