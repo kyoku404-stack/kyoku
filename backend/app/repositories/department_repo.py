@@ -73,7 +73,7 @@ class DepartmentRepository(
             .where(Team.department_id == department_id, Team.is_deleted.is_(False))
         )
         result = await db.execute(stmt)
-        return int(result.scalar_one_or_none() or 0)
+        return result.scalar_one_or_none() or 0
 
     async def get_member_count(self, db: AsyncSession, department_id: UUID) -> int:
         """Counts active users assigned to a department."""
@@ -82,4 +82,4 @@ class DepartmentRepository(
             .where(User.department_id == department_id, User.is_deleted.is_(False))
         )
         result = await db.execute(stmt)
-        return int(result.scalar_one_or_none() or 0)
+        return result.scalar_one_or_none() or 0

@@ -76,4 +76,4 @@ class TeamRepository(BaseRepository[Team, TeamCreate, TeamUpdate]):
             .where(User.team_id == team_id, User.is_deleted.is_(False))
         )
         result = await db.execute(stmt)
-        return int(result.scalar_one_or_none() or 0)
+        return result.scalar_one_or_none() or 0

@@ -183,10 +183,12 @@ class OrganizationService(BaseService[OrganizationRepository]):
             org.is_active = payload.is_active
 
         if payload.settings is not None:
-            current_settings = {}
+            current_settings: dict[str, Any] = {}
             if org.settings_json:
                 try:
-                    current_settings = json.loads(org.settings_json)
+                    loaded = json.loads(org.settings_json)
+                    if isinstance(loaded, dict):
+                        current_settings = loaded
                 except (json.JSONDecodeError, TypeError):
                     current_settings = {}
             current_settings.update(payload.settings)

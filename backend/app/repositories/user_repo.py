@@ -95,4 +95,4 @@ class UserRepository(BaseRepository[User, UserCreate, UserUpdate]):
             stmt = stmt.where(self.model.is_active.is_(is_active))
 
         result = await db.execute(stmt)
-        return int(result.scalar_one_or_none() or 0)
+        return result.scalar_one_or_none() or 0
