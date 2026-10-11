@@ -1251,4 +1251,128 @@ COMPLETED / READY FOR BACKEND IMPLEMENTATION
   1. Build TypeScript DTOs matching `docs/API/api-contract.md` Section 3.2.
   2. Implement frontend screens for Organization Settings, Departments, Teams, and Invitations.
 
+---
+
+### 2026-10-11 — Phase 1.5 Handoff: Organization, Team & Workspace Management APIs (Member 2)
+
+#### Author
+- **Agent Role**: Member 2 (Backend Lead)
+- **Domain**: `/backend/app/api`, `/backend/app/models`, `/backend/app/db`, `/backend/app/core`, `/backend/app/services`, `/backend/app/schemas`, `/backend/app/repositories`, `/backend/migrations/`
+- **Sub-phase**: Phase 1.5 — Organization, Team & Workspace Management
+
+#### Executive Summary
+Member 2 has completed the implementation of all Phase 1.5 backend deliverables. This includes the database models, Alembic migration, Pydantic schemas, repositories, services, activity audit logging, and REST API endpoints covering Organizations, Departments, Teams, Projects, Invitations, and Members, backed by multi-tenant boundary quarantine and role-based access control (RBAC).
+
+#### Completed Deliverables
+1. **SQLAlchemy 2.0 ORM Models (`backend/app/models/`)**:
+   - `Department` (`backend/app/models/department.py`): Functional business unit entity with unique `(organization_id, name)` constraint and relations to teams, users, and organization.
+   - `Invitation` (`backend/app/models/invitation.py`): User onboarding invitation entity with 7-day expiration, unique tokens, and role assignments.
+   - Updated `Team` (`backend/app/models/team.py`): Added `department_id` and `lead_user_id` foreign keys and relationships.
+   - Updated `User` (`backend/app/models/user.py`): Added `department_id` foreign key and relationship.
+   - Updated `Project` (`backend/app/models/project.py`): Added `team_id`, `owner_id`, and relationships.
+   - Updated `Organization` (`backend/app/models/organization.py`): Added `industry`, `company_size`, `time_zone`, `default_language`, `logo_url`, `description`, `settings_json` attributes and relationships to departments and invitations.
+   - Exported all models in `backend/app/models/__init__.py`.
+2. **Alembic Database Migration (`backend/migrations/versions/8f1a2b3c4d5e_phase_1_5_hierarchy_and_invitations.py`)**:
+   - Reversible schema migration adding `departments`, `invitations`, new foreign keys on `teams`, `users`, `projects`, and organization metadata columns.
+3. **Pydantic v2 Schemas (`backend/app/schemas/`)**:
+   - `OrganizationCreate`, `OrganizationUpdate`, `OrganizationResponse`
+   - `DepartmentCreate`, `DepartmentUpdate`, `DepartmentResponse`
+   - `TeamCreate`, `TeamUpdate`, `TeamResponse`
+   - `ProjectCreate`, `ProjectUpdate`, `ProjectResponse`
+   - `InvitationCreate`, `InvitationAccept`, `InvitationResponse`
+   - `MemberResponse`, `MemberUpdate`
+4. **Data Repositories (`backend/app/repositories/`)**:
+   - `DepartmentRepository`, `TeamRepository`, `ProjectRepository`, `InvitationRepository`, `UserRepository`, `OrganizationRepository` with strict row-level multi-tenant filtering.
+5. **Domain Services & Audit Logging (`backend/app/services/`)**:
+   - `OrganizationService`: Workspace management, settings mutation, and tenant boundary enforcement.
+   - `DepartmentService`: Department CRUD with team/member aggregation counts.
+   - `TeamService`: Team CRUD with department validation and member counts.
+   - `ProjectService`: Project workspace CRUD with team association.
+   - `InvitationService`: Secure 7-day token issuance, duplicate check, and account provisioning on acceptance.
+   - `MemberService`: Paginated member directory, role updates, and soft-delete removal.
+   - `ActivityService`: Emits structured immutable audit logs to `activity_logs`.
+6. **FastAPI Endpoints (`backend/app/api/v1/`)**:
+   - `/api/v1/organizations` (POST create, GET /current, GET /{id}, PATCH /{id}, DELETE /{id})
+   - `/api/v1/departments` (POST create, GET list, GET /{id}, PATCH /{id}, DELETE /{id})
+   - `/api/v1/teams` (POST create, GET list, GET /{id}, PATCH /{id}, DELETE /{id})
+   - `/api/v1/projects` (POST create, GET list, GET /{id}, PATCH /{id}, DELETE /{id})
+   - `/api/v1/invitations` (POST send, GET list, DELETE /{id}, POST /accept)
+   - `/api/v1/members` (GET list, PATCH /{user_id}, DELETE /{user_id})
+   - Registered all sub-routers in `backend/app/api/v1/router.py`.
+7. **Verification & Testing (`tests/`)**:
+   - Unit test suite: `tests/unit/test_organization_management.py` (15/15 passing, 100%)
+   - Integration test suite: `tests/integration/test_organization_hierarchy_endpoints.py` (6/6 passing, 100%)
+   - Full test suite: 162/162 passing (100%)
+   - Code quality: `ruff check` (0 errors, 0 warnings)
+
+#### Files Created / Modified
+- `backend/app/models/department.py` (Created)
+- `backend/app/models/invitation.py` (Created)
+- `backend/app/models/team.py` (Modified)
+- `backend/app/models/user.py` (Modified)
+- `backend/app/models/project.py` (Modified)
+- `backend/app/models/organization.py` (Modified)
+- `backend/app/models/__init__.py` (Modified)
+- `backend/app/db/__init__.py` (Modified)
+- `backend/app/core/constants.py` (Modified)
+- `backend/app/core/exceptions.py` (Modified)
+- `backend/app/schemas/organization.py` (Modified)
+- `backend/app/schemas/department.py` (Created)
+- `backend/app/schemas/team.py` (Created)
+- `backend/app/schemas/project.py` (Created)
+- `backend/app/schemas/invitation.py` (Created)
+- `backend/app/schemas/member.py` (Created)
+- `backend/app/schemas/__init__.py` (Modified)
+- `backend/app/repositories/department_repo.py` (Created)
+- `backend/app/repositories/team_repo.py` (Created)
+- `backend/app/repositories/project_repo.py` (Modified)
+- `backend/app/repositories/invitation_repo.py` (Created)
+- `backend/app/repositories/user_repo.py` (Modified)
+- `backend/app/repositories/org_repo.py` (Modified)
+- `backend/app/repositories/__init__.py` (Modified)
+- `backend/app/services/activity_service.py` (Created)
+- `backend/app/services/org_service.py` (Modified)
+- `backend/app/services/department_service.py` (Created)
+- `backend/app/services/team_service.py` (Created)
+- `backend/app/services/project_service.py` (Created)
+- `backend/app/services/invitation_service.py` (Created)
+- `backend/app/services/member_service.py` (Created)
+- `backend/app/services/__init__.py` (Modified)
+- `backend/app/api/v1/organizations.py` (Modified)
+- `backend/app/api/v1/departments.py` (Created)
+- `backend/app/api/v1/teams.py` (Created)
+- `backend/app/api/v1/projects.py` (Created)
+- `backend/app/api/v1/invitations.py` (Created)
+- `backend/app/api/v1/members.py` (Created)
+- `backend/app/api/v1/router.py` (Modified)
+- `backend/migrations/versions/8f1a2b3c4d5e_phase_1_5_hierarchy_and_invitations.py` (Created)
+- `backend/alembic.ini` (Modified)
+- `tests/integration/test_db_migrations.py` (Modified)
+- `tests/unit/test_organization_management.py` (Created)
+- `tests/integration/test_organization_hierarchy_endpoints.py` (Created)
+- `PROJECT_STATE.md` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+#### Verification & Tests Executed
+- [x] Python syntax compilation passed (`python -m py_compile`)
+- [x] Ruff code quality check passed (`ruff check` -> 0 errors)
+- [x] Unit test suite passed (`pytest tests/unit/test_organization_management.py` -> 15/15 OK)
+- [x] Integration test suite passed (`pytest tests/integration/test_organization_hierarchy_endpoints.py` -> 6/6 OK)
+- [x] Full test suite passed (`pytest tests/` -> 162/162 OK, 100%)
+- [x] Database migration verified (`tests/integration/test_db_migrations.py` -> 4/4 OK)
+- [x] Git branch isolation verified (`agent/backend/feature/phase-1.5-organization-management`)
+- [x] Zero hardcoded secrets, zero debug logs
+
+#### Target Receiving Agent
+- **Member 3 (Frontend Lead)**: Build Phase 1.5 Organization Settings, Departments, Teams, Projects, and Invitations UI.
+- **Member 4 (DevOps Lead)**: Update seed scripts with departments, teams, and sample invitations, and configure CI test matrices.
+
+#### Required Action for Receiving Agent
+- **Member 3**:
+  1. Implement organization management views and settings screens consuming `/api/v1/organizations`.
+  2. Implement department and team hierarchy cards consuming `/api/v1/departments` and `/api/v1/teams`.
+  3. Implement project workspace listing consuming `/api/v1/projects`.
+  4. Implement member invitation modal and accept invitation page consuming `/api/v1/invitations`.
+
+
 

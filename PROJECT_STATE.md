@@ -75,7 +75,15 @@ Phase 1.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
   - Authored performance & concurrency benchmark test suite (`tests/integration/test_auth_performance.py`).
   - Created automated test execution script `scripts/test-auth.sh`.
   - Verified 100% test pass rate across 184 monorepo tests (133 backend + 51 frontend) and 0 lint errors.
-- Ready for Phase 1.4 Authentication UI (Member 3).
+- Implemented complete Phase 1.5 Organization, Department, Team, Project, Invitation, and Member REST Endpoints & Domain Logic (Member 2):
+  - Created SQLAlchemy ORM models: `Department` (`backend/app/models/department.py`), `Invitation` (`backend/app/models/invitation.py`), and updated `Team`, `User`, `Project`, and `Organization` models.
+  - Authored Alembic database schema migration revision `8f1a2b3c4d5e_phase_1_5_hierarchy_and_invitations.py` for all hierarchy tables, foreign keys, and indexes.
+  - Implemented Pydantic v2 schemas across all 6 entities in `backend/app/schemas/`.
+  - Implemented asynchronous repositories (`DepartmentRepository`, `TeamRepository`, `ProjectRepository`, `InvitationRepository`, `UserRepository`, `OrganizationRepository`) with strict row-level multi-tenant filtering.
+  - Implemented domain services with business logic validation, 7-day cryptographic invite token lifecycle, account activation, and automated immutable audit logging (`ActivityService`).
+  - Implemented and mounted FastAPI routers in `backend/app/api/v1/router.py`: `/organizations`, `/departments`, `/teams`, `/projects`, `/invitations`, `/members`.
+  - Authored comprehensive unit test suite (`tests/unit/test_organization_management.py`) and integration test suite (`tests/integration/test_organization_hierarchy_endpoints.py`).
+  - Verified 100% test pass rate (162/162 tests OK, 0 lint errors). Ready for Phase 1.5 Frontend UI (Member 3).
 
 ### Blocked
 - None.
@@ -85,8 +93,8 @@ Phase 1.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 ## Subsystem Details
 
 ### Backend
-Status: COMPLETED (Phase 1.3)  
-Next Milestone: Phase 1.4 Authentication & Identity Foundation (Member 2).
+Status: COMPLETED (Phase 1.5)  
+Next Milestone: Phase 1.8 Document Processing & Ingestion Pipeline (Member 2).
 
 ### Frontend
 Status: COMPLETED (Phase 1.3)  

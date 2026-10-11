@@ -24,7 +24,7 @@ class TestDatabaseMigrations:
 
         config = Config(str(alembic_ini))
         config.set_main_option("script_location", str(root_dir / "backend" / "migrations").replace("\\", "/"))
-        config.set_main_option("version_locations", str(root_dir / "backend" / "migrations" / "versions").replace("\\", "/"))
+        config.set_main_option("version_locations", "")
         script = ScriptDirectory.from_config(config)
 
         # Get all revisions
@@ -32,7 +32,7 @@ class TestDatabaseMigrations:
         assert len(revisions) >= 1, "At least one migration revision must be present"
 
         head_revision = script.get_current_head()
-        assert head_revision == "daede4011b68"
+        assert head_revision == "8f1a2b3c4d5e"
 
 
     def test_schema_metadata_tables_completeness(self):

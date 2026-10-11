@@ -1,6 +1,8 @@
 from backend.app.models.activity import ActivityLog
 from backend.app.models.chat import ChatMessage, ChatSession
+from backend.app.models.department import Department
 from backend.app.models.document import Document
+from backend.app.models.invitation import Invitation
 from backend.app.models.knowledge import DocumentChunk, KgEntity, KgRelationship
 from backend.app.models.meeting import Meeting
 from backend.app.models.organization import Organization
@@ -13,8 +15,10 @@ __all__ = [
     "ActivityLog",
     "ChatMessage",
     "ChatSession",
+    "Department",
     "Document",
     "DocumentChunk",
+    "Invitation",
     "KgEntity",
     "KgRelationship",
     "Meeting",
@@ -25,4 +29,3 @@ __all__ = [
     "User",
     "project_users",
 ]
-
