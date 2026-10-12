@@ -100,6 +100,8 @@ class AIPermission(str, Enum):
     ANALYTICS_VIEW = "analytics.view"
     ANALYTICS_EXPORT = "analytics.export"
     AUDIT_READ = "audit.read"
+    ORGANIZATION_CREATE = "organization.create"
+    PROJECT_CREATE_ACTION = "project.create"
 
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
@@ -134,6 +136,7 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     # Phase 1.6 action-based permissions
     AIPermission.DOCUMENT_CREATE.value,
     AIPermission.DOCUMENT_UPDATE.value,
+    AIPermission.PROJECT_CREATE_ACTION.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -179,6 +182,7 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
     AIPermission.ORG_CREATE.value,
+    AIPermission.ORGANIZATION_CREATE.value,
 }
 
 ROLE_PERMISSIONS: dict[str, set[str]] = {

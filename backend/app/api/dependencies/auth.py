@@ -34,6 +34,53 @@ class AuthenticatedUser:
         self.organization_id = organization_id
         self.is_active = is_active
 
+    @property
+    def permissions(self) -> set[str]:
+        """Resolves the canonical action-based permissions assigned to this user's role."""
+        from backend.app.services.ai.interfaces import ROLE_PERMISSIONS
+
+        role_str = self.role.value if hasattr(self.role, "value") else str(self.role)
+        return ROLE_PERMISSIONS.get(role_str, set())
+
+    def has_permission(self, permission: str) -> bool:
+        """Checks if user possesses the specified action-based permission."""
+        return permission in self.permissions
+
+    @property
+    def is_super_admin(self) -> bool:
+        """Returns True if user has SuperAdmin role."""
+        return self.role in (UserRole.SUPER_ADMIN, UserRole.SUPER_ADMIN.value, "SuperAdmin")
+
+    @property
+    def is_org_admin(self) -> bool:
+        """Returns True if user has OrgAdmin or SuperAdmin role."""
+        return self.role in (
+            UserRole.SUPER_ADMIN,
+            UserRole.SUPER_ADMIN.value,
+            UserRole.ORG_ADMIN,
+            UserRole.ORG_ADMIN.value,
+            "SuperAdmin",
+            "OrgAdmin",
+        )
+
+    @property
+    def is_manager(self) -> bool:
+        """Returns True if user has Manager or ProjectManager role."""
+        return self.role in (
+            UserRole.SUPER_ADMIN,
+            UserRole.SUPER_ADMIN.value,
+            UserRole.ORG_ADMIN,
+            UserRole.ORG_ADMIN.value,
+            UserRole.MANAGER,
+            UserRole.MANAGER.value,
+            UserRole.PROJECT_MANAGER,
+            UserRole.PROJECT_MANAGER.value,
+            "SuperAdmin",
+            "OrgAdmin",
+            "Manager",
+            "ProjectManager",
+        )
+
 
 async def get_current_user(
     token: str | None = Depends(oauth2_scheme),

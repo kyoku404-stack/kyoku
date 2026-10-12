@@ -1,6 +1,7 @@
 """KEEP Enterprise Platform — Document Management Service."""
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from backend.app.core.constants import DocumentStatus, ErrorCode
@@ -80,3 +81,49 @@ class DocumentService(BaseService[DocumentRepository]):
             page_size=page_size,
             total_pages=1,
         )
+
+    async def delete_document(
+        self,
+        db: AsyncSession,
+        document_id: UUID,
+        caller: Any,
+        caller_project_ids: set[UUID] | None = None,
+    ) -> bool:
+        """Deletes a document enforcing resource-level authorization and ownership bypass."""
+        from backend.app.api.dependencies.authorization import check_resource_access
+        from backend.app.core.authorization import default_policy_engine
+        from backend.app.core.exceptions import NotFoundException
+        from backend.app.models.document import Document
+        from backend.app.services.ai.interfaces import (
+            ResourceAuthorizationContext,
+            ResourceType,
+        )
+        from sqlalchemy import select
+
+        stmt = select(Document).where(
+            Document.id == document_id,
+            Document.is_deleted == False,
+        )
+        res = await db.execute(stmt)
+        doc = res.scalar_one_or_none()
+        if not doc:
+            raise NotFoundException(message="Document not found.")
+
+        # Evaluate resource-level authorization
+        context = ResourceAuthorizationContext(
+            caller_id=caller.id,
+            caller_role=caller.role.value if hasattr(caller.role, "value") else str(caller.role),
+            caller_org_id=caller.organization_id,
+            caller_project_ids=caller_project_ids or set(),
+            resource_id=doc.id,
+            resource_type=ResourceType.DOCUMENT,
+            resource_org_id=doc.organization_id,
+            resource_owner_id=doc.uploader_id,
+            resource_project_id=doc.project_id,
+            required_permission="document.delete",
+        )
+        check_resource_access(context, default_policy_engine)
+
+        doc.is_deleted = True
+        await db.flush()
+        return True

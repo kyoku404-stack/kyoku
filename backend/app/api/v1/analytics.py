@@ -1,6 +1,7 @@
 """KEEP Enterprise Platform — Analytics Endpoints (`/api/v1/analytics`)."""
 
-from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
+from backend.app.api.dependencies.auth import AuthenticatedUser
+from backend.app.api.dependencies.authorization import require_permission
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.schemas.analytics import AnalyticsSummaryResponse, UsageMetricsResponse
 from backend.app.schemas.envelope import ApiResponse
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 )
 async def get_analytics_summary(
     tenant: TenantContext = Depends(get_tenant_context),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_permission("analytics.view")),
 ) -> ApiResponse[AnalyticsSummaryResponse]:
     """Returns platform summary metrics."""
     data = AnalyticsSummaryResponse(
@@ -44,7 +45,7 @@ async def get_analytics_summary(
 )
 async def get_usage_metrics(
     tenant: TenantContext = Depends(get_tenant_context),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_permission("analytics.view")),
 ) -> ApiResponse[UsageMetricsResponse]:
     """Returns daily usage metrics."""
     data = UsageMetricsResponse(

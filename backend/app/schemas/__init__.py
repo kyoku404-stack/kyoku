@@ -1,6 +1,7 @@
 """Schemas package initialization."""
 
 from backend.app.schemas.analytics import AnalyticsSummaryResponse, UsageMetricsResponse
+from backend.app.schemas.audit import AuditLogResponse
 from backend.app.schemas.auth import (
     LoginRequest,
     RefreshTokenRequest,
@@ -74,6 +75,7 @@ __all__ = [
     "AnalyticsSummaryResponse",
     "ApiErrorResponse",
     "ApiResponse",
+    "AuditLogResponse",
     "ChatCitation",
     "ChatQueryRequest",
     "ChatQueryResponse",

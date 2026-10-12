@@ -1,6 +1,5 @@
-"""KEEP Enterprise Platform — Search Endpoints (`/api/v1/search`)."""
-
-from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
+from backend.app.api.dependencies.auth import AuthenticatedUser
+from backend.app.api.dependencies.authorization import require_permission
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.schemas.search import HybridSearchRequest, SearchResponse
@@ -21,7 +20,7 @@ search_service = SearchService()
 async def hybrid_search(
     request: HybridSearchRequest,
     tenant: TenantContext = Depends(get_tenant_context),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_permission("ai.search")),
 ) -> ApiResponse[SearchResponse]:
     """Executes search and returns standardized response envelope."""
     results = await search_service.hybrid_search(

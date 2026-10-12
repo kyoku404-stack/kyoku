@@ -484,6 +484,22 @@
 }
 ```
 
+#### 3.3.3 Delete Document (Soft Delete with Authorization Gating)
+- **Method**: `DELETE`
+- **Path**: `/api/v1/documents/{id}`
+- **Auth**: Bearer JWT (`document.delete` permission or ownership override for document author/uploader)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Document deleted successfully.",
+  "data": {
+    "id": "99a85f64-5717-4562-b3fc-2c963f66af11"
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404), `AUTH_PERMISSION_DENIED` (403), `AUTH_ORGANIZATION_MISMATCH` (403)
+
 ---
 
 ### 3.4 AI Search & RAG Chat Engine (`/api/v1/search` & `/api/v1/chat`)
@@ -623,6 +639,52 @@ Authorization evaluation occurs after JWT validation and tenant extraction. When
 | `AUTH_RESOURCE_FORBIDDEN` | 403 | Target resource inaccessible | Non-member attempting access to project-scoped resource |
 | `AUTH_ORGANIZATION_MISMATCH` | 403 | Cross-tenant access attempted | Caller `organization_id` does not match resource `organization_id` |
 | `AUTH_POLICY_FAILED` | 403 | Central policy engine evaluation failed | Composite policy evaluation yielded DENY verdict |
+
+---
+
+### 3.6 Security Audit Logs (`/api/v1/audit`)
+
+#### 3.6.1 List Audit Logs (Paginated)
+- **Method**: `GET`
+- **Path**: `/api/v1/audit/logs?page=1&page_size=20&user_id=<uuid>&action=<action>&resource_type=<type>`
+- **Auth**: Bearer JWT (`audit.read` permission — SuperAdmin, OrgAdmin)
+- **Query Parameters**:
+  - `page`: integer (default: 1)
+  - `page_size`: integer (default: 20, max: 100)
+  - `user_id`: UUID (optional filter)
+  - `action`: string (optional filter, e.g. `PERMISSION_DENIED`, `DOCUMENT_DELETED`)
+  - `resource_type`: string (optional filter, e.g. `document`, `project`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Audit logs retrieved.",
+  "data": {
+    "items": [
+      {
+        "id": "11a85f64-5717-4562-b3fc-2c963f66af11",
+        "organization_id": "8bc92d11-3456-4211-89ab-1234567890ab",
+        "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "action": "DOCUMENT_DELETED",
+        "resource_type": "document",
+        "resource_id": "99a85f64-5717-4562-b3fc-2c963f66af11",
+        "metadata_json": {
+          "required_permission": "document.delete",
+          "is_owner": true
+        },
+        "ip_address": "127.0.0.1",
+        "user_agent": "Mozilla/5.0",
+        "created_at": "2026-10-12T10:00:00Z"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+- **Error Codes**: `AUTH_PERMISSION_DENIED` (403), `VALIDATION_ERROR` (422)
 
 ---
 

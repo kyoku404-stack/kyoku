@@ -94,6 +94,102 @@ class ForbiddenException(AppException):
         )
 
 
+class AuthorizationException(ForbiddenException):
+    """Base exception for all authorization and RBAC evaluation failures."""
+
+    def __init__(
+        self,
+        message: str = "Authorization failed.",
+        code: str | ErrorCode = ErrorCode.AUTH_FORBIDDEN,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            details=details,
+        )
+
+
+class PermissionDeniedException(AuthorizationException):
+    """Raised when caller lacks the required action permission for an operation."""
+
+    def __init__(
+        self,
+        message: str = "You do not have permission to perform this action.",
+        code: str | ErrorCode = ErrorCode.AUTH_PERMISSION_DENIED,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            details=details,
+        )
+
+
+class RoleRequiredException(AuthorizationException):
+    """Raised when caller does not possess the minimum required role."""
+
+    def __init__(
+        self,
+        message: str = "Required role not assigned.",
+        code: str | ErrorCode = ErrorCode.AUTH_ROLE_REQUIRED,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            details=details,
+        )
+
+
+class ResourceForbiddenException(AuthorizationException):
+    """Raised when target resource is forbidden (e.g. project membership missing)."""
+
+    def __init__(
+        self,
+        message: str = "Resource is inaccessible.",
+        code: str | ErrorCode = ErrorCode.AUTH_RESOURCE_FORBIDDEN,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            details=details,
+        )
+
+
+class OrganizationMismatchException(AuthorizationException):
+    """Raised when cross-tenant access is attempted."""
+
+    def __init__(
+        self,
+        message: str = "Cross-tenant access attempted.",
+        code: str | ErrorCode = ErrorCode.AUTH_ORGANIZATION_MISMATCH,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            details=details,
+        )
+
+
+class PolicyFailedException(AuthorizationException):
+    """Raised when centralized policy engine evaluation yields a DENY verdict."""
+
+    def __init__(
+        self,
+        message: str = "Policy evaluation failed.",
+        code: str | ErrorCode = ErrorCode.AUTH_POLICY_FAILED,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            details=details,
+        )
+
+
 class ValidationException(AppException):
     """Raised when request payload fails business validation rules."""
 
