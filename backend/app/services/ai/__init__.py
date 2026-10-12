@@ -4,6 +4,10 @@ Exposes abstract contracts for LLMs, embedding models, prompt management,
 token usage tracking, semantic caching, and AI assistants.
 """
 
+from backend.app.services.ai.authorization import (
+    AIAuthorizationFilter,
+    default_ai_authorization_filter,
+)
 from backend.app.services.ai.interfaces import (
     EMPLOYEE_PERMISSIONS,
     ORG_ADMIN_PERMISSIONS,
@@ -48,6 +52,7 @@ __all__ = [
     "ROLE_PERMISSIONS",
     "SUPER_ADMIN_PERMISSIONS",
     "VIEWER_PERMISSIONS",
+    "AIAuthorizationFilter",
     "AIExecutionContext",
     "AIPermission",
     "AISecurityContext",
@@ -76,5 +81,6 @@ __all__ = [
     "UserRole",
     "WorkspaceScopeContext",
     "WorkspaceScopeLevel",
+    "default_ai_authorization_filter",
 ]
 

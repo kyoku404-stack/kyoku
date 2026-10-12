@@ -1,7 +1,8 @@
-"""KEEP Enterprise Platform — Document Endpoints (`/api/v1/documents`)."""
+from uuid import UUID
 
 from backend.app.api.dependencies.auth import (
     AuthenticatedUser,
+    get_current_active_user,
     get_current_user,
     require_roles,
 )
@@ -92,4 +93,48 @@ async def list_documents(
         success=True,
         message="Documents retrieved.",
         data=docs,
+    )
+
+
+@router.delete(
+    "/{id}",
+    response_model=ApiResponse[dict[str, bool]],
+    status_code=status.HTTP_200_OK,
+    summary="Delete document",
+    description="Soft-deletes a document. Requires document.delete permission or document ownership (uploader).",
+)
+async def delete_document(
+    id: UUID,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[dict[str, bool]]:
+    """Deletes a document enforcing resource-level authorization."""
+    from backend.app.api.dependencies.authorization import (
+        audit_authorization,
+        get_user_project_ids,
+    )
+    from backend.app.services.ai.interfaces import AuthorizationDecision
+
+    project_ids = await get_user_project_ids(current_user.id, db)
+    await doc_service.delete_document(
+        db=db,
+        document_id=id,
+        caller=current_user,
+        caller_project_ids=project_ids,
+    )
+
+    # Emit audit log on success
+    await audit_authorization(
+        db=db,
+        caller=current_user,
+        action="document.delete",
+        decision=AuthorizationDecision.allow("Document deleted by authorized principal"),
+        resource_type="document",
+        resource_id=id,
+    )
+
+    return ApiResponse(
+        success=True,
+        message="Document deleted successfully.",
+        data={"deleted": True},
     )

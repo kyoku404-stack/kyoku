@@ -9,10 +9,16 @@ from backend.app.core.constants import (
 )
 from backend.app.core.exceptions import (
     AppException,
+    AuthorizationException,
     ConflictException,
     DatabaseException,
     ForbiddenException,
     NotFoundException,
+    OrganizationMismatchException,
+    PermissionDeniedException,
+    PolicyFailedException,
+    ResourceForbiddenException,
+    RoleRequiredException,
     UnauthorizedException,
     ValidationException,
 )
@@ -27,6 +33,7 @@ from backend.app.core.security import (
 
 __all__ = [
     "AppException",
+    "AuthorizationException",
     "ConflictException",
     "DatabaseException",
     "DocumentStatus",
@@ -34,6 +41,11 @@ __all__ = [
     "ErrorCode",
     "ForbiddenException",
     "NotFoundException",
+    "OrganizationMismatchException",
+    "PermissionDeniedException",
+    "PolicyFailedException",
+    "ResourceForbiddenException",
+    "RoleRequiredException",
     "UnauthorizedException",
     "UserRole",
     "ValidationException",

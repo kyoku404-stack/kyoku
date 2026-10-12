@@ -2,7 +2,8 @@
 
 from uuid import uuid4
 
-from backend.app.api.dependencies.auth import AuthenticatedUser, get_current_user
+from backend.app.api.dependencies.auth import AuthenticatedUser
+from backend.app.api.dependencies.authorization import require_permission
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.schemas.chat import (
     ChatQueryRequest,
@@ -28,7 +29,7 @@ chat_service = ChatService()
 async def chat_query(
     request: ChatQueryRequest,
     tenant: TenantContext = Depends(get_tenant_context),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_permission("ai.chat")),
 ) -> ApiResponse[ChatQueryResponse]:
     """Generates grounded answer with source citations."""
     response = await chat_service.answer_query(
@@ -51,7 +52,7 @@ async def chat_query(
 async def chat_stream(
     request: ChatStreamRequest,
     tenant: TenantContext = Depends(get_tenant_context),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(require_permission("ai.chat")),
 ) -> StreamingResponse:
     """Streams token events over Server-Sent Events."""
     conversation_id = request.conversation_id or uuid4()

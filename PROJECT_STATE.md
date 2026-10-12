@@ -14,11 +14,22 @@ Phase 1.1, Phase 1.2, Phase 1.3, Phase 1.4, and Phase 1.5 are fully COMPLETED ac
 
 Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Authorization Architecture Specification (`docs/Architecture/authorization-architecture.md`) establishing the 7-step authorization pipeline, resource-level ownership evaluation, project containment checks, AI retrieval gating, and audit logging taxonomy.
-- Authored Architecture Decision Records ADR-017 (Action-Based Permission Model & Hierarchical Role Mapping), ADR-018 (Resource-Level Authorization & Ownership Bypass Policy), and ADR-019 (AI Retrieval Authorization Filtering & KG Traversal Scoping) in `docs/decisions/decisions.md`.
-- Expanded official REST API Contract (`docs/API/api-contract.md`) with Section 3.5 (Authorization Error Responses & Error Code Registry) and Section 4 Endpoint Permissions matrix.
+- Authored Architecture Decision Records ADR-017, ADR-018, and ADR-019 in `docs/decisions/decisions.md`.
+- Expanded official REST API Contract (`docs/API/api-contract.md`) with Section 3.5 and Section 4 Endpoint Permissions matrix.
 - Updated Database Schema Specification (`docs/Database/database-schema.md`) Section 3.10 with authorization event definitions for `activity_logs`.
-- Implemented typed authorization domain contracts in `backend/app/services/ai/` and `backend/app/services/rag/`: `ResourceType`, `ResourceAuthorizationContext`, `AuthorizationDecision`, `BaseAuthorizationPolicyEngine`, `BaseResourceOwnershipChecker`, `BaseAIAuthorizationFilter`, extended `RetrievalResult` with `organization_id`, and updated 5-tier role hierarchy with action-based permissions.
-- Authored dedicated unit test suite (`tests/unit/test_authorization_ai_contracts.py`) with 12 tests passing 100% (20/20 total AI contracts tests passing, 0 lint errors). Ready for Member 2 (Backend Lead) to implement RBAC, authorization middleware, decorators, and endpoint protection.
+- Implemented typed authorization domain contracts in `backend/app/services/ai/` and `backend/app/services/rag/`.
+- Authored dedicated unit test suite (`tests/unit/test_authorization_ai_contracts.py`) with 12 tests passing 100%.
+
+Phase 1.6 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
+- Implemented core error codes (`AUTH_ROLE_REQUIRED`, `AUTH_RESOURCE_FORBIDDEN`, `AUTH_ORGANIZATION_MISMATCH`, `AUTH_POLICY_FAILED`) in `backend/app/core/constants.py` and dedicated exception hierarchy (`AuthorizationException`, `PermissionDeniedException`, etc.) in `backend/app/core/exceptions.py`.
+- Built centralized 7-step authorization policy engine (`AuthorizationPolicyEngine`) and resource ownership checker (`ResourceOwnershipChecker`) in `backend/app/core/authorization.py`.
+- Implemented concrete `AIAuthorizationFilter` in `backend/app/services/ai/authorization.py` for RAG candidate pruning and Knowledge Graph entity traversal filtering.
+- Implemented FastAPI authorization dependencies in `backend/app/api/dependencies/authorization.py`: `require_permission()`, `require_role()`, `check_resource_access()`, `get_user_project_ids()`, `audit_authorization()`, and `@authorize` decorator.
+- Enriched `AuthenticatedUser` with dynamic permission resolution, `.has_permission()`, and administrative helper flags in `backend/app/api/dependencies/auth.py`.
+- Implemented security audit log query endpoint (`GET /api/v1/audit/logs`) with `AuditLogResponse` schema, `ActivityService.get_audit_logs()`, and `require_permission("audit.read")` protection.
+- Implemented document deletion endpoint (`DELETE /api/v1/documents/{id}`) with resource-level ownership bypass and tenant isolation in `backend/app/api/v1/documents.py` and `backend/app/services/document_service.py`.
+- Guarded AI search (`ai.search`), AI chat (`ai.chat`), and analytics (`analytics.view`) endpoints with granular permission dependencies.
+- Authored comprehensive test suites: `tests/unit/test_authorization_framework.py` (32 tests) and `tests/integration/test_authorization_endpoints.py` (9 tests). Verified 100% test pass rate across all 228 backend tests and 0 ruff lint errors.
 
 ---
 
@@ -29,15 +40,15 @@ Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 | **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.1 / 1.2 Baseline | `ARCHITECTURE.md`, `docs/Architecture/backend-architecture.md`, ADR-001 - ADR-009 |
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
 | **Authorization Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 Architecture | `docs/Architecture/authorization-architecture.md`, ADR-017 - ADR-019 |
-| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 AI Authorization | Typed security contracts in `services/rag/` & `services/ai/` verified (20/20 tests OK) |
+| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 AI Authorization | Typed security contracts in `services/rag/` & `services/ai/` verified |
 | **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.6 Authz Registry | `docs/API/api-contract.md` updated with Section 3.5 & endpoint permissions |
-| **Backend Architecture & APIs** | COMPLETED (Phase 1.5) | Member 2 (Backend Lead) | Phase 1.6 RBAC & Middleware | Phase 1.5 APIs done; Phase 1.6 backend assigned next |
+| **Backend Architecture & APIs** | COMPLETED (Phase 1.6) | Member 2 (Backend Lead) | Phase 1.6 RBAC Engine & APIs | 7-step engine, dependencies, audit logs & doc delete verified (228/228 tests OK) |
 | **Frontend Application** | COMPLETED (Phase 1.5) | Member 3 (Frontend Lead) | Phase 1.6 Role-Aware UI | Phase 1.5 UI done (93/93 tests OK); Phase 1.6 UI guards assigned next |
-| **Database & Persistence Layer** | COMPLETED (Phase 1.5) | Member 2, 3 & 4 | Phase 1.6 Activity Logging | PostgreSQL 16 + pgvector, ORM models, Repositories, Alembic migrations, Seeding ready |
-| **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Interfaces & authorization filters created |
+| **Database & Persistence Layer** | COMPLETED (Phase 1.6) | Member 2, 3 & 4 | Phase 1.6 Activity Logging | Activity logs queryable, ORM models, Repositories, Alembic migrations ready |
+| **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Concrete AIAuthorizationFilter implemented & tested |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
 | **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.5) | Member 4 (DevOps Lead) | Phase 1.6 Authz Testing | Org seed data & isolation tests ready; Phase 1.6 test suite assigned next |
-| **QA & Verification Suite** | PASSING | All Members | Phase 1.6 Contracts Tests | 20/20 AI unit tests passing (100%), 0 lint errors |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.6 Verification | 228/228 backend tests passing (100%), 0 lint errors |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 ---
@@ -108,6 +119,17 @@ Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
   - Updated handoff documentation (Entry #017 in `docs/handoffs/agent-handoffs.md`).
 
 
+- Implemented complete Phase 1.6 User Role Management & Authorization Framework (Member 2):
+  - Implemented centralized 7-step `AuthorizationPolicyEngine` and `ResourceOwnershipChecker` in `backend/app/core/authorization.py`.
+  - Added new error codes (`AUTH_ROLE_REQUIRED`, `AUTH_RESOURCE_FORBIDDEN`, `AUTH_ORGANIZATION_MISMATCH`, `AUTH_POLICY_FAILED`) in `backend/app/core/constants.py` and structured exceptions in `backend/app/core/exceptions.py`.
+  - Built concrete `AIAuthorizationFilter` in `backend/app/services/ai/authorization.py` fulfilling `BaseAIAuthorizationFilter` contract.
+  - Implemented FastAPI dependencies in `backend/app/api/dependencies/authorization.py`: `require_permission()`, `require_role()`, `check_resource_access()`, `get_user_project_ids()`, `audit_authorization()`, and `@authorize` decorator.
+  - Enhanced `AuthenticatedUser` with permission resolution and role checking helpers.
+  - Built security audit log endpoint `GET /api/v1/audit/logs` and document deletion endpoint `DELETE /api/v1/documents/{id}` with resource-level ownership evaluation.
+  - Authored test suites `tests/unit/test_authorization_framework.py` (32 tests) and `tests/integration/test_authorization_endpoints.py` (9 tests).
+  - Verified 228/228 backend tests passing (100%) and 0 ruff lint errors.
+
+
 ### Blocked
 - None.
 
@@ -116,15 +138,15 @@ Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 ## Subsystem Details
 
 ### Backend
-Status: COMPLETED (Phase 1.5)  
+Status: COMPLETED (Phase 1.6)  
 Next Milestone: Phase 1.8 Document Processing & Ingestion Pipeline (Member 2).
 
 ### Frontend
 Status: COMPLETED (Phase 1.5)  
-Next Milestone: Phase 1.8 Document Processing & Ingestion UI (Member 3).
+Next Milestone: Phase 1.6 Role-Aware UI & Route Guards (Member 3).
 
 ### Database / Persistence
-Status: COMPLETED (Phase 1.5)  
+Status: COMPLETED (Phase 1.6)  
 Next Milestone: Phase 1.8 Document metadata schema and vector indexing.
 
 ### AI / ML
@@ -133,11 +155,11 @@ Next Milestone: Phase 2.1 AI Knowledge Ingestion Pipeline & Phase 2.2 RAG Engine
 
 ### DevOps / Infrastructure
 Status: COMPLETED (Phase 1.5)  
-Next Milestone: Phase 1.6 Document Processing & Storage DevOps.
+Next Milestone: Phase 1.6 Authorization Testing & Multi-Tenant Privilege Escalation Tests (Member 4).
 
 ### QA / Testing
-Status: PASSING (175/175 backend + 93/93 frontend = 268/268 tests OK, 100%)  
-Next Milestone: Phase 1.6 Document ingestion and knowledge pipeline tests.
+Status: PASSING (228/228 backend + 93/93 frontend = 321/321 tests OK, 100%)  
+Next Milestone: Phase 1.6 Frontend and DevOps verification suites.
 
 ---
 
@@ -150,9 +172,9 @@ None.
 ---
 
 ## Last Updated
-2026-10-11
+2026-10-12
 
 ## Last Updated By
-Member 4 — DevOps & Integration Lead
+Member 2 — Backend & Database Lead
 
 

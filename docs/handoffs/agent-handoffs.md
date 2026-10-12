@@ -1607,3 +1607,99 @@ COMPLETED ✓ — READY FOR MEMBER 2 (BACKEND LEAD)
 #### Required Action for Receiving Agent
 - **Member 2**: Reference `docs/Architecture/authorization-architecture.md` Section 8.2 and implement the concrete policy engine and FastAPI permission dependency.
 
+---
+
+## Entry #019: Phase 1.6 — Concrete RBAC Policy Engine, Authorization Dependencies, Endpoint Protection & Security Audit Logging
+
+### Date
+2026-10-12
+
+### Author Agent
+Member 2 (Backend & Database Lead)
+
+### Status
+COMPLETED ✓ — READY FOR MEMBER 3 (FRONTEND LEAD) & MEMBER 4 (DEVOPS LEAD)
+
+### Implemented Features
+- **Centralized 7-Step Authorization Policy Engine & Ownership Checker**:
+  - `backend/app/core/authorization.py`: Implemented `AuthorizationPolicyEngine` implementing the 7-step authorization pipeline: (1) multi-tenant isolation short-circuit (`AUTH_ORGANIZATION_MISMATCH`), (2) canonical role-permission matrix lookup, (3) resource-level ownership override verification for author/uploader (`OWNERSHIP_OVERRIDE_PERMISSIONS`), (4) project workspace containment check with administrative bypass (`PROJECT_BYPASS_ROLES`), and (5) ALLOW/DENY decision dispatch.
+  - Implemented `ResourceOwnershipChecker` with in-memory test registry, runtime lookup, and state reset support.
+- **Authorization Error Codes & Exception Hierarchy**:
+  - `backend/app/core/constants.py`: Added `AUTH_ROLE_REQUIRED`, `AUTH_RESOURCE_FORBIDDEN`, `AUTH_ORGANIZATION_MISMATCH`, and `AUTH_POLICY_FAILED` to `ErrorCode` enum.
+  - `backend/app/core/exceptions.py`: Added `AuthorizationException`, `PermissionDeniedException`, `RoleRequiredException`, `ResourceForbiddenException`, `OrganizationMismatchException`, and `PolicyFailedException` with structured details (`required_permission`, `resource_type`, `user_role`, `details`).
+  - Exported all new exceptions in `backend/app/core/__init__.py`.
+- **Concrete AI Retrieval Authorization Filter**:
+  - `backend/app/services/ai/authorization.py`: Built concrete `AIAuthorizationFilter` implementing `BaseAIAuthorizationFilter`:
+    - `filter_knowledge_candidates()`: prunes RAG vector chunks violating tenant boundary, allowed document whitelist, project workspace scope, or department boundary.
+    - `authorize_kg_traversal()`: filters Knowledge Graph entity traversal against caller tenant boundary and source document accessibility.
+  - Exported in `backend/app/services/ai/__init__.py`.
+- **FastAPI Authorization Dependencies & Decorators**:
+  - `backend/app/api/dependencies/auth.py`: Enriched `AuthenticatedUser` with dynamic permission resolution property `.permissions`, `.has_permission()`, and administrative helper flags (`.is_super_admin`, `.is_org_admin`, `.is_manager`).
+  - `backend/app/api/dependencies/authorization.py`: Created complete suite of authorization dependencies:
+    - `require_permission(permission)`: factory yielding FastAPI dependency for action-based permission validation.
+    - `require_role(role)`: factory verifying minimum required role.
+    - `check_resource_access(...)`: evaluates resource ownership, tenant quarantine, and project containment.
+    - `get_user_project_ids(user, db)`: retrieves project memberships for caller.
+    - `audit_authorization(...)`: emits immutable `PERMISSION_GRANTED` / `PERMISSION_DENIED` security audit logs into `activity_logs`.
+    - `@authorize(permission, resource_type, get_resource_id)`: endpoint decorator enforcing authorization evaluation.
+  - Barrel-exported in `backend/app/api/dependencies/__init__.py`.
+- **Security Audit Logging & Query API**:
+  - `backend/app/schemas/audit.py`: Created `AuditLogResponse` schema; exported in `backend/app/schemas/__init__.py`.
+  - `backend/app/services/activity_service.py`: Added `get_audit_logs(db, organization_id, user_id, action, resource_type, page, page_size)` with filtering and pagination.
+  - `backend/app/api/v1/audit.py`: Implemented `GET /api/v1/audit/logs` guarded with `require_permission("audit.read")`.
+  - Mounted audit router in `backend/app/api/v1/router.py`.
+- **Document Management Deletion with Resource Authorization**:
+  - `backend/app/services/document_service.py`: Added `delete_document(db, document_id, caller)` enforcing resource ownership check and soft delete (`is_deleted = True`).
+  - `backend/app/api/v1/documents.py`: Implemented `DELETE /api/v1/documents/{id}` protected by `require_permission("document.delete")` with ownership override bypass for uploaders.
+- **Protected Endpoint Security Wiring**:
+  - Wired `require_permission("analytics.view")` into `GET /api/v1/analytics` in `analytics.py`.
+  - Wired `require_permission("ai.search")` into `POST /api/v1/search/hybrid` in `search.py`.
+  - Wired `require_permission("ai.chat")` into `POST /api/v1/chat/query` and `POST /api/v1/chat/stream` in `chat.py`.
+- **Test Suites Created & Verified**:
+  - `tests/unit/test_authorization_framework.py`: 32/32 unit tests verifying error codes, exception inheritance, policy engine 7-step pipeline, ownership bypass, project scoping, bulk evaluation, AI filter candidate pruning, and KG traversal.
+  - `tests/integration/test_authorization_endpoints.py`: 9/9 integration tests verifying audit logs endpoint, unauthorized 403 access, document delete permissions, document ownership bypass for uploaders, cross-tenant isolation (403), analytics permissions, and AI search permission enforcement.
+  - Complete backend test suite: **228/228 tests PASSED (100%)**, 0 ruff errors.
+
+### Files Modified / Created
+- `backend/app/core/constants.py` — Added Phase 1.6 ErrorCodes
+- `backend/app/core/exceptions.py` — Implemented AuthorizationException hierarchy
+- `backend/app/core/__init__.py` — Exported authorization exceptions
+- `backend/app/core/authorization.py` — Implemented AuthorizationPolicyEngine and ResourceOwnershipChecker (New)
+- `backend/app/services/ai/authorization.py` — Implemented concrete AIAuthorizationFilter (New)
+- `backend/app/services/ai/interfaces.py` — Added canonical permission mappings
+- `backend/app/services/ai/__init__.py` — Exported AIAuthorizationFilter and default singleton
+- `backend/app/api/dependencies/auth.py` — Enriched AuthenticatedUser with permission helpers
+- `backend/app/api/dependencies/authorization.py` — Implemented require_permission, require_role, @authorize (New)
+- `backend/app/api/dependencies/__init__.py` — Barrel-exported authorization dependencies
+- `backend/app/schemas/audit.py` — Created AuditLogResponse schema (New)
+- `backend/app/schemas/__init__.py` — Exported AuditLogResponse schema
+- `backend/app/services/activity_service.py` — Added get_audit_logs query method
+- `backend/app/services/document_service.py` — Added delete_document with resource authz
+- `backend/app/api/v1/audit.py` — Implemented GET /api/v1/audit/logs endpoint (New)
+- `backend/app/api/v1/documents.py` — Implemented DELETE /api/v1/documents/{id} endpoint
+- `backend/app/api/v1/analytics.py` — Wired require_permission("analytics.view")
+- `backend/app/api/v1/search.py` — Wired require_permission("ai.search")
+- `backend/app/api/v1/chat.py` — Wired require_permission("ai.chat")
+- `backend/app/api/v1/router.py` — Mounted /audit router
+- `tests/unit/test_authorization_framework.py` — Authored 32 unit tests (New)
+- `tests/integration/test_authorization_endpoints.py` — Authored 9 integration tests (New)
+- `PROJECT_STATE.md` — Updated to Phase 1.6 Member 2 completion
+- `docs/api/api-contract.md` — Documented DELETE /documents/{id} and GET /audit/logs
+- `docs/handoffs/agent-handoffs.md` — Appended Entry #019
+
+### Verification & Tests Executed
+- [x] Unit test suite passed: `pytest tests/unit/test_authorization_framework.py -v` → **32/32 PASSED**
+- [x] Integration test suite passed: `pytest tests/integration/test_authorization_endpoints.py -v` → **9/9 PASSED**
+- [x] Full backend test suite passed: `pytest tests/unit/ tests/integration/` → **228/228 PASSED (100%)**
+- [x] Ruff linter passed: `ruff check backend/app tests` → **All checks passed (0 errors)**
+- [x] Feature branch: `agent/backend/feature/phase-1.6-rbac-authorization-framework`
+
+### Target Receiving Agent
+- **Member 3 (Frontend Lead)**: Implement role-aware UI components, route guards, permission hooks (`useAuthorization`), conditional action buttons, and `AccessDeniedPage` (403 handler).
+- **Member 4 (DevOps Lead)**: Build Phase 1.6 end-to-end integration test suites, cross-tenant penetration tests, privilege escalation validation, and update CI workflows.
+
+### Required Action for Receiving Agent
+- **Member 3**: Integrate with `/api/v1/audit/logs` and wire `403 Forbidden` (`AUTH_PERMISSION_DENIED`) error responses to display the user-friendly access-denied state.
+- **Member 4**: Extend automated security regression tests verifying RBAC boundary enforcement across all endpoints.
+
+
