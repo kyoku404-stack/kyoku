@@ -22,3 +22,5 @@ export * from './meeting';
 export * from './task';
 export * from './knowledge';
 export * from './activity';
+export * from './permission';
+export * from './audit';

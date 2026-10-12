@@ -29,7 +29,17 @@ Phase 1.6 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
 - Implemented security audit log query endpoint (`GET /api/v1/audit/logs`) with `AuditLogResponse` schema, `ActivityService.get_audit_logs()`, and `require_permission("audit.read")` protection.
 - Implemented document deletion endpoint (`DELETE /api/v1/documents/{id}`) with resource-level ownership bypass and tenant isolation in `backend/app/api/v1/documents.py` and `backend/app/services/document_service.py`.
 - Guarded AI search (`ai.search`), AI chat (`ai.chat`), and analytics (`analytics.view`) endpoints with granular permission dependencies.
-- Authored comprehensive test suites: `tests/unit/test_authorization_framework.py` (32 tests) and `tests/integration/test_authorization_endpoints.py` (9 tests). Verified 100% test pass rate across all 228 backend tests and 0 ruff lint errors.
+Phase 1.6 Member 3 (Frontend Lead) deliverables are COMPLETED:
+- Implemented action-based fine-grained permission model (`frontend/src/types/permission.ts`) matching backend action specifications and canonical 5-tier role hierarchy (`Viewer`, `Member`, `Manager`, `OrgAdmin`, `SuperAdmin`).
+- Created audit log domain types (`frontend/src/types/audit.ts`) and typed client service `auditService` (`frontend/src/services/auditService.ts`) consuming `GET /api/v1/audit/logs`.
+- Enhanced `useAuthStore` (`frontend/src/store/useAuthStore.ts`) with effective role resolution, role hierarchy comparisons (`isAtLeastRole`), permission checking (`hasPermission`, `hasAllPermissions`, `hasAnyPermission`), and developer/preview role simulator (`setSimulatedRole`).
+- Created `useAuthorization` custom hook (`frontend/src/hooks/useAuthorization.ts`) with fine-grained access evaluation and resource ownership override bypass.
+- Created declarative authorization UI primitives (`frontend/src/components/authorization/`): `PermissionGate`, `RoleGate`, `RoleBadge`, and interactive `RoleSwitcherModal`.
+- Created user-friendly 403 Forbidden handler `AccessDeniedPage` (`frontend/src/pages/AccessDeniedPage.tsx`) with structured error details, required permission metadata, and role preview tools.
+- Created real-time security audit log viewer `AuditLogsPage` (`frontend/src/pages/AuditLogsPage.tsx`) with action badges, resource filtering, and pagination.
+- Created route protection guards (`RequireAuth`, `RequirePermission`, `RequireRole`) in `frontend/src/routes/guards.tsx` and protected administrative routes.
+- Updated `Sidebar.tsx` with conditional navigation filtering and role status indicator, and `Header.tsx` with active role badge.
+- Authored comprehensive test suites (`authorization.test.ts`, `auditService.test.ts`, `authorizationComponents.test.tsx`) with 100% pass rate (109/109 Vitest tests OK). Verified clean TypeScript compilation and production build.
 
 ---
 
@@ -43,7 +53,7 @@ Phase 1.6 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
 | **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 AI Authorization | Typed security contracts in `services/rag/` & `services/ai/` verified |
 | **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.6 Authz Registry | `docs/API/api-contract.md` updated with Section 3.5 & endpoint permissions |
 | **Backend Architecture & APIs** | COMPLETED (Phase 1.6) | Member 2 (Backend Lead) | Phase 1.6 RBAC Engine & APIs | 7-step engine, dependencies, audit logs & doc delete verified (228/228 tests OK) |
-| **Frontend Application** | COMPLETED (Phase 1.5) | Member 3 (Frontend Lead) | Phase 1.6 Role-Aware UI | Phase 1.5 UI done (93/93 tests OK); Phase 1.6 UI guards assigned next |
+| **Frontend Application** | COMPLETED (Phase 1.6) | Member 3 (Frontend Lead) | Phase 1.6 Role-Aware UI | Role-aware UI, PermissionGate, RoleGate, AccessDeniedPage, AuditLogsPage (109/109 tests OK) |
 | **Database & Persistence Layer** | COMPLETED (Phase 1.6) | Member 2, 3 & 4 | Phase 1.6 Activity Logging | Activity logs queryable, ORM models, Repositories, Alembic migrations ready |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Concrete AIAuthorizationFilter implemented & tested |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |

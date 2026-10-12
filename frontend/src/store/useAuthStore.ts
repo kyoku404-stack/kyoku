@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import type { UserProfileResponse, UserRole } from '@/types/auth';
+import {
+  ROLE_HIERARCHY,
+  ROLE_PERMISSIONS_MAP,
+} from '@/types/permission';
 import { authService } from '@/services/authService';
 
 interface AuthState {
@@ -8,6 +12,7 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  simulatedRole: UserRole | null;
 
   setAuth: (
     user: UserProfileResponse,
@@ -16,7 +21,14 @@ interface AuthState {
   ) => void;
   setUser: (user: UserProfileResponse) => void;
   clearAuth: () => void;
+  setSimulatedRole: (role: UserRole | null) => void;
+  getEffectiveRole: () => UserRole;
   hasRole: (allowedRoles: UserRole[]) => boolean;
+  isAtLeastRole: (minRole: UserRole) => boolean;
+  hasPermission: (permission: string) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  getPermissions: () => Set<string>;
   initializeSession: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -27,6 +39,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refreshToken: localStorage.getItem('keep_refresh_token'),
   isAuthenticated: !!localStorage.getItem('keep_auth_token'),
   isLoading: false,
+  simulatedRole: null,
 
   setAuth: (user, token, refreshToken) => {
     localStorage.setItem('keep_auth_token', token);
@@ -39,6 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken: refreshToken || get().refreshToken,
       isAuthenticated: true,
       isLoading: false,
+      simulatedRole: null,
     });
   },
 
@@ -55,13 +69,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
+      simulatedRole: null,
     });
   },
 
+  setSimulatedRole: (role) => {
+    set({ simulatedRole: role });
+  },
+
+  getEffectiveRole: (): UserRole => {
+    const { simulatedRole, user } = get();
+    if (simulatedRole) return simulatedRole;
+    if (user?.role) return user.role;
+    return 'Guest';
+  },
+
   hasRole: (allowedRoles) => {
-    const user = get().user;
-    if (!user) return false;
-    return allowedRoles.includes(user.role);
+    const effectiveRole = get().getEffectiveRole();
+    return allowedRoles.includes(effectiveRole);
+  },
+
+  isAtLeastRole: (minRole) => {
+    const effectiveRole = get().getEffectiveRole();
+    const currentLevel = ROLE_HIERARCHY[effectiveRole] ?? 0;
+    const requiredLevel = ROLE_HIERARCHY[minRole] ?? 0;
+    return currentLevel >= requiredLevel;
+  },
+
+  getPermissions: (): Set<string> => {
+    const effectiveRole = get().getEffectiveRole();
+    return ROLE_PERMISSIONS_MAP[effectiveRole] ?? new Set();
+  },
+
+  hasPermission: (permission) => {
+    const permissions = get().getPermissions();
+    return permissions.has(permission);
+  },
+
+  hasAllPermissions: (permissions) => {
+    const userPerms = get().getPermissions();
+    return permissions.every((p) => userPerms.has(p));
+  },
+
+  hasAnyPermission: (permissions) => {
+    const userPerms = get().getPermissions();
+    return permissions.some((p) => userPerms.has(p));
   },
 
   initializeSession: async () => {
