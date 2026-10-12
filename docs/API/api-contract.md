@@ -595,33 +595,67 @@ data: {"finish_reason": "stop", "total_tokens": 85}
 
 ---
 
-## 4. API Endpoints Registry & Ownership
+### 3.5 Authorization Error Responses & Policy Enforcement (Phase 1.6)
 
-| Path | Method | Purpose | Owner | Phase |
-| :--- | :--- | :--- | :--- | :--- |
-| `/api/v1/auth/login` | POST | Authenticate user & issue tokens | Member 2 | Phase 1.4 |
-| `/api/v1/auth/refresh` | POST | Refresh expired access token | Member 2 | Phase 1.4 |
-| `/api/v1/auth/me` | GET | Retrieve authenticated profile | Member 2 | Phase 1.4 |
-| `/api/v1/users` | GET / POST | Manage enterprise users | Member 2 | Phase 1.4 |
-| `/api/v1/organizations` | POST | Create enterprise organization | Member 2 | Phase 1.5 |
-| `/api/v1/organizations/current` | GET | Retrieve tenant details | Member 2 | Phase 1.5 |
-| `/api/v1/organizations/{id}` | GET / PATCH / DELETE | Manage enterprise tenant | Member 2 | Phase 1.5 |
-| `/api/v1/departments` | GET / POST | Manage departments | Member 2 | Phase 1.5 |
-| `/api/v1/departments/{id}` | GET / PATCH / DELETE | Department details & operations | Member 2 | Phase 1.5 |
-| `/api/v1/teams` | GET / POST | Manage department teams | Member 2 | Phase 1.5 |
-| `/api/v1/teams/{id}` | GET / PATCH / DELETE | Team details & operations | Member 2 | Phase 1.5 |
-| `/api/v1/projects` | GET / POST | Manage collaborative projects | Member 2 | Phase 1.5 |
-| `/api/v1/projects/{id}` | GET / PATCH / DELETE | Project details & operations | Member 2 | Phase 1.5 |
-| `/api/v1/invitations` | GET / POST | Manage user invitations | Member 2 | Phase 1.5 |
-| `/api/v1/invitations/accept` | POST | Accept invitation & activate user | Member 2 | Phase 1.5 |
-| `/api/v1/members` | GET | List enterprise members | Member 2 | Phase 1.5 |
-| `/api/v1/members/{user_id}` | PATCH / DELETE | Member role & status updates | Member 2 | Phase 1.5 |
-| `/api/v1/documents/upload` | POST | Multipart file ingestion | Member 2 & Member 1 | Phase 1.8 |
-| `/api/v1/documents` | GET | List tenant documents | Member 2 | Phase 1.8 |
-| `/api/v1/search/hybrid` | POST | Hybrid semantic + BM25 search | Member 1 & Member 2 | Phase 2.2 |
-| `/api/v1/chat/query` | POST | Citation-backed RAG Q&A | Member 1 & Member 2 | Phase 2.2 |
-| `/api/v1/chat/stream` | POST (SSE) | Real-time token streaming Q&A | Member 1 & Member 2 | Phase 2.2 |
-| `/api/v1/graph/query` | POST | Knowledge Graph entity traversal | Member 1 & Member 2 | Phase 2.4 |
+Authorization evaluation occurs after JWT validation and tenant extraction. When access is denied by policy evaluation, endpoints return a standardized `ApiErrorResponse` envelope with HTTP 403 Forbidden.
+
+#### 3.5.1 Standard Authorization Error Envelope
+```json
+{
+  "success": false,
+  "error": {
+    "code": "AUTH_PERMISSION_DENIED",
+    "message": "You do not have permission to perform this action.",
+    "details": {
+      "required_permission": "document.delete",
+      "user_role": "Member",
+      "resource_type": "document"
+    }
+  }
+}
+```
+
+#### 3.5.2 Authorization Error Code Registry
+| Error Code | HTTP Status | Description | Trigger |
+| :--- | :---: | :--- | :--- |
+| `AUTH_PERMISSION_DENIED` | 403 | Caller lacks required action permission | Missing permission in caller role and no ownership override |
+| `AUTH_ROLE_REQUIRED` | 403 | Minimum organizational role not held | Endpoint guarded by specific minimum role tier |
+| `AUTH_RESOURCE_FORBIDDEN` | 403 | Target resource inaccessible | Non-member attempting access to project-scoped resource |
+| `AUTH_ORGANIZATION_MISMATCH` | 403 | Cross-tenant access attempted | Caller `organization_id` does not match resource `organization_id` |
+| `AUTH_POLICY_FAILED` | 403 | Central policy engine evaluation failed | Composite policy evaluation yielded DENY verdict |
+
+---
+
+## 4. API Endpoints Registry, Ownership & Authorization Controls
+
+| Path | Method | Purpose | Required Permission | Owner | Phase |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `/api/v1/auth/login` | POST | Authenticate user & issue tokens | Public (None) | Member 2 | Phase 1.4 |
+| `/api/v1/auth/refresh` | POST | Refresh expired access token | Authenticated | Member 2 | Phase 1.4 |
+| `/api/v1/auth/me` | GET | Retrieve authenticated profile | Authenticated | Member 2 | Phase 1.4 |
+| `/api/v1/users` | GET / POST | Manage enterprise users | `user.view` / `user.manage` | Member 2 | Phase 1.4 |
+| `/api/v1/organizations` | POST | Create enterprise organization | `org:create` (SuperAdmin) | Member 2 | Phase 1.5 |
+| `/api/v1/organizations/current` | GET | Retrieve tenant details | `organization.manage` | Member 2 | Phase 1.5 |
+| `/api/v1/organizations/{id}` | GET / PATCH / DELETE | Manage enterprise tenant | `organization.manage` | Member 2 | Phase 1.5 |
+| `/api/v1/departments` | GET / POST | Manage departments | `dept:read` / `dept:create` | Member 2 | Phase 1.5 |
+| `/api/v1/departments/{id}` | GET / PATCH / DELETE | Department details & operations | `dept:read` / `dept:update` / `dept:delete` | Member 2 | Phase 1.5 |
+| `/api/v1/teams` | GET / POST | Manage department teams | `team:read` / `team:create` | Member 2 | Phase 1.5 |
+| `/api/v1/teams/{id}` | GET / PATCH / DELETE | Team details & operations | `team:read` / `team:update` / `team:delete` | Member 2 | Phase 1.5 |
+| `/api/v1/projects` | GET / POST | Manage collaborative projects | `project.create` | Member 2 | Phase 1.5 |
+| `/api/v1/projects/{id}` | GET / PATCH / DELETE | Project details & operations | `project.manage` | Member 2 | Phase 1.5 |
+| `/api/v1/invitations` | GET / POST | Manage user invitations | `user.invite` | Member 2 | Phase 1.5 |
+| `/api/v1/invitations/accept` | POST | Accept invitation & activate user | Public (Token-backed) | Member 2 | Phase 1.5 |
+| `/api/v1/members` | GET | List enterprise members | `user.view` | Member 2 | Phase 1.5 |
+| `/api/v1/members/{user_id}` | PATCH / DELETE | Member role & status updates | `user.manage` | Member 2 | Phase 1.5 |
+| `/api/v1/documents/upload` | POST | Multipart file ingestion | `document.create` | Member 2 & Member 1 | Phase 1.8 |
+| `/api/v1/documents` | GET | List tenant documents | `document.read` | Member 2 | Phase 1.8 |
+| `/api/v1/documents/{id}` | DELETE | Delete document (owner/admin) | `document.delete` | Member 2 | Phase 1.8 |
+| `/api/v1/search/hybrid` | POST | Hybrid semantic + BM25 search | `ai.search` | Member 1 & Member 2 | Phase 2.2 |
+| `/api/v1/chat/query` | POST | Citation-backed RAG Q&A | `ai.chat` | Member 1 & Member 2 | Phase 2.2 |
+| `/api/v1/chat/stream` | POST (SSE) | Real-time token streaming Q&A | `ai.chat` | Member 1 & Member 2 | Phase 2.2 |
+| `/api/v1/graph/query` | POST | Knowledge Graph entity traversal | `ai.search` | Member 1 & Member 2 | Phase 2.4 |
+| `/api/v1/analytics` | GET | Platform & project analytics | `analytics.view` | Member 2 | Phase 1.6 |
+| `/api/v1/audit/logs` | GET | Security audit log trail | `audit.read` (OrgAdmin) | Member 2 | Phase 1.6 |
 
 ---
 

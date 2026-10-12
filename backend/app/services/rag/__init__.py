@@ -7,6 +7,7 @@ knowledge graph stores, chat history persistence, and RAG synthesis engines.
 
 from backend.app.services.rag.interfaces import (
     AIQueryLogRecord,
+    BaseAIAuthorizationFilter,
     BaseAIQueryLogRepository,
     BaseChatHistoryRepository,
     BaseChunkRepository,
@@ -43,6 +44,7 @@ from backend.app.services.rag.interfaces import (
 
 __all__ = [
     "AIQueryLogRecord",
+    "BaseAIAuthorizationFilter",
     "BaseAIQueryLogRepository",
     "BaseChatHistoryRepository",
     "BaseChunkRepository",

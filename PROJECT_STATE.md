@@ -4,21 +4,21 @@
 Phase 1 — Core Platform Foundation
 
 ## Current Sub-Phase
-Phase 1.5 — Organization, Team & Workspace Management
+Phase 1.6 — User Role Management & Authorization Framework
 
 ## Repository Health
 GREEN
 
 ## Overall Status
-Phase 1.1, Phase 1.2, Phase 1.3, and Phase 1.4 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+Phase 1.1, Phase 1.2, Phase 1.3, Phase 1.4, and Phase 1.5 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
 
-Phase 1.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
-- Authored master Organizational Hierarchy, Multi-Tenancy & AI Workspace Architecture Specification (`docs/Architecture/organization-hierarchy-architecture.md`) defining the 4-tier hierarchy (Org -> Depts -> Teams -> Projects), zero-trust multi-tenant quarantine, multi-tier contextual AI memory scoping, and RBAC permission governance.
-- Authored Architecture Decision Records ADR-014 (Multi-Tier Organizational Hierarchy & Context-Aware Knowledge Retrieval), ADR-015 (Multi-Tenant Workspace Isolation Barrier & AI Context Quarantine), and ADR-016 (Department & Team Scoped AI Permissions & Retrieval Inheritance) in `docs/decisions/decisions.md`.
-- Expanded official REST API Contract (`docs/API/api-contract.md`) specifying all Phase 1.5 endpoints (`/organizations`, `/departments`, `/teams`, `/projects`, `/invitations`, `/members`) with full JSON envelopes and error codes.
-- Expanded official Database Schema Specification (`docs/Database/database-schema.md`) with `departments` and `invitations` schemas, updated `teams` with `department_id`, updated ERD, and indexing matrix.
-- Implemented typed AI & RAG Workspace Scoping Domain Contracts (`backend/app/services/ai/` and `backend/app/services/rag/`), including `WorkspaceScopeLevel`, `WorkspaceScopeContext`, `AIWorkspaceSettings`, `BaseWorkspaceContextResolver`, `BaseTenantIsolationValidator`, `WorkspaceMemoryScope`, `BaseWorkspaceMemoryRouter`, and expanded `AISecurityContext` / `RAGSecurityContext`.
-- Authored dedicated unit test suite (`tests/unit/test_workspace_ai_contracts.py`) passing 100% (8/8 tests OK, 30/30 total AI tests OK). Ready for Member 2 (Backend Lead) to implement organization, department, team, project, and invitation APIs.
+Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Authorization Architecture Specification (`docs/Architecture/authorization-architecture.md`) establishing the 7-step authorization pipeline, resource-level ownership evaluation, project containment checks, AI retrieval gating, and audit logging taxonomy.
+- Authored Architecture Decision Records ADR-017 (Action-Based Permission Model & Hierarchical Role Mapping), ADR-018 (Resource-Level Authorization & Ownership Bypass Policy), and ADR-019 (AI Retrieval Authorization Filtering & KG Traversal Scoping) in `docs/decisions/decisions.md`.
+- Expanded official REST API Contract (`docs/API/api-contract.md`) with Section 3.5 (Authorization Error Responses & Error Code Registry) and Section 4 Endpoint Permissions matrix.
+- Updated Database Schema Specification (`docs/Database/database-schema.md`) Section 3.10 with authorization event definitions for `activity_logs`.
+- Implemented typed authorization domain contracts in `backend/app/services/ai/` and `backend/app/services/rag/`: `ResourceType`, `ResourceAuthorizationContext`, `AuthorizationDecision`, `BaseAuthorizationPolicyEngine`, `BaseResourceOwnershipChecker`, `BaseAIAuthorizationFilter`, extended `RetrievalResult` with `organization_id`, and updated 5-tier role hierarchy with action-based permissions.
+- Authored dedicated unit test suite (`tests/unit/test_authorization_ai_contracts.py`) with 12 tests passing 100% (20/20 total AI contracts tests passing, 0 lint errors). Ready for Member 2 (Backend Lead) to implement RBAC, authorization middleware, decorators, and endpoint protection.
 
 ---
 
@@ -28,15 +28,16 @@ Phase 1.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 | :--- | :--- | :--- | :--- | :--- |
 | **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.1 / 1.2 Baseline | `ARCHITECTURE.md`, `docs/Architecture/backend-architecture.md`, ADR-001 - ADR-009 |
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
-| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 AI Security | Typed security contracts in `services/rag/` & `services/ai/` verified |
-| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.4 Auth Standard | `docs/api/api-contract.md` updated with all 8 auth endpoints |
-| **Backend Architecture & APIs** | COMPLETED (Phase 1.4) | Member 2 (Backend Lead) | Phase 1.4 Auth APIs | Auth endpoints, JWT issuance, middleware & sessions implemented |
-| **Frontend Application** | COMPLETED (Phase 1.5) | Member 3 (Frontend Lead) | Phase 1.8 Ingestion & Knowledge | Org Setup Wizard, Department & Team Managers, Member Directory, Project Workspaces, Settings & AI Governance, Invitation Acceptance (93/93 tests OK) |
-| **Database & Persistence Layer** | COMPLETED (Phase 1.3) | Member 2, 3 & 4 | Phase 1.4 Auth & Users | PostgreSQL 16 + pgvector, ORM models, Repositories, Alembic migrations, Seeding & Integration tests ready |
-| **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Interfaces created; full pipeline scheduled for Phase 2 |
+| **Authorization Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 Architecture | `docs/Architecture/authorization-architecture.md`, ADR-017 - ADR-019 |
+| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 AI Authorization | Typed security contracts in `services/rag/` & `services/ai/` verified (20/20 tests OK) |
+| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.6 Authz Registry | `docs/API/api-contract.md` updated with Section 3.5 & endpoint permissions |
+| **Backend Architecture & APIs** | COMPLETED (Phase 1.5) | Member 2 (Backend Lead) | Phase 1.6 RBAC & Middleware | Phase 1.5 APIs done; Phase 1.6 backend assigned next |
+| **Frontend Application** | COMPLETED (Phase 1.5) | Member 3 (Frontend Lead) | Phase 1.6 Role-Aware UI | Phase 1.5 UI done (93/93 tests OK); Phase 1.6 UI guards assigned next |
+| **Database & Persistence Layer** | COMPLETED (Phase 1.5) | Member 2, 3 & 4 | Phase 1.6 Activity Logging | PostgreSQL 16 + pgvector, ORM models, Repositories, Alembic migrations, Seeding ready |
+| **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Interfaces & authorization filters created |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
-| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.5) | Member 4 (DevOps Lead) | Phase 1.5 Org Seed, Audit & Isolation Testing | Org seed data, audit logging tests, multi-tenant isolation tests, Playwright E2E, scripts |
-| **QA & Verification Suite** | COMPLETED (Phase 1.5) | All Members | Phase 1.5 Org & Security Tests | 175/175 backend + 93/93 frontend = 268/268 tests OK (100%) |
+| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.5) | Member 4 (DevOps Lead) | Phase 1.6 Authz Testing | Org seed data & isolation tests ready; Phase 1.6 test suite assigned next |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.6 Contracts Tests | 20/20 AI unit tests passing (100%), 0 lint errors |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 ---

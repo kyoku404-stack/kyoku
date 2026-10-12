@@ -438,6 +438,99 @@ ACCEPTED
 
 ---
 
+### ADR-017 — Action-Based Permission Model & Hierarchical Role Mapping
+
+#### Date
+2026-10-12
+
+#### Context
+`devdocs/p1/p1.6.txt` (Chapters 4, 5, 6) mandates an action-based permission model (`document.create`, `document.delete`, `project.manage`, `meeting.create`, `ai.chat`, `organization.manage`, etc.) rather than monolithic role-name checks. Roles must receive curated sets of permissions with hierarchical inheritance from lower to higher tiers.
+
+#### Decision
+1. Define granular, action-based permissions in `AIPermission` enum:
+   - `document.create`, `document.read`, `document.update`, `document.delete`
+   - `project.manage`, `project.membership`
+   - `meeting.create`, `meeting.read`, `meeting.manage`
+   - `ai.chat`, `ai.search`, `ai.admin`, `ai.config`
+   - `organization.manage`, `organization.settings`
+   - `user.invite`, `user.manage`, `user.view`
+   - `analytics.view`, `analytics.export`
+   - `audit.read`
+2. Map canonical permissions hierarchically across the 5 system roles:
+   - `Viewer`: Read-only access to documents, meetings, AI search/chat, dashboards.
+   - `Member` / `Employee`: Inherits Viewer + document creation/updates.
+   - `ProjectManager`: Inherits Member + document deletion, project management, meeting creation/management, member invitations.
+   - `OrgAdmin`: Inherits ProjectManager + tenant settings, user management, AI administration, analytics export, audit logs.
+   - `SuperAdmin`: Inherits OrgAdmin + system organization creation.
+
+#### Alternatives Considered
+- Direct role-string comparisons in route handlers (`if user.role != "Admin"`): Fragile, prevents fine-grained delegation, incompatible with future custom role configurations.
+- Coarse read/write/admin permissions: Insufficient granularity for enterprise compliance (e.g., distinguishing document upload from document deletion).
+
+#### Reason
+Action-based keys decouple permission checks from role assignments, enabling future custom roles without refactoring endpoint guards.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-018 — Resource-Level Authorization & Ownership Bypass Policy
+
+#### Date
+2026-10-12
+
+#### Context
+`devdocs/p1/p1.6.txt` (Chapters 7, 9, 10, 11) specifies that access decisions must evaluate both caller identity and target resource metadata (organization tenant boundary, project membership, and resource ownership). Certain resources grant elevated permissions to creators regardless of base role (e.g., an Employee who uploaded a document may update or delete their own upload).
+
+#### Decision
+1. Model resource evaluation via a typed `ResourceAuthorizationContext` capturing `caller_id`, `caller_role`, `caller_org_id`, `caller_project_ids`, `resource_id`, `resource_type`, `resource_org_id`, `resource_owner_id`, `resource_project_id`, and `required_permission`.
+2. Establish a deterministic 7-step authorization evaluation pipeline:
+   - Step 1: Hard tenant boundary check (`caller_org_id == resource_org_id`) -> immediate `AUTH_ORGANIZATION_MISMATCH` (403) on mismatch.
+   - Step 2: Role permission evaluation (`required_permission in caller.permissions`).
+   - Step 3: Ownership override check (`BaseResourceOwnershipChecker.is_owner()`) for permitted actions (`document.update`, `document.delete`, `meeting.manage`, `chat_session.delete`).
+   - Step 4: Project workspace containment check (`resource_project_id in caller_project_ids`) for non-admin users.
+3. Define abstract contracts `BaseAuthorizationPolicyEngine` and `BaseResourceOwnershipChecker` in `backend/app/services/ai/interfaces.py`.
+
+#### Alternatives Considered
+- Decentralized checks inside each service handler: Results in inconsistent error codes, missing audit logs, and potential horizontal access bypasses.
+- SQL-only row level security (RLS): Difficult to mock in unit test environments and does not integrate cleanly with FastAPI dependency injection and AI retrieval.
+
+#### Reason
+Centralized policy evaluation ensures uniform least-privilege enforcement, structured error reporting, and reliable audit trail generation.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-019 — AI Retrieval Authorization Filtering & KG Traversal Scoping
+
+#### Date
+2026-10-12
+
+#### Context
+`devdocs/p1/p1.6.txt` (Chapter 14) requires that AI modules (RAG search, conversational context assembly, and Knowledge Graph entity traversal) inherit the exact same authorization boundaries as REST endpoints. No confidential document or entity from an unauthorized project or tenant may ever enter prompt context.
+
+#### Decision
+1. Introduce `BaseAIAuthorizationFilter` abstract interface in `backend/app/services/rag/interfaces.py`:
+   - `filter_knowledge_candidates(candidates, security_context)`: Prunes candidate document chunks by tenant boundary, document-level read permission, and project membership.
+   - `authorize_kg_traversal(entities, security_context)`: Filters Knowledge Graph nodes to only those originating from caller-accessible source documents.
+2. Extend `RetrievalResult` dataclass with `organization_id` to enforce hard tenant validation during candidate pruning.
+3. Enforce AI action permissions: `ai.chat` for RAG conversation, `ai.search` for semantic queries, `ai.admin` for quotas/monitoring, and `ai.config` for model tuning.
+
+#### Alternatives Considered
+- Filtering prompt outputs post-generation via LLM self-critique: Unreliable, incurs high token latency, and risks sensitive data leakage.
+- Disregarding resource-level project scoping for AI prompts: Violates enterprise data isolation between internal project teams.
+
+#### Reason
+Pre-retrieval and in-pipeline candidate pruning prevents unauthorized context injection before prompts reach the LLM, ensuring zero data leakage.
+
+#### Status
+ACCEPTED
+
+---
+
 ## Documented Assumptions
 
 ### Assumption 001 — Knowledge Graph Storage Engine (PostgreSQL MVP -> Neo4j)
