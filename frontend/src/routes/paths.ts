@@ -25,6 +25,8 @@ export const ROUTES = {
   INVITATION_ACCEPT: '/invitations/accept',
   MEETINGS: '/meetings',
   ANALYTICS: '/analytics',
+  AUDIT_LOGS: '/audit/logs',
+  ACCESS_DENIED: '/access-denied',
   HEALTH: '/health',
   NOT_FOUND: '*',
 } as const;

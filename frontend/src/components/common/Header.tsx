@@ -3,11 +3,17 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/paths';
 import { ThemeToggle } from './ThemeToggle';
 import { useUIStore } from '@/store/useUIStore';
-import { Menu, Layers, ShieldCheck, Activity } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthorization } from '@/hooks/useAuthorization';
+import { RoleBadge } from '@/components/authorization/RoleBadge';
+import { Menu, Layers, ShieldCheck, Activity, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const Header: React.FC = () => {
   const { toggleSidebar } = useUIStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+  const { role } = useAuthorization();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/80 backdrop-blur-md">
@@ -51,12 +57,26 @@ export const Header: React.FC = () => {
 
           <ThemeToggle />
 
-          <Link to={ROUTES.LOGIN}>
-            <Button variant="outline" size="sm">
-              <ShieldCheck className="h-4 w-4 mr-1.5" />
-              Sign In
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2.5">
+              <RoleBadge role={role} size="sm" />
+              <Link to={ROUTES.PROFILE} className="flex items-center gap-1.5 text-xs font-medium text-foreground hover:underline">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <UserIcon className="h-4 w-4" />
+                </div>
+                <span className="hidden md:inline max-w-[120px] truncate">
+                  {user?.full_name || user?.email || 'Profile'}
+                </span>
+              </Link>
+            </div>
+          ) : (
+            <Link to={ROUTES.LOGIN}>
+              <Button variant="outline" size="sm">
+                <ShieldCheck className="h-4 w-4 mr-1.5" />
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>

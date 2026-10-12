@@ -1702,4 +1702,92 @@ COMPLETED ✓ — READY FOR MEMBER 3 (FRONTEND LEAD) & MEMBER 4 (DEVOPS LEAD)
 - **Member 3**: Integrate with `/api/v1/audit/logs` and wire `403 Forbidden` (`AUTH_PERMISSION_DENIED`) error responses to display the user-friendly access-denied state.
 - **Member 4**: Extend automated security regression tests verifying RBAC boundary enforcement across all endpoints.
 
+---
+
+## Entry #020: Phase 1.6 — Role-Aware UI, Conditional Navigation, Permission Gates, Audit Log Viewer & Access-Denied Handlers
+
+### Date
+2026-10-12
+
+### Author Agent
+Member 3 (Frontend Engineering Lead)
+
+### Status
+COMPLETED ✓ — MANDATORY HUMAN GATING STOP
+
+### Implemented Features
+- **Action-Based Permission System & Role Hierarchy**:
+  - `frontend/src/types/permission.ts`: Defined `Permission` action enum across all domains (`document.*`, `project.*`, `meeting.*`, `ai.*`, `organization.*`, `user.*`, `analytics.*`, `audit.*`).
+  - Defined canonical hierarchical role-to-permission mapping (`ROLE_PERMISSIONS_MAP`) matching backend architecture for `Viewer`, `Member`, `Manager`, `OrgAdmin`, and `SuperAdmin`.
+  - Defined `ROLE_HIERARCHY` levels and `OWNERSHIP_OVERRIDE_PERMISSIONS` for creator/author privilege bypass.
+- **Security Audit & Authorization Types & Service Client**:
+  - `frontend/src/types/audit.ts`: Defined `AuditLogEntry` and `AuditLogQueryParams`.
+  - `frontend/src/services/auditService.ts`: Created typed API client service for `GET /api/v1/audit/logs` with pagination and action/resource filtering.
+  - Added Phase 1.6 authorization error codes to `ErrorCode` enum in `frontend/src/types/api.ts`.
+- **State Store & Authorization Hook**:
+  - `frontend/src/store/useAuthStore.ts`: Enriched with dynamic permissions calculation, `isAtLeastRole(minRole)`, `hasPermission(permission)`, `hasAllPermissions()`, `hasAnyPermission()`, and simulated role testing mode (`setSimulatedRole()`).
+  - `frontend/src/hooks/useAuthorization.ts`: Created `useAuthorization` custom hook providing reactive role/permission evaluation, ownership checking (`isOwner`), and resource-level access evaluations.
+- **Declarative Authorization UI Primitives**:
+  - `frontend/src/components/authorization/PermissionGate.tsx`: Declarative gate rendering children only if permission is granted, with ownership bypass and fallback support.
+  - `frontend/src/components/authorization/RoleGate.tsx`: Declarative gate rendering children only if role matches or meets minimum hierarchy level.
+  - `frontend/src/components/authorization/RoleBadge.tsx`: Visual badge with semantic role colors, iconography, and sizing.
+  - `frontend/src/components/authorization/RoleSwitcherModal.tsx`: Interactive preview tool allowing instant role switching to verify UI adaptation in real time without creating separate accounts.
+- **Access Denied (403 Handler) Page & Audit Log Viewer**:
+  - `frontend/src/pages/AccessDeniedPage.tsx`: User-friendly 403 Forbidden page showing active role badge, required permission details, error codes (`AUTH_PERMISSION_DENIED`), and navigation actions (Go Back, Dashboard, Switch Role Preview).
+  - `frontend/src/pages/AuditLogsPage.tsx`: Interactive real-time security audit log table displaying permission grants, denials, and mutations, with action badges, resource filtering, and pagination.
+- **Route Protection & Conditional Navigation**:
+  - `frontend/src/routes/guards.tsx`: Implemented `RequireAuth`, `RequirePermission`, and `RequireRole` route guards with automatic redirection to `AccessDeniedPage`.
+  - `frontend/src/routes/paths.ts` & `frontend/src/routes/index.tsx`: Registered `/access-denied` and `/audit/logs`, and protected admin routes (`/organization/settings`, `/organization/setup`, `/audit/logs`).
+  - `frontend/src/components/common/Sidebar.tsx`: Role-aware conditional navigation hiding inaccessible items, adding Security Audit Logs link with RBAC badge, and active role footer with preview trigger.
+  - `frontend/src/components/common/Header.tsx`: Integrated active role badge and user profile status.
+- **Testing & Verification**:
+  - Authored unit test suite for authorization and store logic (`frontend/src/tests/authorization.test.ts` — 5 tests).
+  - Authored unit test suite for audit service operations (`frontend/src/tests/auditService.test.ts` — 2 tests).
+  - Authored component test suite for gates, badges, access-denied page, and switcher modal (`frontend/src/tests/authorizationComponents.test.tsx` — 9 tests).
+  - 100% test pass rate across all 16 frontend test suites (109/109 tests OK).
+  - Zero TypeScript errors (`tsc --noEmit`), zero ESLint warnings (`npm run lint`), production build verified (`npm run build`).
+
+### Files Modified / Created
+- `frontend/src/types/permission.ts` (New)
+- `frontend/src/types/audit.ts` (New)
+- `frontend/src/types/api.ts` (Modified)
+- `frontend/src/types/index.ts` (Modified)
+- `frontend/src/services/auditService.ts` (New)
+- `frontend/src/services/index.ts` (Modified)
+- `frontend/src/store/useAuthStore.ts` (Modified)
+- `frontend/src/hooks/useAuthorization.ts` (New)
+- `frontend/src/components/authorization/PermissionGate.tsx` (New)
+- `frontend/src/components/authorization/RoleGate.tsx` (New)
+- `frontend/src/components/authorization/RoleBadge.tsx` (New)
+- `frontend/src/components/authorization/RoleSwitcherModal.tsx` (New)
+- `frontend/src/components/authorization/index.ts` (New)
+- `frontend/src/pages/AccessDeniedPage.tsx` (New)
+- `frontend/src/pages/AuditLogsPage.tsx` (New)
+- `frontend/src/routes/guards.tsx` (New)
+- `frontend/src/routes/paths.ts` (Modified)
+- `frontend/src/routes/index.tsx` (Modified)
+- `frontend/src/components/common/Sidebar.tsx` (Modified)
+- `frontend/src/components/common/Header.tsx` (Modified)
+- `frontend/src/tests/authorization.test.ts` (New)
+- `frontend/src/tests/auditService.test.ts` (New)
+- `frontend/src/tests/authorizationComponents.test.tsx` (New)
+- `PROJECT_STATE.md` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Verification & Tests Executed
+- [x] TypeScript strict typecheck passed: `npx tsc --noEmit` → **0 errors**
+- [x] ESLint linting passed: `npm run lint` → **0 errors, 0 warnings**
+- [x] Full Vitest test suite passed: `npm test -- --run` → **109/109 tests OK (100%)**
+- [x] Vite production build passed: `npm run build` → **1,715 modules transformed, 0 errors**
+- [x] Feature branch: `agent/frontend/feature/phase-1.6-role-management-authorization`
+
+#### Target Receiving Agent
+- **Member 4 (DevOps Lead)**: Phase 1.6 security test suites, cross-tenant penetration tests, privilege escalation validation, and Playwright E2E testing for role-gated routes.
+
+#### Required Action for Receiving Agent
+- **Member 4**:
+  1. Add Playwright E2E tests validating that unprivileged roles attempting to access `/organization/settings` or `/audit/logs` are redirected to `/access-denied` with appropriate error codes.
+  2. Validate that OrgAdmin and SuperAdmin can view `/audit/logs` with real-time audit records.
+
+
 

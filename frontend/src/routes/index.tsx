@@ -53,9 +53,18 @@ const OrgSettingsPage = lazy(() =>
 const AcceptInvitationPage = lazy(() =>
   import('@/pages/AcceptInvitationPage').then((m) => ({ default: m.AcceptInvitationPage }))
 );
+const AccessDeniedPage = lazy(() =>
+  import('@/pages/AccessDeniedPage').then((m) => ({ default: m.AccessDeniedPage }))
+);
+const AuditLogsPage = lazy(() =>
+  import('@/pages/AuditLogsPage').then((m) => ({ default: m.AuditLogsPage }))
+);
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 );
+
+import { RequirePermission, RequireRole } from '@/routes/guards';
+import { Permission } from '@/types/permission';
 
 const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
   <Suspense
@@ -117,16 +126,38 @@ export const router = createBrowserRouter([
       {
         path: 'organization/setup',
         element: (
-          <SuspenseWrapper>
-            <OrgSetupPage />
-          </SuspenseWrapper>
+          <RequireRole allowedRoles={['OrgAdmin', 'SuperAdmin']}>
+            <SuspenseWrapper>
+              <OrgSetupPage />
+            </SuspenseWrapper>
+          </RequireRole>
         ),
       },
       {
         path: 'organization/settings',
         element: (
+          <RequirePermission permission={Permission.ORGANIZATION_SETTINGS}>
+            <SuspenseWrapper>
+              <OrgSettingsPage />
+            </SuspenseWrapper>
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'audit/logs',
+        element: (
+          <RequirePermission permission={Permission.AUDIT_READ}>
+            <SuspenseWrapper>
+              <AuditLogsPage />
+            </SuspenseWrapper>
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'access-denied',
+        element: (
           <SuspenseWrapper>
-            <OrgSettingsPage />
+            <AccessDeniedPage />
           </SuspenseWrapper>
         ),
       },
