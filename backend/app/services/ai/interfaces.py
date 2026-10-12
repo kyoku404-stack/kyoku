@@ -3,6 +3,7 @@
 Owner: Member 1 (Project Lead & AI Architect)
 Domain: /backend/app/services/ai
 Specification: devdocs/p1/p1.2.txt (Chapters 10, 11, 16, 17, 19)
+             devdocs/p1/p1.6.txt (Chapters 3-14, 18) — Phase 1.6 Authorization Framework
 """
 
 from abc import ABC, abstractmethod
@@ -78,6 +79,28 @@ class AIPermission(str, Enum):
     MEMBER_UPDATE = "member:update"
     MEMBER_REMOVE = "member:remove"
 
+    # Phase 1.6 Resource-Level Authorization & Policy Engine
+    DOCUMENT_CREATE = "document.create"
+    DOCUMENT_READ = "document.read"
+    DOCUMENT_UPDATE = "document.update"
+    DOCUMENT_DELETE = "document.delete"
+    PROJECT_MANAGE = "project.manage"
+    MEETING_CREATE = "meeting.create"
+    MEETING_READ = "meeting.read"
+    MEETING_MANAGE = "meeting.manage"
+    AI_CHAT = "ai.chat"
+    AI_SEARCH = "ai.search"
+    AI_ADMIN = "ai.admin"
+    AI_CONFIG = "ai.config"
+    ORGANIZATION_MANAGE = "organization.manage"
+    ORGANIZATION_SETTINGS = "organization.settings"
+    USER_INVITE = "user.invite"
+    USER_MANAGE = "user.manage"
+    USER_VIEW = "user.view"
+    ANALYTICS_VIEW = "analytics.view"
+    ANALYTICS_EXPORT = "analytics.export"
+    AUDIT_READ = "audit.read"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -89,6 +112,13 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.TEAM_READ.value,
     AIPermission.PROJECT_READ.value,
     AIPermission.MEMBER_READ.value,
+    # Phase 1.6 action-based permissions
+    AIPermission.DOCUMENT_READ.value,
+    AIPermission.MEETING_READ.value,
+    AIPermission.AI_CHAT.value,
+    AIPermission.AI_SEARCH.value,
+    AIPermission.USER_VIEW.value,
+    AIPermission.ANALYTICS_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -101,6 +131,9 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     AIPermission.PROJECT_CREATE.value,
     AIPermission.PROJECT_UPDATE.value,
     AIPermission.INVITATION_READ.value,
+    # Phase 1.6 action-based permissions
+    AIPermission.DOCUMENT_CREATE.value,
+    AIPermission.DOCUMENT_UPDATE.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -111,6 +144,12 @@ PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.PROJECT_DELETE.value,
     AIPermission.PROJECT_MEMBERSHIP.value,
     AIPermission.INVITATION_CREATE.value,
+    # Phase 1.6 action-based permissions
+    AIPermission.DOCUMENT_DELETE.value,
+    AIPermission.PROJECT_MANAGE.value,
+    AIPermission.MEETING_CREATE.value,
+    AIPermission.MEETING_MANAGE.value,
+    AIPermission.USER_INVITE.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
@@ -128,6 +167,14 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.INVITATION_REVOKE.value,
     AIPermission.MEMBER_UPDATE.value,
     AIPermission.MEMBER_REMOVE.value,
+    # Phase 1.6 action-based permissions
+    AIPermission.ORGANIZATION_MANAGE.value,
+    AIPermission.ORGANIZATION_SETTINGS.value,
+    AIPermission.USER_MANAGE.value,
+    AIPermission.AI_ADMIN.value,
+    AIPermission.AI_CONFIG.value,
+    AIPermission.ANALYTICS_EXPORT.value,
+    AIPermission.AUDIT_READ.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
@@ -146,6 +193,151 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     "OrgAdmin": ORG_ADMIN_PERMISSIONS,
     "SuperAdmin": SUPER_ADMIN_PERMISSIONS,
 }
+
+
+# ---------------------------------------------------------------------------
+# Phase 1.6 — Authorization Domain Contracts
+# ---------------------------------------------------------------------------
+
+
+class ResourceType(str, Enum):
+    """Resource types subject to authorization policy evaluation."""
+
+    DOCUMENT = "document"
+    PROJECT = "project"
+    TEAM = "team"
+    DEPARTMENT = "department"
+    MEETING = "meeting"
+    CHAT_SESSION = "chat_session"
+    AI_QUERY = "ai_query"
+    ORGANIZATION = "organization"
+    MEMBER = "member"
+    INVITATION = "invitation"
+
+
+@dataclass
+class ResourceAuthorizationContext:
+    """Full context for evaluating a single resource-level authorization decision.
+
+    Combines caller identity (role, tenant, memberships) with target resource
+    ownership and organizational metadata for policy engine evaluation.
+    """
+
+    # Caller identity
+    caller_id: UUID
+    caller_role: str
+    caller_org_id: UUID
+    caller_project_ids: set[UUID] = field(default_factory=set)
+    caller_team_ids: set[UUID] = field(default_factory=set)
+    caller_dept_id: UUID | None = None
+
+    # Target resource metadata
+    resource_id: UUID = field(default_factory=lambda: __import__('uuid').uuid4())
+    resource_type: ResourceType = ResourceType.DOCUMENT
+    resource_org_id: UUID = field(default_factory=lambda: __import__('uuid').uuid4())
+    resource_owner_id: UUID | None = None
+    resource_project_id: UUID | None = None
+    required_permission: str = ""
+
+
+@dataclass
+class AuthorizationDecision:
+    """Result of a policy engine authorization evaluation."""
+
+    allowed: bool
+    reason: str = ""
+    error_code: str | None = None
+    required_permission: str = ""
+    resource_type: str = ""
+
+    @classmethod
+    def allow(cls, reason: str = "Permission granted") -> "AuthorizationDecision":
+        """Constructs an ALLOW decision."""
+        return cls(allowed=True, reason=reason)
+
+    @classmethod
+    def deny(
+        cls,
+        error_code: str,
+        reason: str = "Permission denied",
+        required_permission: str = "",
+        resource_type: str = "",
+    ) -> "AuthorizationDecision":
+        """Constructs a DENY decision with a structured error code."""
+        return cls(
+            allowed=False,
+            reason=reason,
+            error_code=error_code,
+            required_permission=required_permission,
+            resource_type=resource_type,
+        )
+
+
+class BaseAuthorizationPolicyEngine(ABC):
+    """Abstract interface for centralized authorization policy evaluation.
+
+    Implements the 7-step authorization pipeline defined in
+    docs/Architecture/authorization-architecture.md Section 2:
+    tenant boundary -> permission check -> ownership override -> project membership.
+    """
+
+    @abstractmethod
+    def evaluate_access(
+        self,
+        context: ResourceAuthorizationContext,
+    ) -> AuthorizationDecision:
+        """Evaluates all authorization rules for a single resource access request.
+
+        Args:
+            context: Full caller identity + resource metadata context.
+
+        Returns:
+            AuthorizationDecision with allowed flag, reason, and error_code.
+        """
+
+    @abstractmethod
+    def evaluate_bulk_access(
+        self,
+        contexts: list[ResourceAuthorizationContext],
+    ) -> list[AuthorizationDecision]:
+        """Evaluates authorization for a batch of resource access requests.
+
+        Used to filter search results and list endpoints by access rights.
+
+        Args:
+            contexts: List of individual resource authorization contexts.
+
+        Returns:
+            Ordered list of AuthorizationDecision, one per input context.
+        """
+
+
+class BaseResourceOwnershipChecker(ABC):
+    """Abstract interface for evaluating resource ownership bypass rules.
+
+    Certain resources grant additional permissions to the user who created them
+    (e.g., document uploader can delete their own document regardless of role).
+    """
+
+    @abstractmethod
+    def is_owner(
+        self,
+        caller_id: UUID,
+        resource_type: ResourceType,
+        resource_id: UUID,
+        organization_id: UUID,
+    ) -> bool:
+        """Returns True if caller is the designated owner of the target resource.
+
+        Args:
+            caller_id: Authenticated user's UUID.
+            resource_type: Type of the resource being evaluated.
+            resource_id: UUID of the target resource.
+            organization_id: Tenant boundary for the lookup.
+
+        Returns:
+            True if the caller owns the resource, False otherwise.
+        """
 
 
 class WorkspaceScopeLevel(str, Enum):

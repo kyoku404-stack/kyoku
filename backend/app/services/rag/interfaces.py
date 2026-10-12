@@ -64,6 +64,7 @@ class RetrievalResult:
     page_number: int | None = None
     chunk_index: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
+    organization_id: UUID | None = None
     department_id: UUID | None = None
     team_id: UUID | None = None
     project_id: UUID | None = None
@@ -602,5 +603,29 @@ class BaseWorkspaceMemoryRouter(ABC):
         security_context: RAGSecurityContext,
     ) -> list[RetrievalResult]:
         """Prunes candidate document chunks not authorized for the requesting user's workspace scope."""
+
+
+class BaseAIAuthorizationFilter(ABC):
+    """Abstract interface for authorization-aware AI retrieval filtering.
+
+    Enforces resource-level permissions and tenant boundary on RAG candidates
+    and Knowledge Graph entity traversals before context assembly (devdocs/p1/p1.6.txt Ch 14).
+    """
+
+    @abstractmethod
+    def filter_knowledge_candidates(
+        self,
+        candidates: list[RetrievalResult],
+        security_context: RAGSecurityContext,
+    ) -> list[RetrievalResult]:
+        """Prunes RAG candidates to only those authorized for the caller."""
+
+    @abstractmethod
+    def authorize_kg_traversal(
+        self,
+        entities: list[KGEntityRecord],
+        security_context: RAGSecurityContext,
+    ) -> list[KGEntityRecord]:
+        """Filters KG entities to only those from caller-accessible documents."""
 
 

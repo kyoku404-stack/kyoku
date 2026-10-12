@@ -1537,3 +1537,73 @@ COMPLETED ✓ — MANDATORY HUMAN GATING STOP
 #### Required Action for Receiving Agent
 - Human team review and PR merge of `agent/devops/feature/phase-1.5-org-seed-audit-integration-testing` into `main`.
 - Create Phase 1.6 kick-off prompt using `docs/templates/MASTER_SUBPHASE_PROMPT.md` for each of the 4 members.
+
+---
+
+## Entry #018: Phase 1.6 — Master Authorization Architecture Specification, Permission Model & AI Retrieval Contracts
+
+### Date
+2026-10-12
+
+### Author Agent
+Member 1 (Project Lead & AI Architect)
+
+### Status
+COMPLETED ✓ — READY FOR MEMBER 2 (BACKEND LEAD)
+
+### Implemented Features
+- **Master Authorization Architecture Specification**:
+  - Authored `docs/Architecture/authorization-architecture.md` detailing the 7-step authorization pipeline (JWT validation -> user/tenant resolution -> role/permission loading -> hard tenant isolation check -> policy engine evaluation -> resource ownership check -> audit log emission).
+  - Defined granular action-based permissions model (`document.*`, `project.*`, `meeting.*`, `ai.*`, `organization.*`, `user.*`, `analytics.*`, `audit.*`).
+  - Defined canonical hierarchical role-to-permission mapping for `Viewer`, `Member` / `Employee`, `ProjectManager`, `OrgAdmin`, and `SuperAdmin`.
+  - Defined resource-level authorization model, `ResourceAuthorizationContext`, and ownership override bypass table.
+  - Specified AI retrieval authorization requirements (RAG search candidate filtering and Knowledge Graph entity traversal scoping).
+  - Outlined standardized authorization error codes (`AUTH_PERMISSION_DENIED`, `AUTH_ROLE_REQUIRED`, `AUTH_RESOURCE_FORBIDDEN`, `AUTH_ORGANIZATION_MISMATCH`, `AUTH_POLICY_FAILED`).
+  - Defined immutable authorization audit logging taxonomy (`PERMISSION_GRANTED`, `PERMISSION_DENIED`) for `activity_logs`.
+- **Architectural Decision Records (ADRs)**:
+  - Authored ADR-017 (Action-Based Permission Model & Hierarchical Role Mapping) in `docs/decisions/decisions.md`.
+  - Authored ADR-018 (Resource-Level Authorization & Ownership Bypass Policy) in `docs/decisions/decisions.md`.
+  - Authored ADR-019 (AI Retrieval Authorization Filtering & KG Traversal Scoping) in `docs/decisions/decisions.md`.
+- **API Contracts Specification Update**:
+  - Updated `docs/API/api-contract.md` with Section 3.5: Authorization Error Responses & Policy Enforcement (`ApiErrorResponse` schema and 5 standard `AUTH_*` error codes).
+  - Enriched Table 4 (API Endpoints Registry, Ownership & Authorization Controls) with required permissions for all platform endpoints.
+- **Database Schema Specification Update**:
+  - Updated `docs/Database/database-schema.md` Section 3.10 `activity_logs` table with authorization event actions (`PERMISSION_GRANTED`, `PERMISSION_DENIED`) and `metadata_json` structure.
+- **AI & RAG Service Contracts**:
+  - `backend/app/services/ai/interfaces.py`: Added `ResourceType` enum (10 domains), `ResourceAuthorizationContext` dataclass, `AuthorizationDecision` dataclass (with `allow()` and `deny()` factories), `BaseAuthorizationPolicyEngine` abstract interface, `BaseResourceOwnershipChecker` abstract interface, and expanded `AIPermission` with all Phase 1.6 action-based permissions mapped across all 5 roles.
+  - `backend/app/services/ai/__init__.py`: Exported all Phase 1.6 authorization domain types.
+  - `backend/app/services/rag/interfaces.py`: Added `BaseAIAuthorizationFilter` abstract interface with `filter_knowledge_candidates()` and `authorize_kg_traversal()`; extended `RetrievalResult` dataclass with `organization_id` for hard tenant validation.
+  - `backend/app/services/rag/__init__.py`: Exported `BaseAIAuthorizationFilter`.
+- **Unit Testing Suite**:
+  - Authored `tests/unit/test_authorization_ai_contracts.py` with 12 comprehensive unit tests covering `ResourceType`, `ResourceAuthorizationContext`, `AuthorizationDecision`, action-based `AIPermission` values, 5-tier role inheritance, mock `BaseAuthorizationPolicyEngine` (cross-tenant rejection, permission checking, ownership override, project scoping, bulk evaluation), mock `BaseResourceOwnershipChecker`, and mock `BaseAIAuthorizationFilter` (RAG chunk pruning and KG entity gating).
+  - 12/12 new tests passing (20/20 total AI contracts unit tests passing).
+  - Ruff lint clean (0 errors).
+
+### Files Modified / Created
+- `docs/Architecture/authorization-architecture.md` — Master Phase 1.6 architecture specification (New)
+- `docs/decisions/decisions.md` — Added ADR-017, ADR-018, ADR-019
+- `docs/API/api-contract.md` — Added Section 3.5 and enriched Section 4 endpoint registry
+- `docs/Database/database-schema.md` — Updated Section 3.10 audit trail for authorization
+- `backend/app/services/ai/interfaces.py` — Added Phase 1.6 permissions, enums, contexts, and abstract engines
+- `backend/app/services/ai/__init__.py` — Exported Phase 1.6 authorization contracts
+- `backend/app/services/rag/interfaces.py` — Added `BaseAIAuthorizationFilter` and `organization_id` on `RetrievalResult`
+- `backend/app/services/rag/__init__.py` — Exported `BaseAIAuthorizationFilter`
+- `tests/unit/test_authorization_ai_contracts.py` — New unit test suite (12 tests)
+- `PROJECT_STATE.md` — Updated to Phase 1.6 Member 1 completion
+- `docs/handoffs/agent-handoffs.md` — Appended Entry #018
+
+### Verification & Tests Executed
+- [x] Unit test suite passed: `pytest tests/unit/test_authorization_ai_contracts.py -v` → **12/12 PASSED**
+- [x] Workspace contracts test suite passed: `pytest tests/unit/test_workspace_ai_contracts.py -v` → **8/8 PASSED**
+- [x] Total AI contracts test suite: **20/20 PASSED (100%)**
+- [x] Linter passed: `ruff check backend/app/services/ai backend/app/services/rag tests/unit/test_authorization_ai_contracts.py` → **0 errors**
+- [x] Feature branch: `agent/backend/feature/phase-1.6-authorization-ai-contracts`
+
+#### Target Receiving Agent
+- **Member 2 (Backend Lead)**: Implement concrete `AuthorizationPolicyEngine` in `backend/app/core/authorization.py`, `require_permission` dependency in `backend/app/api/dependencies/authorization.py`, ownership checking in services, wire middleware into protected endpoints, and emit audit logs.
+- **Member 3 (Frontend Lead)**: Build role-aware UI guards, conditional action buttons, and `AccessDeniedPage` (403 handler).
+- **Member 4 (DevOps Lead)**: Author integration test suite for protected endpoints, cross-tenant isolation, and privilege escalation tests.
+
+#### Required Action for Receiving Agent
+- **Member 2**: Reference `docs/Architecture/authorization-architecture.md` Section 8.2 and implement the concrete policy engine and FastAPI permission dependency.
+

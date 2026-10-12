@@ -344,19 +344,19 @@ Models interconnected enterprise semantic entities and relations in PostgreSQL.
 ---
 
 ### 3.10 `activity_logs` Table (Audit Trail)
-Immutable security and audit event logging.
+Immutable security and audit event logging. Captures authentication, workspace operations, and all Phase 1.6 authorization verdicts (`PERMISSION_GRANTED` and `PERMISSION_DENIED`).
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique audit event identifier |
 | `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` | Tenant boundary |
 | `user_id` | `UUID` | NULL, FK -> `users.id` | Actor user ID (NULL for system events) |
-| `action` | `VARCHAR(100)` | NOT NULL | Action name (e.g. `USER_LOGIN`, `DOCUMENT_UPLOAD`, `AI_QUERY`) |
-| `resource_type` | `VARCHAR(100)` | NOT NULL | Target entity type (`document`, `user`, `chat`) |
+| `action` | `VARCHAR(100)` | NOT NULL | Action name (e.g. `USER_LOGIN`, `PERMISSION_GRANTED`, `PERMISSION_DENIED`, `DOCUMENT_UPLOAD`, `AI_QUERY`) |
+| `resource_type` | `VARCHAR(100)` | NOT NULL | Target entity type (`document`, `project`, `meeting`, `organization`, `chat_session`, `user`) |
 | `resource_id` | `VARCHAR(255)` | NULL | Target entity UUID string |
 | `ip_address` | `VARCHAR(45)` | NULL | Client IP address |
 | `user_agent` | `VARCHAR(512)` | NULL | Client user agent string |
-| `metadata_json` | `JSONB` | NOT NULL, Default `'{}'::jsonb` | Detailed event payload |
+| `metadata_json` | `JSONB` | NOT NULL, Default `'{}'::jsonb` | Detailed event payload (e.g. `{"required_permission": "document.delete", "decision": "ALLOW", "error_code": null, "reason": "owner_override"}`) |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Event timestamp |
 
 ---
