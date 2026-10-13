@@ -1606,7 +1606,6 @@ COMPLETED ✓ — READY FOR MEMBER 2 (BACKEND LEAD)
 
 #### Required Action for Receiving Agent
 - **Member 2**: Reference `docs/Architecture/authorization-architecture.md` Section 8.2 and implement the concrete policy engine and FastAPI permission dependency.
-
 ---
 
 ## Entry #019: Phase 1.6 — Concrete RBAC Policy Engine, Authorization Dependencies, Endpoint Protection & Security Audit Logging
@@ -1858,6 +1857,92 @@ COMPLETED ✓ — MANDATORY HUMAN GATING STOP
 - Human team review and PR merge of `agent/devops/feature/phase-1.6-rbac-security-audit-testing` into `main`.
 - Awaiting human authorization before proceeding to the next sub-phase (Phase 1.8 Document Processing & Ingestion Pipeline).
 
+---
 
+## Entry #022: Phase 1.7 — Dashboard Architecture & AI Widget Integration Design
 
+#### Date
+2026-10-13
 
+#### Author Agent
+Member 1 (Project Lead & AI Architect)
+
+#### Status
+COMPLETED — Ready for Member 2 (Backend Lead) and Member 3 (Frontend Lead) Implementation
+
+#### Implemented Features
+
+**1. Master Dashboard Architecture Specification** (`docs/Architecture/dashboard-architecture.md`):
+- Full dashboard request lifecycle diagram: JWT auth -> authorization gate -> parallel widget API calls -> skeleton render -> progressive hydration.
+- Complete React component hierarchy: DashboardLayout, TopNavBar (OrganizationLogo, GlobalSearchBar, NotificationBell, AIQuickAccessButton, ThemeSwitcher, UserProfileMenu), Sidebar (11 nav items with role filtering), MainWorkspace (WelcomeSection, KPICardGrid, ActivityFeedWidget, ProjectsWidget, DocumentsWidget, AIAssistantWidget, NotificationsWidget, AnalyticsWidget).
+- Authoritative TypeScript interface contracts for all 6 widget data shapes (DashboardSummary, ActivityEvent, ProjectSummary, DocumentSummary, Notification, AnalyticsSummary).
+- DashboardContext interface and 6 widget custom hook signatures (useDashboardSummary, useActivityFeed, useRecentProjects, useRecentDocuments, useNotifications, useAnalyticsSummary).
+- PermissionGate widget rendering pattern with concrete examples.
+- AI Assistant widget finite state machine (IDLE -> TYPING -> LOADING -> STREAMING -> COMPLETE -> ERROR).
+- AI widget stub contract and Phase 2.x roadmap (2.1 ingestion, 2.2 RAG, 2.3 meetings, 2.5 KG, 3.1 enterprise search).
+- Role-based navigation permission table (5 roles x 11 nav items) with PermissionGate enforcement rule.
+- Full CSS custom properties token layer for Light and Dark themes (14 tokens each, Indigo/Violet brand accent).
+- Theme persistence via localStorage key `keep_theme`, FOUC prevention strategy.
+- Responsive layout breakpoints: Desktop (>= 1280px, 3-col), Tablet (768-1279px, 2-col), Mobile (< 768px, 1-col + bottom nav).
+- Performance targets: < 100ms skeleton, < 500ms critical path, < 2000ms full load; 6-widget client-side TTL cache strategy.
+- Redis backend cache directives: `dashboard:{user_id}:{org_id}` TTL 60s, `analytics:{org_id}:{period}` TTL 300s.
+- WCAG 2.1 AA accessibility requirements table (8 requirements with implementation specifications).
+- Global search architecture with debounce, 4-type scope, and SearchResultItem contract.
+- Security considerations: authorization backend enforcement, notification XSS prevention, AI query sanitization, CSRF, rate limiting.
+- Per-member testing contracts (Member 3 Vitest: 5 test cases per widget; Member 2 Pytest: 4 test cases per endpoint; Member 4 Playwright: 5 E2E scenarios).
+
+**2. Architecture Decision Records** (appended to `docs/decisions/decisions.md`):
+- ADR-020: Dashboard Widget-Level API Independence — Parallel widget calls over monolithic endpoint; enables independent caching, error boundaries, and progressive hydration.
+- ADR-021: CSS Custom Properties Token Layer for Theme Management — Single :root token layer over CSS-in-JS or duplicate files; enables future org branding with zero component changes.
+- ADR-022: AI Assistant Widget as Integration Shell — Stub SSE endpoint strategy ensures Phase 1.7 frontend SSE client is fully exercised; Phase 2.2 replaces stub with zero frontend changes.
+
+**3. API Contract Section 5** (appended to `docs/API/api-contract.md`):
+- GET /api/v1/dashboard — Dashboard summary with user, org, KPI data (Redis TTL 60s).
+- GET /api/v1/activity — Paginated activity feed with actor, action, resource, occurred_at.
+- GET /api/v1/projects/recent — Recent projects with progress, priority, deadline, team members.
+- GET /api/v1/documents/recent — Recent documents with file_type, uploaded_by, ai_summary_available.
+- GET /api/v1/notifications — Paginated notifications; PATCH mark-read and POST read-all related endpoints.
+- GET /api/v1/analytics/summary — Time-series analytics (ADMIN/ORG_ADMIN only; Redis TTL 300s).
+- POST /api/v1/ai/query — SSE stub (Phase 1.7); full RAG in Phase 2.2; rate-limited 60/hr/user.
+- GET /api/v1/search — Full-text search across projects, documents, users, teams (org-scoped).
+
+#### Files Modified / Created
+- `docs/Architecture/dashboard-architecture.md` (CREATED — master Phase 1.7 spec)
+- `docs/decisions/decisions.md` (MODIFIED — ADR-020, ADR-021, ADR-022 appended)
+- `docs/API/api-contract.md` (MODIFIED — Section 5 dashboard & AI widget endpoints appended)
+- `PROJECT_STATE.md` (MODIFIED — Phase 1.7 status, Dashboard Architecture row added, API contracts row updated)
+
+#### API Contracts Updated
+- `[GET]  /api/v1/dashboard`
+- `[GET]  /api/v1/activity`
+- `[GET]  /api/v1/projects/recent`
+- `[GET]  /api/v1/documents/recent`
+- `[GET]  /api/v1/notifications`
+- `[PATCH] /api/v1/notifications/{id}/read`
+- `[POST]  /api/v1/notifications/read-all`
+- `[GET]  /api/v1/analytics/summary`
+- `[POST] /api/v1/ai/query`
+- `[GET]  /api/v1/search`
+
+#### Database Changes / Migrations
+- None. Phase 1.7 Member 1 deliverables are documentation and architectural contracts only. Member 2 may require minor schema additions for notification storage if not already covered by `activity_logs` in Phase 1.5/1.6.
+
+#### Verification & Tests Executed
+- [x] All documents written and verified for content correctness.
+- [x] TypeScript interface contracts verified consistent with Phase 1.6 enums (UserRole, ResourceType).
+- [x] API contract shapes validated against Phase 1.5 pagination envelope (PaginatedData[T]).
+- [x] ADRs cross-referenced with ADR-001 (monorepo), ADR-002 (tech stack), ADR-011 (auth), ADR-017 (RBAC) for consistency.
+- [x] Branch: `agent/ai-lead/feature/phase-1.7-dashboard-architecture` created and all files committed.
+
+#### Known Issues / Technical Debt
+- The `notifications` table may need to be added as a dedicated table by Member 2 if not already present in the Phase 1.5 schema (currently activity_logs handles system events but user-targeted notifications may need a separate model).
+- `ai_queries_today` KPI requires an AI query logging mechanism — Member 2 should add a counter to the stub endpoint that writes to Redis with a 24h TTL per user.
+
+#### Target Receiving Agent
+- **Member 2 (Backend Lead)**: Implement all 8 dashboard API endpoints, notification service, Redis caching, and stub AI query SSE endpoint per Section 5 of `docs/API/api-contract.md`.
+- **Member 3 (Frontend Lead)**: Build all dashboard UI components, DashboardContext, custom hooks, theme system, and responsive CSS per `docs/Architecture/dashboard-architecture.md`.
+
+#### Required Action for Receiving Agent
+**Member 2**: Read `docs/Architecture/dashboard-architecture.md` Sections 3, 9.3, 12 and implement all 8 endpoints in `docs/API/api-contract.md` Section 5. Wire Redis caching with specified TTLs. Implement SSE stub for `/api/v1/ai/query`. Author Pytest unit tests per Section 13.2.
+
+**Member 3**: Read `docs/Architecture/dashboard-architecture.md` Sections 2.2, 3–8 and build the complete dashboard component tree. Create `frontend/src/styles/tokens.css` with the token layer from Section 7.1. Implement DashboardContext, 6 widget hooks, PermissionGate wrappers, and responsive CSS grid. Author Vitest tests per Section 13.1.
