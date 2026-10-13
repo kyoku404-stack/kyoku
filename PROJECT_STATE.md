@@ -4,7 +4,7 @@
 Phase 1 — Core Platform Foundation
 
 ## Current Sub-Phase
-Phase 1.6 — User Role Management & Authorization Framework
+Phase 1.7 — Dashboard Development & User Experience
 
 ## Repository Health
 GREEN
@@ -56,6 +56,12 @@ Phase 1.6 Member 4 (DevOps & Integration Lead) deliverables are COMPLETED:
 - Built automated test orchestration script `scripts/test-authz.sh` supporting targeted test suite execution (`unit`, `integration`, `security`, `audit`, `perf`, `frontend`, `e2e`, `all`) with ANSI status reporting.
 - Verified 100% test pass rate across 365 monorepo tests (256 backend + 109 frontend tests OK), 0 ruff errors, 0 ESLint warnings, and clean frontend build.
 
+Phase 1.7 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Dashboard Architecture Specification (`docs/Architecture/dashboard-architecture.md`) defining the full dashboard component hierarchy, widget-level API independence architecture, TypeScript data contracts for all 6 widget endpoints, AI Assistant widget states and stub/live integration strategy, role-based navigation permission table, CSS token-layer theming system, responsive layout breakpoints, performance loading targets (< 2s full load, < 500ms widget refresh), WCAG 2.1 AA accessibility requirements, global search architecture, security considerations, and per-member testing contracts.
+- Authored Architecture Decision Records ADR-020 (Dashboard Widget-Level API Independence), ADR-021 (CSS Custom Properties Token Layer for Theme Management), and ADR-022 (AI Assistant Widget as Integration Shell — Phase 1.7 Stub Strategy) in `docs/decisions/decisions.md`.
+- Expanded official REST API Contract (`docs/API/api-contract.md`) with Section 5 (Dashboard & AI Widget API Contracts), defining 8 new endpoints: `GET /api/v1/dashboard`, `GET /api/v1/activity`, `GET /api/v1/projects/recent`, `GET /api/v1/documents/recent`, `GET /api/v1/notifications`, `GET /api/v1/analytics/summary`, `POST /api/v1/ai/query` (stub), and `GET /api/v1/search` with full request/response shapes, authorization rules, caching directives, and error codes.
+- Defined AI Assistant widget Phase 2.x integration roadmap (Phase 2.1 ingestion → Phase 2.2 RAG → Phase 2.3 meetings → Phase 2.5 KG → Phase 3.1 enterprise search) to guide future agents. Ready for Member 2 (Backend Lead) to implement dashboard endpoints and Member 3 (Frontend Lead) to build the dashboard UI.
+
 ---
 
 ## Progress Matrix
@@ -65,8 +71,9 @@ Phase 1.6 Member 4 (DevOps & Integration Lead) deliverables are COMPLETED:
 | **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.1 / 1.2 Baseline | `ARCHITECTURE.md`, `docs/Architecture/backend-architecture.md`, ADR-001 - ADR-009 |
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
 | **Authorization Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 Architecture | `docs/Architecture/authorization-architecture.md`, ADR-017 - ADR-019 |
+| **Dashboard Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.7 Architecture | `docs/Architecture/dashboard-architecture.md`, ADR-020 - ADR-022 |
 | **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 AI Authorization | Typed security contracts in `services/rag/` & `services/ai/` verified |
-| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.6 Authz Registry | `docs/API/api-contract.md` updated with Section 3.5 & endpoint permissions |
+| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.7 Dashboard Endpoints | `docs/API/api-contract.md` updated with Section 5 (8 dashboard + AI query + search endpoints) |
 | **Backend Architecture & APIs** | COMPLETED (Phase 1.6) | Member 2 (Backend Lead) | Phase 1.6 RBAC Engine & APIs | 7-step engine, dependencies, audit logs & doc delete verified (228/228 tests OK) |
 | **Frontend Application** | COMPLETED (Phase 1.6) | Member 3 (Frontend Lead) | Phase 1.6 Role-Aware UI | Role-aware UI, PermissionGate, RoleGate, AccessDeniedPage, AuditLogsPage (109/109 tests OK) |
 | **Database & Persistence Layer** | COMPLETED (Phase 1.6) | Member 2, 3 & 4 | Phase 1.6 Activity Logging | Activity logs queryable, ORM models, Repositories, Alembic migrations ready |
@@ -197,9 +204,9 @@ None.
 ---
 
 ## Last Updated
-2026-10-12
+2026-10-13
 
 ## Last Updated By
-Member 4 — DevOps & Integration Lead
+Member 1 — Project Lead & AI Architect
 
 

@@ -743,3 +743,342 @@ The Frontend Lead (Member 3) completed a comprehensive contract conformance revi
 - **Upload File Size Limits**: Ensure 413 / `FILE_SIZE_EXCEEDED` returns clear `max_bytes` in `details` for client-side toast notifications.
 - **Token Refresh Expiration Window**: The `expires_in` field is utilized by the frontend to trigger proactive silent token refreshes before expiration.
 
+
+---
+
+## Section 5 — Dashboard & AI Widget API Contracts (Phase 1.7)
+
+> **Approved by**: Member 1 (Project Lead & AI Architect)
+> **Implementer**: Member 2 (Backend Lead)
+> **Consumer**: Member 3 (Frontend Lead)
+> **Reference**: `docs/Architecture/dashboard-architecture.md` Section 3, ADR-020, ADR-022
+
+---
+
+### 5.1 GET /api/v1/dashboard
+
+**Purpose**: Returns the authenticated user's personalized dashboard summary including user profile, organization metadata, and all KPI counters.
+
+**Authorization**: Any authenticated user (role-specific fields controlled per role).
+
+**Response Shape**:
+```json
+{
+  "success": true,
+  "message": "Dashboard summary retrieved successfully.",
+  "data": {
+    "user": {
+      "id": "uuid",
+      "full_name": "Siddhant Gupta",
+      "email": "siddhant@acme.com",
+      "role": "ORG_ADMIN",
+      "avatar_url": null
+    },
+    "organization": {
+      "id": "uuid",
+      "name": "Acme Corp",
+      "logo_url": null,
+      "plan": "enterprise"
+    },
+    "kpi": {
+      "total_projects": 12,
+      "total_documents": 340,
+      "total_members": 48,
+      "upcoming_meetings": 3,
+      "storage_used_bytes": 5368709120,
+      "storage_quota_bytes": 107374182400,
+      "ai_queries_today": 87
+    },
+    "greeting_time_of_day": "morning"
+  }
+}
+```
+
+**Notes**:
+- `kpi.ai_queries_today` is `0` for roles below ORG_ADMIN.
+- `greeting_time_of_day` is derived from user's timezone stored in organization metadata.
+- Backend Redis cache key: `dashboard:{user_id}:{org_id}`, TTL 60s.
+
+---
+
+### 5.2 GET /api/v1/activity
+
+**Purpose**: Returns a paginated, chronological feed of organizational activity events visible to the authenticated user.
+
+**Authorization**: Any authenticated user (events are tenant-scoped; project-scoped events filtered to visible projects only).
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| page | int | 1 | Page number (1-indexed) |
+| page_size | int | 20 | Items per page (max 50) |
+| filter | string | "all" | Filter by resource type: `all`, `document`, `project`, `meeting`, `user`, `ai_summary` |
+
+**Response Shape**:
+```json
+{
+  "success": true,
+  "message": "Activity feed retrieved successfully.",
+  "data": {
+    "items": [
+      {
+        "id": "uuid",
+        "actor": {
+          "id": "uuid",
+          "full_name": "John Smith",
+          "avatar_url": null
+        },
+        "action": "uploaded",
+        "resource_type": "document",
+        "resource_id": "uuid",
+        "resource_name": "Project Proposal.pdf",
+        "metadata": {},
+        "occurred_at": "2026-10-13T09:30:00Z"
+      }
+    ],
+    "total": 245,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 13
+  }
+}
+```
+
+---
+
+### 5.3 GET /api/v1/projects/recent
+
+**Purpose**: Returns recently updated projects accessible to the authenticated user.
+
+**Authorization**: Any authenticated user (projects scoped to user's membership; ADMINs see all org projects).
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| limit | int | 6 | Maximum number of projects (max 12) |
+
+**Response Shape**:
+```json
+{
+  "success": true,
+  "message": "Recent projects retrieved successfully.",
+  "data": [
+    {
+      "id": "uuid",
+      "name": "AI Platform",
+      "description": "Internal AI tooling project",
+      "status": "active",
+      "priority": "high",
+      "progress_percent": 78,
+      "deadline": "2026-08-15",
+      "team_members": [
+        { "id": "uuid", "full_name": "Alice Chen", "avatar_url": null }
+      ],
+      "document_count": 24,
+      "updated_at": "2026-10-13T08:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 5.4 GET /api/v1/documents/recent
+
+**Purpose**: Returns recently accessed or uploaded documents visible to the authenticated user.
+
+**Authorization**: Any authenticated user (documents scoped to user's project memberships; ADMINs see all org documents).
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| limit | int | 8 | Maximum number of documents (max 20) |
+
+**Response Shape**:
+```json
+{
+  "success": true,
+  "message": "Recent documents retrieved successfully.",
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Q3 Strategy.pdf",
+      "file_type": "pdf",
+      "file_size_bytes": 2048000,
+      "project_id": "uuid",
+      "project_name": "Strategy 2026",
+      "uploaded_by": { "id": "uuid", "full_name": "Sarah Lee" },
+      "uploaded_at": "2026-10-12T14:00:00Z",
+      "last_accessed_at": "2026-10-13T09:00:00Z",
+      "ai_summary_available": false
+    }
+  ]
+}
+```
+
+---
+
+### 5.5 GET /api/v1/notifications
+
+**Purpose**: Returns the authenticated user's notifications, ordered by created_at descending.
+
+**Authorization**: Any authenticated user (notifications are user-scoped — no cross-user leakage).
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| page | int | 1 | Page number |
+| page_size | int | 20 | Items per page (max 50) |
+| unread_only | bool | false | When true, returns only unread notifications |
+
+**Response Shape**:
+```json
+{
+  "success": true,
+  "message": "Notifications retrieved successfully.",
+  "data": {
+    "items": [
+      {
+        "id": "uuid",
+        "type": "info",
+        "title": "New document uploaded",
+        "body": "John uploaded Project Proposal.pdf to AI Platform.",
+        "action_url": "/documents/uuid",
+        "is_read": false,
+        "created_at": "2026-10-13T09:30:00Z"
+      }
+    ],
+    "total": 12,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+**Related Endpoints**:
+- `PATCH /api/v1/notifications/{id}/read` — Mark single notification as read.
+- `POST /api/v1/notifications/read-all` — Mark all notifications as read.
+
+---
+
+### 5.6 GET /api/v1/analytics/summary
+
+**Purpose**: Returns time-series analytics aggregated at the organization level for the selected period.
+
+**Authorization**: ADMIN and ORG_ADMIN roles only. Returns `403 AUTHZ_INSUFFICIENT_ROLE` for all other roles.
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| period | string | "week" | Aggregation period: `week`, `month`, `quarter`, `year` |
+
+**Response Shape**:
+```json
+{
+  "success": true,
+  "message": "Analytics summary retrieved successfully.",
+  "data": {
+    "period": "week",
+    "documents_uploaded": [
+      { "label": "Mon", "value": 12 },
+      { "label": "Tue", "value": 8 }
+    ],
+    "active_users": [
+      { "label": "Mon", "value": 34 }
+    ],
+    "new_members": [
+      { "label": "Mon", "value": 2 }
+    ],
+    "project_distribution": [
+      { "status": "active", "count": 9 },
+      { "status": "on_hold", "count": 2 },
+      { "status": "completed", "count": 5 }
+    ],
+    "ai_usage_trend": [],
+    "search_trend": []
+  }
+}
+```
+
+**Notes**:
+- `ai_usage_trend` and `search_trend` are returned as empty arrays in Phase 1.7 and will be populated in Phase 2.
+- Backend Redis cache key: `analytics:{org_id}:{period}`, TTL 300s.
+
+---
+
+### 5.7 POST /api/v1/ai/query (Phase 1.7 Stub)
+
+**Purpose**: Accepts an AI query and returns a streamed SSE response. In Phase 1.7, returns a canned stub response. In Phase 2.2, this endpoint is replaced with the full RAG pipeline — no frontend changes required.
+
+**Authorization**: Any authenticated user. Rate-limited to 60 requests/hour per user (Redis token bucket).
+
+**Request Body**:
+```json
+{
+  "query": "Summarize this week's activity",
+  "context": {
+    "project_id": null,
+    "document_ids": []
+  },
+  "stream": true
+}
+```
+
+**Response**: `Content-Type: text/event-stream`
+```
+event: token
+data: {"token": "Here is a summary of this week"}
+
+event: token
+data: {"token": " activity: [stub response — AI engine activates in Phase 2.2]."}
+
+event: done
+data: {"sources": [], "query_id": "uuid"}
+```
+
+**Error Codes**:
+| Code | HTTP | Description |
+|------|------|-------------|
+| `AI_RATE_LIMIT_EXCEEDED` | 429 | User has exceeded 60 queries/hour |
+| `AI_QUERY_TOO_LONG` | 422 | Query exceeds 4096 characters |
+| `AI_UNAVAILABLE` | 503 | AI service temporarily unavailable |
+
+---
+
+### 5.8 GET /api/v1/search
+
+**Purpose**: Full-text search across projects, documents, users, and teams within the authenticated user's organization.
+
+**Authorization**: Any authenticated user (results scoped to accessible resources per role).
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| q | string | required | Search query string |
+| type | string | "all" | Filter by type: `all`, `project`, `document`, `user`, `team` |
+| page | int | 1 | Page number |
+| page_size | int | 10 | Results per page (max 20) |
+
+**Response Shape**:
+```json
+{
+  "success": true,
+  "message": "Search completed successfully.",
+  "data": {
+    "query": "AI Platform",
+    "total": 5,
+    "items": [
+      {
+        "type": "project",
+        "id": "uuid",
+        "title": "AI Platform",
+        "subtitle": "Internal AI tooling project — Active",
+        "url": "/projects/uuid",
+        "icon": "project",
+        "relevance_score": 0.95
+      }
+    ]
+  }
+}
+```

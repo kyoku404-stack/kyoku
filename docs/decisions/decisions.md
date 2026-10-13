@@ -562,3 +562,87 @@ Reduces system resource usage during local four-agent test execution.
 
 #### Requires Confirmation
 NO (Implementation detail abstracted via vector service layer)
+
+---
+
+### ADR-020 — Dashboard Widget-Level API Independence
+
+#### Date
+2026-10-13
+
+#### Context
+Phase 1.7 requires a dashboard that loads quickly and remains resilient when individual backend services are slow or temporarily unavailable. A single monolithic `GET /api/v1/dashboard` endpoint would create a hard dependency where one slow data source (e.g., analytics) delays the entire page render.
+
+#### Decision
+Each dashboard widget sources data from its own dedicated endpoint. Six separate endpoints are defined: `/api/v1/dashboard` (summary + KPIs), `/api/v1/activity`, `/api/v1/projects/recent`, `/api/v1/documents/recent`, `/api/v1/notifications`, `/api/v1/analytics/summary`. All six are dispatched in parallel immediately after the dashboard route mounts.
+
+#### Alternatives Considered
+- Single composite endpoint: Rejected — one slow data source delays full page render and prevents partial progressive hydration.
+- GraphQL batching: Rejected — introduces GraphQL dependency not established in the Phase 1.2 tech stack decision (ADR-002).
+
+#### Reason
+Widget-level independence enables: (a) skeleton-first progressive render, (b) independent error boundaries per widget, (c) granular TTL-based caching in Redis, and (d) independent refresh polling intervals (e.g., notifications at 30s vs. analytics at 300s).
+
+#### Impact
+Member 2 implements six dedicated FastAPI endpoints. Member 3 implements six independent widget hooks with individual loading/error/empty states. Member 4 load tests each endpoint independently.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-021 — CSS Custom Properties Token Layer for Theme Management
+
+#### Date
+2026-10-13
+
+#### Context
+Phase 1.7 requires Light, Dark, and System theme support. Future versions will require organization-specific branding. A naive approach of per-component color literals or duplicated CSS classes creates exponential maintenance burden.
+
+#### Decision
+All color, shadow, and spacing values are defined exclusively as CSS custom properties (variables) on `:root[data-theme="light"]` and `:root[data-theme="dark"]` in a dedicated `tokens.css` file. No component CSS file references hardcoded color values. Theme switching is achieved by toggling the `data-theme` attribute on the `<html>` element. The KEEP brand accent is Indigo (#6366F1 light / #818CF8 dark) with Violet (#8B5CF6 / #A78BFA) as secondary.
+
+#### Alternatives Considered
+- CSS-in-JS theme objects: Rejected — adds runtime overhead and a new dependency not in the established stack.
+- Tailwind dark mode: Rejected — Tailwind is not in the established tech stack (ADR-002).
+- Duplicate CSS files per theme: Rejected — leads to maintenance divergence across components.
+
+#### Reason
+A single token layer means organization branding in future phases requires only overriding the `:root[data-theme]` block with organization-specific values — zero component changes needed. Enforces design system consistency.
+
+#### Impact
+Member 3 creates `frontend/src/styles/tokens.css` and a `ThemeSwitcher` component. `DashboardContext` exposes `theme` / `setTheme`. Theme preference persisted in `localStorage` under key `keep_theme`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-022 — AI Assistant Widget as Integration Shell (Phase 1.7 Stub Strategy)
+
+#### Date
+2026-10-13
+
+#### Context
+The AI Assistant widget (Chapter 12 of Phase 1.7 spec) must appear fully functional in the dashboard UI today, but the underlying RAG engine (Phase 2.2), knowledge ingestion pipeline (Phase 2.1), and meeting intelligence (Phase 2.3) are not yet implemented.
+
+#### Decision
+The AI Assistant widget in Phase 1.7 is implemented as a **functional UI shell** with a stub backend endpoint (`POST /api/v1/ai/query`). The stub endpoint:
+- Accepts the identical `AIQueryRequest` payload shape that Phase 2.2 will use.
+- Returns a canned SSE stream: one `token` event with a placeholder response, then a `done` event with an empty `sources` array.
+- Returns HTTP 200 with the correct SSE `Content-Type: text/event-stream` header so the frontend streaming client is exercised end-to-end.
+
+The widget UI is fully implemented: query input, suggested prompts (role-filtered), streaming token display, source citation placeholders, session history panel. When Phase 2.2 activates, the backend stub is replaced with the real RAG pipeline — zero frontend changes required.
+
+#### Alternatives Considered
+- Placeholder UI only (no backend stub): Rejected — frontend SSE streaming client would not be exercised or tested in Phase 1.7; Phase 2 integration would require frontend changes.
+- Mock API at the frontend layer: Rejected — hides real HTTP/SSE contract from integration tests.
+
+#### Reason
+The stub strategy ensures that the exact API contract, SSE streaming protocol, and frontend rendering pipeline are validated in Phase 1.7. The "seam" between Phase 1.7 (UI) and Phase 2.2 (RAG) is tested and provably clean.
+
+#### Impact
+Member 2 implements `POST /api/v1/ai/query` stub with SSE response. Member 3 implements full AI widget UI with EventSource client. Member 4 authors E2E tests that validate the stub SSE stream is received and rendered.
+
+#### Status
+ACCEPTED
