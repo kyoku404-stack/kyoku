@@ -216,6 +216,7 @@ class TestAuthorizationEndpointsIntegration(unittest.TestCase):
         # Verify soft-deleted
         with Session(sync_test_engine) as session:
             d = session.get(Document, doc_id)
+            assert d is not None
             self.assertTrue(d.is_deleted)
 
     def test_document_delete_by_uploader_owner_override(self) -> None:

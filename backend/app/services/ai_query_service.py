@@ -9,6 +9,7 @@ import json
 import re
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
+from typing import Any
 from uuid import UUID, uuid4
 
 from backend.app.api.dependencies.auth import AuthenticatedUser
@@ -86,8 +87,9 @@ class AIQueryService:
             yield f"event: token\ndata: {json.dumps(token_payload)}\n\n"
 
         # Done event with sources list and query ID
-        done_payload = {
-            "sources": [],
+        sources: list[dict[str, Any]] = []
+        done_payload: dict[str, Any] = {
+            "sources": sources,
             "query_id": str(query_id),
         }
         yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"

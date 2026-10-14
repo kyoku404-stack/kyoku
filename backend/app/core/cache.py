@@ -7,7 +7,7 @@ Derived from devdocs/p1/p1.7.txt and docs/Architecture/dashboard-architecture.md
 
 import logging
 import time
-from typing import Any
+from typing import Any, cast
 
 from backend.app.core.config import settings
 
@@ -24,13 +24,13 @@ class CacheManager:
     """Manages Redis cache operations with resilient in-memory fallback."""
 
     def __init__(self) -> None:
-        self._redis_client: Any | None = None
+        self._redis_client: Any = None
         self._in_memory_cache: dict[str, tuple[str, float]] = {}
         self._in_memory_counters: dict[str, tuple[int, float]] = {}
         self._in_memory_rate_limits: dict[str, list[float]] = {}
         self._redis_connected: bool | None = None
 
-    async def get_client(self) -> Any | None:
+    async def get_client(self) -> Any:
         """Lazily initializes and returns the async Redis client."""
         if not HAS_REDIS:
             return None
@@ -46,23 +46,24 @@ class CacheManager:
             except Exception as e:
                 logger.warning(f"Could not initialize Redis client: {e}. Using in-memory fallback.")
                 return None
-        return self._redis_client
+        return cast(Any, self._redis_client)
 
     async def get(self, key: str) -> str | None:
         """Retrieves string value from cache."""
         client = await self.get_client()
         if client:
             try:
-                return await client.get(key)
+                val = await client.get(key)
+                return str(val) if val is not None else None
             except Exception as e:
                 logger.debug(f"Redis get failed for {key}: {e}. Falling back to in-memory.")
 
         # In-memory fallback
         now = time.time()
         if key in self._in_memory_cache:
-            val, expiry = self._in_memory_cache[key]
+            val_mem, expiry = self._in_memory_cache[key]
             if expiry > now:
-                return val
+                return val_mem
             del self._in_memory_cache[key]
         return None
 
@@ -101,8 +102,8 @@ class CacheManager:
             try:
                 keys = await client.keys(pattern)
                 if keys:
-                    deleted = await client.delete(*keys)
-                    return deleted
+                    del_result = await client.delete(*keys)
+                    return int(del_result) if del_result is not None else 0
             except Exception as e:
                 logger.debug(f"Redis delete_pattern failed for {pattern}: {e}.")
 
@@ -122,7 +123,7 @@ class CacheManager:
                 val = await client.incr(key)
                 if val == 1:
                     await client.expire(key, ttl)
-                return val
+                return int(val)
             except Exception as e:
                 logger.debug(f"Redis incr failed for {key}: {e}.")
 
@@ -183,8 +184,9 @@ class CacheManager:
                 pipe.zcard(key)
                 pipe.zadd(key, {str(now): now})
                 pipe.expire(key, window_seconds)
-                _, count, _, _ = await pipe.execute()
-                is_allowed = count < limit
+                results = await pipe.execute()
+                count = int(results[1]) if len(results) > 1 else 0
+                is_allowed = bool(count < limit)
                 remaining = max(0, limit - count)
                 return is_allowed, remaining
             except Exception as e:
