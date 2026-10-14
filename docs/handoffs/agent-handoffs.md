@@ -1946,3 +1946,129 @@ COMPLETED — Ready for Member 2 (Backend Lead) and Member 3 (Frontend Lead) Imp
 **Member 2**: Read `docs/Architecture/dashboard-architecture.md` Sections 3, 9.3, 12 and implement all 8 endpoints in `docs/API/api-contract.md` Section 5. Wire Redis caching with specified TTLs. Implement SSE stub for `/api/v1/ai/query`. Author Pytest unit tests per Section 13.2.
 
 **Member 3**: Read `docs/Architecture/dashboard-architecture.md` Sections 2.2, 3–8 and build the complete dashboard component tree. Create `frontend/src/styles/tokens.css` with the token layer from Section 7.1. Implement DashboardContext, 6 widget hooks, PermissionGate wrappers, and responsive CSS grid. Author Vitest tests per Section 13.1.
+
+---
+
+## Entry #023: Phase 1.7 — Dashboard APIs, Notifications Persistence, Analytics & AI Query Streaming Stub
+
+#### Date
+2026-10-15
+
+#### Author Agent
+Member 2 (Backend & Database Lead)
+
+#### Status
+COMPLETED — Verified with 100% test pass rate (296/296 tests OK). Ready for Member 3 (Frontend Lead) UI integration and Member 4 (DevOps Lead) E2E verification.
+
+#### Implemented Features
+1. **Notifications Persistence & Alembic Migration**:
+   - Authored `Notification` SQLAlchemy ORM model (`backend/app/models/notification.py`) implementing `id`, `organization_id`, `user_id`, `type`, `title`, `body`, `action_url`, `is_read`, soft deletion (`is_deleted`, `deleted_at`), and timestamp mixins.
+   - Configured high-performance indexes: `ix_notifications_user_unread` on `(user_id, is_read)` and `ix_notifications_org_created` on `(organization_id, created_at)`.
+   - Wired two-way cascade relationships in `User` (`user.notifications`) and `Organization` (`organization.notifications`).
+   - Created Alembic migration `backend/migrations/versions/a1b2c3d4e5f6_phase_1_7_notifications.py` (down-revision: `8f1a2b3c4d5e`). Verified clean offline transactional DDL generation.
+   - Enhanced `backend/app/db/seed.py` to seed sample notifications for initial users.
+
+2. **Core Caching, Rate Limiting & Counters Engine (`backend/app/core/cache.py`)**:
+   - Implemented `CacheManager` with asynchronous Redis backend (`redis.asyncio`) and thread-safe in-memory fallback.
+   - Implemented sliding-window Redis rate limiter (`check_rate_limit(key, limit, window_seconds)`).
+   - Implemented atomic counters (`increment_counter`, `get_counter`) with 24-hour TTL for tracking daily AI query volume.
+   - Added `RateLimitExceededException` (HTTP 429) in `backend/app/core/exceptions.py` and new `ErrorCode` constants (`AI_RATE_LIMIT_EXCEEDED`, `AI_QUERY_TOO_LONG`, `AI_UNAVAILABLE`).
+
+3. **Domain Repositories & Data Aggregators**:
+   - `NotificationRepository` (`backend/app/repositories/notification_repo.py`): User-scoped paginated fetching, unread filtering, single notification mark-as-read, and bulk `mark_all_read()` scoped to the authenticated caller.
+   - `DashboardRepository` (`backend/app/repositories/dashboard_repo.py`): Live KPI aggregations (`total_projects`, `total_documents`, `total_members`, `upcoming_meetings`, `storage_used_bytes`), role-scoped recent projects and documents, tenant-isolated activity feed with actor enrichment, time-series analytics, and full-text global search across 4 entity types (`project`, `document`, `user`, `team`).
+
+4. **Domain Services**:
+   - `DashboardService` (`backend/app/services/dashboard_service.py`):
+     - `get_dashboard_summary()`: Aggregates user profile, tenant info, live KPIs, greeting calculated from tenant timezone, and 60-second Redis caching (`dashboard:{user_id}:{org_id}`).
+     - `get_activity_feed()`: Paginated chronological tenant activity feed with event filtering.
+     - `get_recent_projects()` & `get_recent_documents()`: Scoped to caller permissions and project memberships.
+     - `get_analytics_summary()`: Strictly guarded to `OrgAdmin` and `SuperAdmin`, period filtering (`day`, `week`, `month`, `year`), and 300-second Redis caching (`analytics:{org_id}:{period}`).
+     - `global_search()`: Multi-entity search scoped to caller organization.
+   - `NotificationService` (`backend/app/services/notification_service.py`): User-scoped list retrieval, mark-as-read, and bulk mark-all-read.
+   - `AIQueryService` (`backend/app/services/ai_query_service.py`):
+     - Enforces query length validation (rejects > 4096 chars with 422 `AI_QUERY_TOO_LONG`).
+     - Sanitizes query against prompt injection and control sequences.
+     - Enforces 60 req/hr rate limit per user using sliding window.
+     - Generates Server-Sent Events (SSE) token stream with `event: token` and `event: done` payloads, incrementing `ai_queries_today` in Redis.
+
+5. **FastAPI Endpoints Mounted**:
+   - `GET  /api/v1/dashboard`
+   - `GET  /api/v1/activity`
+   - `GET  /api/v1/projects/recent`
+   - `GET  /api/v1/documents/recent`
+   - `GET  /api/v1/notifications`
+   - `PATCH /api/v1/notifications/{id}/read`
+   - `POST /api/v1/notifications/read-all`
+   - `GET  /api/v1/analytics/summary` (OrgAdmin / SuperAdmin restricted)
+   - `POST /api/v1/ai/query` (SSE streaming stub)
+   - `GET  /api/v1/search` (multi-entity global search)
+
+#### Files Modified / Created
+- `backend/app/models/notification.py` (CREATED)
+- `backend/app/models/user.py` (MODIFIED — added notifications relationship)
+- `backend/app/models/organization.py` (MODIFIED — added notifications relationship)
+- `backend/app/models/__init__.py` (MODIFIED — registered Notification)
+- `backend/migrations/versions/a1b2c3d4e5f6_phase_1_7_notifications.py` (CREATED)
+- `backend/app/schemas/dashboard.py` (CREATED)
+- `backend/app/schemas/analytics.py` (MODIFIED — extended with time-series fields)
+- `backend/app/schemas/__init__.py` (MODIFIED — exported dashboard schemas)
+- `backend/app/core/constants.py` (MODIFIED — added AI error codes)
+- `backend/app/core/exceptions.py` (MODIFIED — added RateLimitExceededException)
+- `backend/app/core/cache.py` (CREATED — Redis CacheManager & rate limiter)
+- `backend/app/repositories/notification_repo.py` (CREATED)
+- `backend/app/repositories/dashboard_repo.py` (CREATED)
+- `backend/app/repositories/__init__.py` (MODIFIED — exported repos)
+- `backend/app/services/dashboard_service.py` (CREATED)
+- `backend/app/services/notification_service.py` (CREATED)
+- `backend/app/services/ai_query_service.py` (CREATED)
+- `backend/app/services/__init__.py` (MODIFIED — exported services)
+- `backend/app/api/v1/dashboard.py` (CREATED)
+- `backend/app/api/v1/activity.py` (CREATED)
+- `backend/app/api/v1/notifications.py` (CREATED)
+- `backend/app/api/v1/ai.py` (CREATED)
+- `backend/app/api/v1/projects.py` (MODIFIED — mounted GET /recent before /{id})
+- `backend/app/api/v1/documents.py` (MODIFIED — mounted GET /recent before /{id})
+- `backend/app/api/v1/analytics.py` (MODIFIED — wired DashboardService summary)
+- `backend/app/api/v1/search.py` (MODIFIED — added GET /search global search)
+- `backend/app/api/v1/router.py` (MODIFIED — registered new routers)
+- `backend/app/db/seed.py` (MODIFIED — added notification seeding)
+- `docs/database/database-schema.md` (MODIFIED — added notifications table, ERD, and indexes)
+- `PROJECT_STATE.md` (MODIFIED — updated Phase 1.7 progress and matrix)
+- `tests/unit/test_dashboard_services.py` (CREATED — 17 unit tests)
+- `tests/integration/test_dashboard_endpoints.py` (CREATED — 23 integration tests)
+- `tests/integration/test_authorization_endpoints.py` (MODIFIED — asserted OrgAdmin vs Member on /analytics/summary)
+- `tests/integration/test_db_migrations.py` (MODIFIED — updated head revision to a1b2c3d4e5f6)
+- `docs/handoffs/agent-handoffs.md` (MODIFIED — appended Entry #023)
+
+#### Verification & Tests Executed
+- [x] Unit test suite passed: `pytest tests/unit/` → **141/141 passed (100%)**
+- [x] Integration test suite passed: `pytest tests/integration/` → **155/155 passed (100%)**
+- [x] Full test matrix passed: `pytest` → **296/296 passed (100%)**
+- [x] Alembic SQL generation verified: `python -m alembic upgrade 8f1a2b3c4d5e:a1b2c3d4e5f6 --sql` (0 errors)
+- [x] Strict tenant isolation and RBAC role boundaries verified across all new endpoints.
+- [x] Redis caching (TTL 60s & 300s) and sliding-window rate limiting verified.
+- [x] Zero unhandled exceptions or tracebacks.
+
+#### Target Receiving Agent
+- **Member 3 (Frontend Lead)**: Build the Phase 1.7 dashboard UI, custom hooks, and widgets consuming the newly verified endpoints.
+- **Member 4 (DevOps Lead)**: Execute Playwright E2E scenarios and CI validation for dashboard workflows.
+
+#### Required Action for Receiving Agent
+**Member 3 (Frontend Lead)**:
+1. Review `docs/Architecture/dashboard-architecture.md` and `docs/API/api-contract.md` Section 5.
+2. Build the 6 dashboard widgets consuming:
+   - `GET /api/v1/dashboard` (Summary, greeting, live KPIs)
+   - `GET /api/v1/activity` (Chronological feed)
+   - `GET /api/v1/projects/recent` (Recent projects)
+   - `GET /api/v1/documents/recent` (Recent documents)
+   - `GET /api/v1/notifications`, `PATCH /api/v1/notifications/{id}/read`, `POST /api/v1/notifications/read-all`
+   - `GET /api/v1/analytics/summary` (Wrapped in `PermissionGate` for `OrgAdmin`/`SuperAdmin`)
+   - `POST /api/v1/ai/query` (SSE streaming client)
+   - `GET /api/v1/search?q=...` (Debounced global search bar in TopNavBar)
+3. Ensure token CSS theme layer (`keep_theme` light/dark) conforms to Section 7.1.
+
+**Member 4 (DevOps Lead)**:
+1. Ensure Redis container is running in Docker environment for cache persistence.
+2. Run Playwright E2E test suite covering dashboard hydration, widget rendering, and SSE streaming.
+

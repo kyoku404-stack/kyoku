@@ -239,3 +239,21 @@ class DatabaseException(AppException):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             details=details,
         )
+
+
+class RateLimitExceededException(AppException):
+    """Raised when an operation exceeds rate limits."""
+
+    def __init__(
+        self,
+        message: str = "Rate limit exceeded. Please wait before retrying.",
+        code: str | ErrorCode = ErrorCode.AI_RATE_LIMIT_EXCEEDED,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            status_code=getattr(status, "HTTP_429_TOO_MANY_REQUESTS", 429),
+            details=details,
+        )
+

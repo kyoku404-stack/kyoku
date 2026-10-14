@@ -361,6 +361,26 @@ Immutable security and audit event logging. Captures authentication, workspace o
 
 ---
 
+### 3.11 `notifications` Table (Phase 1.7 Dashboard & User Experience)
+Stores user-directed notifications with status tracking, categorization, action links, and soft-delete capabilities.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique notification identifier |
+| `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` ON DELETE CASCADE | Tenant boundary foreign key |
+| `user_id` | `UUID` | NOT NULL, FK -> `users.id` ON DELETE CASCADE | Recipient user identifier |
+| `type` | `VARCHAR(50)` | NOT NULL, Default `'info'` | Category (`info`, `warning`, `success`, `error`, `reminder`) |
+| `title` | `VARCHAR(255)` | NOT NULL | Short notification title |
+| `body` | `TEXT` | NOT NULL | Detailed notification body message |
+| `action_url` | `VARCHAR(512)` | NULL | Optional deep-link destination URL |
+| `is_read` | `BOOLEAN` | NOT NULL, Default `FALSE` | Read receipt flag |
+| `is_deleted` | `BOOLEAN` | NOT NULL, Default `FALSE` | Soft delete flag |
+| `deleted_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Soft delete timestamp |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Creation timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Last modification timestamp |
+
+---
+
 ## 4. Entity Relationship Diagram (ERD)
 
 ```mermaid
@@ -393,6 +413,8 @@ erDiagram
     KG_ENTITY ||--o{ KG_RELATIONSHIP : "target_of"
 
     USER ||--o{ CHAT_SESSION : "conducts"
+    USER ||--o{ NOTIFICATION : "receives"
+    ORGANIZATION ||--o{ NOTIFICATION : "scopes"
     CHAT_SESSION ||--o{ CHAT_MESSAGE : "contains"
     CHAT_MESSAGE ||--o{ AI_FEEDBACK : "evaluated_by"
 ```
@@ -417,6 +439,8 @@ erDiagram
 | `kg_relationships` | `idx_kg_rel_tgt` | B-tree | `organization_id, target_entity_id` | Reverse graph traversals |
 | `chat_messages` | `idx_chat_msg_session` | B-tree | `session_id, created_at ASC` | Chronological chat history |
 | `activity_logs` | `idx_activity_org_date` | B-tree | `organization_id, created_at DESC` | Security audit queries |
+| `notifications` | `ix_notifications_user_unread` | B-tree | `user_id, is_read` | High-frequency unread notifications lookup |
+| `notifications` | `ix_notifications_org_created` | B-tree | `organization_id, created_at DESC` | Organization-scoped chronological feed |
 
 ---
 
