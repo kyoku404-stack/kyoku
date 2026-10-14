@@ -179,15 +179,15 @@ Phase 1.7 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
 ## Subsystem Details
 
 ### Backend
-Status: COMPLETED (Phase 1.6)  
+Status: COMPLETED (Phase 1.7)  
 Next Milestone: Phase 1.8 Document Processing & Ingestion Pipeline (Member 2).
 
 ### Frontend
-Status: COMPLETED (Phase 1.6)  
-Next Milestone: Phase 1.8 Document Processing & Ingestion UI (Member 3).
+Status: IN PROGRESS (Phase 1.7)  
+Next Milestone: Phase 1.7 Dashboard UI & AI Assistant Widget Implementation (Member 3).
 
 ### Database / Persistence
-Status: COMPLETED (Phase 1.6)  
+Status: COMPLETED (Phase 1.7)  
 Next Milestone: Phase 1.8 Document metadata schema and vector indexing.
 
 ### AI / ML
@@ -199,8 +199,8 @@ Status: COMPLETED (Phase 1.6)
 Next Milestone: Phase 1.8 Document Processing & Vector Storage Infrastructure (Member 4).
 
 ### QA / Testing
-Status: PASSING (256/256 backend + 109/109 frontend = 365/365 tests OK, 100%)  
-Next Milestone: Phase 1.8 Ingestion & knowledge processing test matrices.
+Status: PASSING (296/296 backend + 109/109 frontend = 405/405 tests OK, 100%, 0 ruff errors)  
+Next Milestone: Phase 1.7 Frontend Dashboard component tests (Member 3).
 
 ---
 

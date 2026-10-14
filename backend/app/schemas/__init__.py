@@ -95,10 +95,10 @@ from backend.app.schemas.user import (
 )
 
 __all__ = [
-    "ActivityActor",
-    "ActivityEventResponse",
     "AIQueryContext",
     "AIQueryRequest",
+    "ActivityActor",
+    "ActivityEventResponse",
     "AnalyticsSummaryResponse",
     "ApiErrorResponse",
     "ApiResponse",

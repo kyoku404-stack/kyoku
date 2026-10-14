@@ -23,8 +23,8 @@ from backend.app.services.team_service import TeamService
 from backend.app.services.user_service import UserService
 
 __all__ = [
-    "ActivityService",
     "AIQueryService",
+    "ActivityService",
     "AuthService",
     "BaseService",
     "ChatService",

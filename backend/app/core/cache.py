@@ -43,7 +43,7 @@ class CacheManager:
                     socket_connect_timeout=0.5,
                     socket_timeout=0.5,
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Could not initialize Redis client: {e}. Using in-memory fallback.")
                 return None
         return cast(Any, self._redis_client)
@@ -55,7 +55,7 @@ class CacheManager:
             try:
                 val = await client.get(key)
                 return str(val) if val is not None else None
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Redis get failed for {key}: {e}. Falling back to in-memory.")
 
         # In-memory fallback
@@ -74,7 +74,7 @@ class CacheManager:
             try:
                 await client.set(key, value, ex=ttl)
                 return True
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Redis set failed for {key}: {e}. Falling back to in-memory.")
 
         # In-memory fallback
@@ -87,7 +87,7 @@ class CacheManager:
         if client:
             try:
                 await client.delete(key)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Redis delete failed for {key}: {e}.")
 
         if key in self._in_memory_cache:
@@ -104,7 +104,7 @@ class CacheManager:
                 if keys:
                     del_result = await client.delete(*keys)
                     return int(del_result) if del_result is not None else 0
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Redis delete_pattern failed for {pattern}: {e}.")
 
         # In-memory fallback
@@ -124,7 +124,7 @@ class CacheManager:
                 if val == 1:
                     await client.expire(key, ttl)
                 return int(val)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Redis incr failed for {key}: {e}.")
 
         # In-memory fallback
@@ -146,7 +146,7 @@ class CacheManager:
             try:
                 val = await client.get(key)
                 return int(val) if val else 0
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Redis get_counter failed for {key}: {e}.")
 
         now = time.time()
@@ -189,7 +189,7 @@ class CacheManager:
                 is_allowed = bool(count < limit)
                 remaining = max(0, limit - count)
                 return is_allowed, remaining
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Redis rate limit failed for {key}: {e}. Falling back to in-memory.")
 
         # In-memory fallback

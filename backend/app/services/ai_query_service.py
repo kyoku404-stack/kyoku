@@ -8,9 +8,9 @@ Derived from devdocs/p1/p1.7.txt and docs/Architecture/dashboard-architecture.md
 import json
 import re
 from collections.abc import AsyncGenerator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from backend.app.api.dependencies.auth import AuthenticatedUser
 from backend.app.core.cache import cache
@@ -57,7 +57,7 @@ class AIQueryService:
 
         # 2. Rate Limiting (60 requests/hour per user)
         rate_key = f"ai_query:{current_user.id}"
-        is_allowed, remaining = await cache.check_rate_limit(
+        is_allowed, _remaining = await cache.check_rate_limit(
             rate_key, limit=60, window_seconds=3600
         )
         if not is_allowed:
@@ -68,7 +68,7 @@ class AIQueryService:
             )
 
         # 3. Increment daily org counter for dashboard KPI
-        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today_str = datetime.now(UTC).strftime("%Y-%m-%d")
         counter_key = f"ai_queries_today:{current_user.organization_id}:{today_str}"
         await cache.incr(counter_key, ttl=86400)
 

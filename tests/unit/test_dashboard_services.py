@@ -12,38 +12,27 @@ Sub-phase: Phase 1.7 Dashboard Development & User Experience
 Reference: devdocs/p1/p1.7.txt, docs/Architecture/dashboard-architecture.md
 """
 
-import asyncio
-from datetime import datetime, timezone
 import unittest
+from datetime import UTC, datetime
 from uuid import uuid4
-
-import pytest
-from pydantic import ValidationError
 
 from backend.app.api.dependencies.auth import AuthenticatedUser
 from backend.app.core.cache import CacheManager
 from backend.app.core.constants import ErrorCode, UserRole
 from backend.app.core.exceptions import (
-    RateLimitExceededException,
     ValidationException,
 )
 from backend.app.schemas.dashboard import (
     ActivityActor,
     ActivityEventResponse,
-    AIQueryContext,
     AIQueryRequest,
     DashboardAnalyticsSummaryResponse,
     DashboardKPI,
     DashboardOrg,
     DashboardSummaryResponse,
     DashboardUser,
-    DocumentReference,
-    DocumentSummaryResponse,
-    DocumentUploaderSummary,
     GlobalSearchResponse,
     GlobalSearchResultItem,
-    NotificationCreate,
-    NotificationReadAllResponse,
     NotificationResponse,
     ProjectDistributionItem,
     ProjectMemberSummary,
@@ -100,7 +89,7 @@ class TestDashboardSchemas(unittest.TestCase):
             resource_id=uuid4(),
             resource_name="Blueprint.pdf",
             metadata={"size_mb": 12},
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
         )
         self.assertEqual(event.action, "uploaded")
         self.assertEqual(event.resource_type, "document")
@@ -116,7 +105,7 @@ class TestDashboardSchemas(unittest.TestCase):
             deadline="2026-12-31",
             team_members=[ProjectMemberSummary(id=uuid4(), full_name="Team Lead")],
             document_count=18,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         self.assertEqual(proj.name, "Knowledge Graph")
         self.assertEqual(proj.progress_percent, 85)
@@ -129,7 +118,7 @@ class TestDashboardSchemas(unittest.TestCase):
             body="New security patches deployed.",
             action_url="/system/status",
             is_read=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self.assertEqual(notif.type, "info")
         self.assertFalse(notif.is_read)
@@ -209,7 +198,7 @@ class TestCacheManager(unittest.IsolatedAsyncioTestCase):
     async def test_rate_limiting(self) -> None:
         user_id = str(uuid4())
         # First 3 requests should pass
-        for i in range(3):
+        for _ in range(3):
             allowed, rem = await self.cache.check_rate_limit(user_id, limit=3, window_seconds=60)
             self.assertTrue(allowed)
 

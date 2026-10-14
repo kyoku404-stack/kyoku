@@ -6,15 +6,16 @@ Derived from devdocs/p1/p1.7.txt and docs/Architecture/dashboard-architecture.md
 """
 
 import json
-from datetime import datetime, timezone
-from uuid import UUID
+import logging
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from backend.app.api.dependencies.auth import AuthenticatedUser
+
+logger = logging.getLogger(__name__)
 from backend.app.core.cache import cache
 from backend.app.core.constants import ErrorCode, UserRole
 from backend.app.core.exceptions import RoleRequiredException
-from backend.app.models.organization import Organization
 from backend.app.models.user import User
 from backend.app.repositories.dashboard_repo import DashboardRepository
 from backend.app.repositories.org_repo import OrganizationRepository
@@ -47,10 +48,10 @@ class DashboardService:
     def _determine_greeting(self, time_zone_str: str | None = None) -> str:
         """Determines time of day greeting based on organization/user timezone."""
         try:
-            tz = ZoneInfo(time_zone_str) if time_zone_str else timezone.utc
+            tz = ZoneInfo(time_zone_str) if time_zone_str else UTC
             now = datetime.now(tz)
-        except Exception:
-            now = datetime.now(timezone.utc)
+        except Exception:  # noqa: BLE001
+            now = datetime.now(UTC)
 
         hour = now.hour
         if 5 <= hour < 12:
@@ -84,8 +85,8 @@ class DashboardService:
             try:
                 parsed = json.loads(cached_data)
                 return DashboardSummaryResponse.model_validate(parsed)
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                logger.debug(f"Dashboard cache decode failed: {e}")
 
         # 1. Fetch organization details
         org = await self.org_repo.get_active_by_id(db, current_user.organization_id)
@@ -99,7 +100,7 @@ class DashboardService:
         # 3. AI Queries Today counter (admin only)
         ai_queries_today = 0
         if self._is_admin(current_user):
-            today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            today_str = datetime.now(UTC).strftime("%Y-%m-%d")
             counter_key = f"ai_queries_today:{current_user.organization_id}:{today_str}"
             ai_queries_today = await cache.get_counter(counter_key)
 
@@ -232,8 +233,8 @@ class DashboardService:
             try:
                 parsed = json.loads(cached_data)
                 return DashboardAnalyticsSummaryResponse.model_validate(parsed)
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                logger.debug(f"Analytics cache decode failed: {e}")
 
         analytics = await self.dashboard_repo.get_analytics_summary(
             db=db,

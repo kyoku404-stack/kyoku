@@ -36,7 +36,6 @@ from backend.app.core.config import Settings, settings  # noqa: E402
 from backend.app.core.security import get_password_hash  # noqa: E402
 from backend.app.db.base import Base  # noqa: E402
 from backend.app.main import app  # noqa: E402
-from backend.app.models.notification import Notification  # noqa: E402
 from backend.app.models.organization import Organization  # noqa: E402
 from backend.app.models.user import User  # noqa: E402
 

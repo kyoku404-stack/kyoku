@@ -4,7 +4,6 @@ Aggregates KPI counters, recent resources, activity logs, time-series analytics,
 and multi-entity global search strictly scoped to the tenant organization.
 """
 
-from datetime import datetime, timezone
 from uuid import UUID
 
 from backend.app.models.activity import ActivityLog
