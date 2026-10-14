@@ -5,6 +5,7 @@ from backend.app.models.document import Document
 from backend.app.models.invitation import Invitation
 from backend.app.models.knowledge import DocumentChunk, KgEntity, KgRelationship
 from backend.app.models.meeting import Meeting
+from backend.app.models.notification import Notification
 from backend.app.models.organization import Organization
 from backend.app.models.project import Project, project_users
 from backend.app.models.task import Task
@@ -22,6 +23,7 @@ __all__ = [
     "KgEntity",
     "KgRelationship",
     "Meeting",
+    "Notification",
     "Organization",
     "Project",
     "Task",

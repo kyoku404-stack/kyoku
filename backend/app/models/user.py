@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from backend.app.models.department import Department
     from backend.app.models.document import Document
     from backend.app.models.meeting import Meeting
+    from backend.app.models.notification import Notification
     from backend.app.models.organization import Organization
     from backend.app.models.project import Project
     from backend.app.models.team import Team
@@ -86,3 +87,8 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
         cascade="all, delete-orphan",
     )
     meetings: Mapped[list["Meeting"]] = relationship("Meeting", back_populates="organizer")
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from backend.app.models.document import Document
     from backend.app.models.invitation import Invitation
     from backend.app.models.knowledge import KgEntity, KgRelationship
+    from backend.app.models.notification import Notification
     from backend.app.models.project import Project
     from backend.app.models.team import Team
     from backend.app.models.user import User
@@ -70,4 +71,7 @@ class Organization(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
     )
     kg_relationships: Mapped[list["KgRelationship"]] = relationship(
         "KgRelationship", back_populates="organization", cascade="all, delete-orphan"
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification", back_populates="organization", cascade="all, delete-orphan"
     )

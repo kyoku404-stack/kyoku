@@ -9,14 +9,17 @@ from backend.app.api.dependencies.auth import (
 from backend.app.api.dependencies.database import get_db
 from backend.app.api.dependencies.tenant import TenantContext, get_tenant_context
 from backend.app.core.constants import DocumentStatus, UserRole
+from backend.app.schemas.dashboard import DocumentSummaryResponse
 from backend.app.schemas.document import DocumentResponse, DocumentUploadResponse
 from backend.app.schemas.envelope import ApiResponse, PaginatedData
+from backend.app.services.dashboard_service import DashboardService
 from backend.app.services.document_service import DocumentService
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 doc_service = DocumentService()
+dashboard_service = DashboardService()
 
 
 @router.post(
@@ -93,6 +96,31 @@ async def list_documents(
         success=True,
         message="Documents retrieved.",
         data=docs,
+    )
+
+
+@router.get(
+    "/recent",
+    response_model=ApiResponse[list[DocumentSummaryResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="Get recent documents",
+    description="Returns recently accessed or uploaded documents visible to the authenticated user.",
+)
+async def get_recent_documents(
+    limit: int = Query(default=8, ge=1, le=20, description="Maximum number of documents (max 20)"),
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[list[DocumentSummaryResponse]]:
+    """Retrieves recent documents for user."""
+    documents = await dashboard_service.get_recent_documents(
+        db=db,
+        current_user=current_user,
+        limit=limit,
+    )
+    return ApiResponse(
+        success=True,
+        message="Recent documents retrieved successfully.",
+        data=documents,
     )
 
 

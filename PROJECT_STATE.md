@@ -62,6 +62,15 @@ Phase 1.7 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Expanded official REST API Contract (`docs/API/api-contract.md`) with Section 5 (Dashboard & AI Widget API Contracts), defining 8 new endpoints: `GET /api/v1/dashboard`, `GET /api/v1/activity`, `GET /api/v1/projects/recent`, `GET /api/v1/documents/recent`, `GET /api/v1/notifications`, `GET /api/v1/analytics/summary`, `POST /api/v1/ai/query` (stub), and `GET /api/v1/search` with full request/response shapes, authorization rules, caching directives, and error codes.
 - Defined AI Assistant widget Phase 2.x integration roadmap (Phase 2.1 ingestion → Phase 2.2 RAG → Phase 2.3 meetings → Phase 2.5 KG → Phase 3.1 enterprise search) to guide future agents. Ready for Member 2 (Backend Lead) to implement dashboard endpoints and Member 3 (Frontend Lead) to build the dashboard UI.
 
+Phase 1.7 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
+- Implemented `Notification` SQLAlchemy ORM model (`backend/app/models/notification.py`) and generated clean Alembic migration revision `a1b2c3d4e5f6` (`backend/migrations/versions/a1b2c3d4e5f6_phase_1_7_notifications.py`).
+- Authored authoritative Pydantic v2 schemas (`backend/app/schemas/dashboard.py`) for all 8 Phase 1.7 endpoints matching `docs/API/api-contract.md` Section 5.
+- Implemented asynchronous Redis caching, sliding-window rate limiting (60 req/hr), and counters in `CacheManager` (`backend/app/core/cache.py`).
+- Implemented `NotificationRepository` (`backend/app/repositories/notification_repo.py`) and `DashboardRepository` (`backend/app/repositories/dashboard_repo.py`) providing live KPI aggregations, recent projects/documents, tenant-isolated activity feeds, and full-text global search across projects, documents, users, and teams.
+- Implemented domain services: `DashboardService` (`backend/app/services/dashboard_service.py`) with 60s dashboard cache and 300s analytics cache, `NotificationService` (`backend/app/services/notification_service.py`), and `AIQueryService` (`backend/app/services/ai_query_service.py`) with 4096-char sanitization, 60 req/hr rate limiting, and SSE streaming token generation.
+- Mounted 8 REST endpoints in FastAPI router: `GET /api/v1/dashboard`, `GET /api/v1/activity`, `GET /api/v1/projects/recent`, `GET /api/v1/documents/recent`, `GET /api/v1/notifications`, `PATCH /api/v1/notifications/{id}/read`, `POST /api/v1/notifications/read-all`, `GET /api/v1/analytics/summary`, `POST /api/v1/ai/query`, `GET /api/v1/search`.
+- Authored unit test suite (`tests/unit/test_dashboard_services.py`) with 17 tests and integration test suite (`tests/integration/test_dashboard_endpoints.py`) with 23 tests, achieving 100% pass rate across 296 repository tests (141 unit + 155 integration).
+
 ---
 
 ## Progress Matrix
@@ -74,13 +83,13 @@ Phase 1.7 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 | **Dashboard Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.7 Architecture | `docs/Architecture/dashboard-architecture.md`, ADR-020 - ADR-022 |
 | **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 AI Authorization | Typed security contracts in `services/rag/` & `services/ai/` verified |
 | **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.7 Dashboard Endpoints | `docs/API/api-contract.md` updated with Section 5 (8 dashboard + AI query + search endpoints) |
-| **Backend Architecture & APIs** | COMPLETED (Phase 1.6) | Member 2 (Backend Lead) | Phase 1.6 RBAC Engine & APIs | 7-step engine, dependencies, audit logs & doc delete verified (228/228 tests OK) |
-| **Frontend Application** | COMPLETED (Phase 1.6) | Member 3 (Frontend Lead) | Phase 1.6 Role-Aware UI | Role-aware UI, PermissionGate, RoleGate, AccessDeniedPage, AuditLogsPage (109/109 tests OK) |
-| **Database & Persistence Layer** | COMPLETED (Phase 1.6) | Member 2, 3 & 4 | Phase 1.6 Activity Logging | Activity logs queryable, ORM models, Repositories, Alembic migrations ready |
+| **Backend Architecture & APIs** | COMPLETED (Phase 1.7) | Member 2 (Backend Lead) | Phase 1.7 Dashboard APIs | 8 dashboard endpoints, SSE streaming stub, Redis caching & search (296/296 tests OK) |
+| **Frontend Application** | IN PROGRESS (Phase 1.7) | Member 3 (Frontend Lead) | Phase 1.7 Dashboard UI | Ready for Member 3 UI widget implementation consuming new endpoints |
+| **Database & Persistence Layer** | COMPLETED (Phase 1.7) | Member 2 & 4 | Phase 1.7 Notifications Schema | `notifications` table, indexes, Alembic migration `a1b2c3d4e5f6` |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Concrete AIAuthorizationFilter implemented & tested |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
 | **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.6) | Member 4 (DevOps Lead) | Phase 1.6 RBAC Security & Audit Testing | 28 new tests, Playwright E2E suite, test-authz.sh runner, 256/256 backend tests passing |
-| **QA & Verification Suite** | PASSING | All Members | Phase 1.6 All Roles Verified | 256/256 backend + 109/109 frontend = 365/365 tests OK (100%), 0 lint errors |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.7 Backend Verified | 141 unit + 155 integration = 296 backend tests OK (100%), 0 failures |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 ---
@@ -170,15 +179,15 @@ Phase 1.7 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 ## Subsystem Details
 
 ### Backend
-Status: COMPLETED (Phase 1.6)  
+Status: COMPLETED (Phase 1.7)  
 Next Milestone: Phase 1.8 Document Processing & Ingestion Pipeline (Member 2).
 
 ### Frontend
-Status: COMPLETED (Phase 1.6)  
-Next Milestone: Phase 1.8 Document Processing & Ingestion UI (Member 3).
+Status: IN PROGRESS (Phase 1.7)  
+Next Milestone: Phase 1.7 Dashboard UI & AI Assistant Widget Implementation (Member 3).
 
 ### Database / Persistence
-Status: COMPLETED (Phase 1.6)  
+Status: COMPLETED (Phase 1.7)  
 Next Milestone: Phase 1.8 Document metadata schema and vector indexing.
 
 ### AI / ML
@@ -190,8 +199,8 @@ Status: COMPLETED (Phase 1.6)
 Next Milestone: Phase 1.8 Document Processing & Vector Storage Infrastructure (Member 4).
 
 ### QA / Testing
-Status: PASSING (256/256 backend + 109/109 frontend = 365/365 tests OK, 100%)  
-Next Milestone: Phase 1.8 Ingestion & knowledge processing test matrices.
+Status: PASSING (296/296 backend + 109/109 frontend = 405/405 tests OK, 100%, 0 ruff errors)  
+Next Milestone: Phase 1.7 Frontend Dashboard component tests (Member 3).
 
 ---
 

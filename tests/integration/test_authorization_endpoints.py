@@ -216,6 +216,7 @@ class TestAuthorizationEndpointsIntegration(unittest.TestCase):
         # Verify soft-deleted
         with Session(sync_test_engine) as session:
             d = session.get(Document, doc_id)
+            assert d is not None
             self.assertTrue(d.is_deleted)
 
     def test_document_delete_by_uploader_owner_override(self) -> None:
@@ -310,11 +311,18 @@ class TestAuthorizationEndpointsIntegration(unittest.TestCase):
         self.assertEqual(body["error"]["code"], ErrorCode.AUTH_ORGANIZATION_MISMATCH)
 
     def test_analytics_endpoints_require_permission(self) -> None:
-        """Analytics endpoints are accessible to authenticated users with analytics.view."""
-        res_summary = self.client.get("/api/v1/analytics/summary", headers=self.headers_member_a1)
+        """Analytics summary requires OrgAdmin/SuperAdmin; usage requires analytics.view."""
+        # OrgAdmin can access analytics summary
+        res_summary = self.client.get("/api/v1/analytics/summary", headers=self.headers_admin_a)
         self.assertEqual(res_summary.status_code, 200)
         self.assertTrue(res_summary.json()["success"])
 
+        # Member without OrgAdmin role receives 403 on summary
+        res_member_summary = self.client.get("/api/v1/analytics/summary", headers=self.headers_member_a1)
+        self.assertEqual(res_member_summary.status_code, 403)
+        self.assertEqual(res_member_summary.json()["error"]["code"], ErrorCode.AUTH_ROLE_REQUIRED)
+
+        # Member with analytics.view can access usage endpoint
         res_usage = self.client.get("/api/v1/analytics/usage", headers=self.headers_member_a1)
         self.assertEqual(res_usage.status_code, 200)
         self.assertTrue(res_usage.json()["success"])

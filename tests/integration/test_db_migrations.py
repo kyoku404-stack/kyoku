@@ -32,7 +32,7 @@ class TestDatabaseMigrations:
         assert len(revisions) >= 1, "At least one migration revision must be present"
 
         head_revision = script.get_current_head()
-        assert head_revision == "8f1a2b3c4d5e"
+        assert head_revision == "a1b2c3d4e5f6"
 
 
     def test_schema_metadata_tables_completeness(self):

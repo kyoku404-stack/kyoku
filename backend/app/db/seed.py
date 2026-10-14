@@ -19,6 +19,7 @@ from backend.app.models.document import Document
 from backend.app.models.invitation import Invitation
 from backend.app.models.knowledge import DocumentChunk, KgEntity, KgRelationship
 from backend.app.models.meeting import Meeting
+from backend.app.models.notification import Notification
 from backend.app.models.organization import Organization
 from backend.app.models.project import Project
 from backend.app.models.task import Task
@@ -95,6 +96,7 @@ async def seed_database(session: AsyncSession) -> dict[str, int]:
         "kg_entities": 0,
         "kg_relationships": 0,
         "activity_logs": 0,
+        "notifications": 0,
     }
 
     # 1. Default Organization (Acme Enterprise)
@@ -837,6 +839,62 @@ async def seed_database(session: AsyncSession) -> dict[str, int]:
         )
         session.add(log)
         counts["activity_logs"] += 1
+
+    # 13. Notifications (Phase 1.7 User Experience)
+    notifications_data = [
+        (
+            USER_ADMIN_ID,
+            "info",
+            "New document uploaded",
+            "John uploaded Project Proposal.pdf to AI Platform.",
+            "/documents/00000000-0000-0000-0000-000000000041",
+            False,
+        ),
+        (
+            USER_ADMIN_ID,
+            "warning",
+            "Storage quota notice",
+            "Organization storage usage has reached 5.0 GB of 100 GB allocated quota.",
+            "/organization/settings",
+            False,
+        ),
+        (
+            USER_ADMIN_ID,
+            "reminder",
+            "Upcoming meeting in 15 minutes",
+            "Architecture Review Board starts at 10:00 AM UTC.",
+            "/meetings",
+            True,
+        ),
+        (
+            USER_DEV_ID,
+            "security",
+            "New login detected",
+            "Successful login from IP address 192.168.1.50.",
+            "/profile",
+            False,
+        ),
+    ]
+    for user_id, ntype, title, body, action_url, is_read in notifications_data:
+        notif_res = await session.execute(
+            select(Notification).where(
+                Notification.user_id == user_id,
+                Notification.title == title,
+            )
+        )
+        if not notif_res.scalar_one_or_none():
+            notif = Notification(
+                id=uuid.uuid4(),
+                organization_id=ORG_ID,
+                user_id=user_id,
+                type=ntype,
+                title=title,
+                body=body,
+                action_url=action_url,
+                is_read=is_read,
+            )
+            session.add(notif)
+            counts["notifications"] += 1
 
     await session.commit()
     logger.info("Database seeding completed successfully. Created entities: %s", counts)

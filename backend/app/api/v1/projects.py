@@ -9,14 +9,17 @@ from backend.app.api.dependencies.auth import (
 )
 from backend.app.api.dependencies.database import get_db
 from backend.app.core.constants import UserRole
+from backend.app.schemas.dashboard import ProjectSummaryResponse
 from backend.app.schemas.envelope import ApiResponse
 from backend.app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from backend.app.services.dashboard_service import DashboardService
 from backend.app.services.project_service import ProjectService
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 project_service = ProjectService()
+dashboard_service = DashboardService()
 
 
 @router.post(
@@ -80,6 +83,31 @@ async def list_projects(
     return ApiResponse(
         success=True,
         message="Projects retrieved successfully.",
+        data=projects,
+    )
+
+
+@router.get(
+    "/recent",
+    response_model=ApiResponse[list[ProjectSummaryResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="Get recent projects",
+    description="Returns recently updated projects accessible to the authenticated user.",
+)
+async def get_recent_projects(
+    limit: int = Query(default=6, ge=1, le=12, description="Maximum number of projects (max 12)"),
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[list[ProjectSummaryResponse]]:
+    """Retrieves recent projects for user."""
+    projects = await dashboard_service.get_recent_projects(
+        db=db,
+        current_user=current_user,
+        limit=limit,
+    )
+    return ApiResponse(
+        success=True,
+        message="Recent projects retrieved successfully.",
         data=projects,
     )
 
