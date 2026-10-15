@@ -26,6 +26,21 @@ Phase 1.8 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
   - Added `document.download`, `document.preview`, `document.version` to `AIPermission` and role permission matrices.
 - Authored dedicated unit test suite (`tests/unit/test_document_storage_ai_contracts.py`) with 28 tests passing 100%. Total backend tests: 331/331 OK. Monorepo tests: 459/459 OK (331 backend + 128 frontend).
 
+Phase 1.8 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
+- Implemented `DocumentVersion` SQLAlchemy ORM model (`backend/app/models/document_version.py`) with `UniqueConstraint("document_id", "version_number")`, foreign keys, and relationship to `DocumentChunk`.
+- Enhanced `Document` ORM model (`backend/app/models/document.py`) with `current_version_id` (`use_alter=True`), `current_version_number`, `original_filename`, `title`, `description`, `mime_type`, `checksum_sha256`, `category`, `tags`, `chunk_count`, `error_message`, and `metadata_json`.
+- Updated `DocumentChunk` model (`backend/app/models/knowledge.py`) with `document_version_id` foreign key.
+- Authored and verified clean Alembic schema migration revision `b2c3d4e5f6a7_phase_1_8_document_versions.py` chained from `a1b2c3d4e5f6` to `b2c3d4e5f6a7 (head)`.
+- Implemented `DocumentValidator` (`backend/app/services/document_validator.py`) with path traversal sanitization, supported format validation (11 file extensions), per-format size limits (`MAX_FILE_SIZES`), magic-byte sniffing (`MAGIC_BYTE_SIGNATURES`), and cryptographic SHA-256 calculation.
+- Implemented `LocalStorageService` (`backend/app/services/storage_service.py`) supporting tenant-isolated directory layout (`storage/{organization_id}/documents/{document_id}/v{version}/{filename}`), atomic save/read/delete, storage quota enforcement, and preview caching (`generate_preview_path`, `save_preview`, `read_preview`).
+- Implemented `RAGDocumentIngestionSeam` (`backend/app/services/rag_seam.py`) supporting async Celery task dispatch token synthesis, processing status transitions, chunk registration, and superseded version chunk deactivation.
+- Authored Pydantic v2 schemas in `backend/app/schemas/document.py` (`DocumentUploadResponse`, `DocumentVersionItemResponse`, `DocumentResponse`, `DocumentDetailResponse`, `DocumentUpdatePayload`, `DocumentUpdateResponse`, `DocumentVersionUploadResponse`, `DocumentDeleteResponse`).
+- Implemented `DocumentRepository` and `DocumentVersionRepository` (`backend/app/repositories/document_repo.py`) with full-text search, category/status/project filtering, sorting, pagination, and multi-tenant isolation.
+- Implemented `DocumentService` (`backend/app/services/document_service.py`) with business logic for uploads, duplicate checking (409 `DUPLICATE_FILE_DETECTED`), quota checks (400 `STORAGE_QUOTA_EXCEEDED`), version lineage bumps, file downloading, preview generation (PDF, images, text, HTML conversion), metadata updates, and soft-delete/archiving with ownership bypass.
+- Implemented all 8 REST endpoints in FastAPI router `backend/app/api/v1/documents.py` conforming strictly to `docs/api/api-contract.md` Section 3.3.
+- Authored comprehensive unit test suite `tests/unit/test_document_management_service.py` (14 tests) and integration test suite `tests/integration/test_document_management_endpoints.py` (10 tests).
+- Verified 100% test pass rate across 483 monorepo tests (355 backend + 128 frontend tests OK) and 0 lint errors.
+
 Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Authorization Architecture Specification (`docs/Architecture/authorization-architecture.md`) establishing the 7-step authorization pipeline, resource-level ownership evaluation, project containment checks, AI retrieval gating, and audit logging taxonomy.
 - Authored Architecture Decision Records ADR-017, ADR-018, and ADR-019 in `docs/decisions/decisions.md`.
@@ -133,13 +148,13 @@ Phase 1.7 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 | **Document Storage & Lifecycle Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Architecture | `docs/Architecture/document-management-architecture.md`, ADR-023 - ADR-025 |
 | **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Ingestion Contracts | Typed document processing, storage & ingestion seam contracts in `services/rag/` & `services/ai/` |
 | **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.8 Document Endpoints | `docs/api/api-contract.md` updated with Section 3.3 (8 document endpoints) & Table 4 registry |
-| **Backend Architecture & APIs** | COMPLETED (Phase 1.7) | Member 2 (Backend Lead) | Phase 1.8 Document APIs | Ready for Member 2 implementation (upload, storage, versioning, metadata) |
+| **Backend Architecture & APIs** | COMPLETED (Phase 1.8) | Member 2 (Backend Lead) | Phase 1.8 Document APIs | 8 REST endpoints, LocalStorageService, DocumentValidator, DocumentService, RAG seam |
 | **Frontend Application** | COMPLETED (Phase 1.7) | Member 3 (Frontend Lead) | Phase 1.8 Document UI | Ready for Member 3 implementation (uploader, explorer, preview, version timeline) |
-| **Database & Persistence Layer** | COMPLETED (Phase 1.7) | Member 2 & 4 | Phase 1.8 Versions Schema | Specification approved: `documents` enhancements + `document_versions` table |
+| **Database & Persistence Layer** | COMPLETED (Phase 1.8) | Member 2 & 4 | Phase 1.8 Versions Schema | Alembic migration `b2c3d4e5f6a7`, `document_versions` table, `documents` enhancements |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Ingestion state machine & BaseRAGDocumentIngestionSeam established |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
 | **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.7) | Member 4 (DevOps Lead) | Phase 1.8 Storage Infrastructure | Ready for Member 4 Docker volume configs & test suites |
-| **QA & Verification Suite** | PASSING | All Members | Phase 1.8 Member 1 Verified | 331 backend + 128 frontend = 459 tests OK (100%), 0 failures, clean lint |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.8 Member 2 Verified | 355 backend + 128 frontend = 483 tests OK (100%), 0 failures, clean lint |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 ---
@@ -229,16 +244,16 @@ Phase 1.7 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 ## Subsystem Details
 
 ### Backend
-Status: COMPLETED (Phase 1.7)  
-Next Milestone: Phase 1.8 Document Upload APIs, Storage Services & Validation Logic (Member 2).
+Status: COMPLETED (Phase 1.8)  
+Next Milestone: Phase 1.8 Document Upload, Explorer & Preview UI (Member 3).
 
 ### Frontend
 Status: COMPLETED (Phase 1.7)  
 Next Milestone: Phase 1.8 Document Upload, Explorer & Preview UI (Member 3).
 
 ### Database / Persistence
-Status: SPECIFIED & APPROVED (Phase 1.8)  
-Next Milestone: Phase 1.8 Alembic migration for `document_versions` and `documents` enhancements (Member 2).
+Status: COMPLETED (Phase 1.8)  
+Next Milestone: Phase 1.8 Document Storage Volume Mounting & Performance Benchmark Suites (Member 4).
 
 ### AI / ML
 Status: SPECIFIED & SCAFFOLDED (Phase 1.8)  
@@ -249,8 +264,8 @@ Status: COMPLETED (Phase 1.7)
 Next Milestone: Phase 1.8 Document Storage Volume Mounting & Performance Benchmark Suites (Member 4).
 
 ### QA / Testing
-Status: PASSING (331/331 backend + 128/128 frontend = 459/459 tests OK, 100%, 0 lint errors)  
-Next Milestone: Phase 1.8 Backend & Frontend Integration and E2E Test Suites.
+Status: PASSING (355/355 backend + 128/128 frontend = 483/483 tests OK, 100%, 0 lint errors)  
+Next Milestone: Phase 1.8 Frontend & DevOps Testing Suites.
 
 ---
 
@@ -266,6 +281,6 @@ None.
 2026-10-15
 
 ## Last Updated By
-Member 1 — Project Lead & AI Architect
+Member 2 — Backend and Database Lead
 
 

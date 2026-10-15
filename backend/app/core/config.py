@@ -106,8 +106,12 @@ class Settings(BaseSettings):
         auth = f":{password}@" if password else ""
         return f"redis://{auth}{host}:{port}/0"
 
-    # Local Storage
+    # Local Storage & Document System
     UPLOAD_STORAGE_PATH: str = "./uploads"
+    STORAGE_ROOT: str = "./storage"
+    DEFAULT_STORAGE_QUOTA_BYTES: int = (
+        10 * 1024 * 1024 * 1024
+    )  # 10 GB default quota per org
 
     model_config = SettingsConfigDict(
         env_file=(".env", "backend/.env", ".env.development"),

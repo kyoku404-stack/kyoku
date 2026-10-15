@@ -44,8 +44,14 @@ from backend.app.schemas.department import (
     DepartmentUpdate,
 )
 from backend.app.schemas.document import (
+    DocumentDeleteResponse,
+    DocumentDetailResponse,
     DocumentResponse,
+    DocumentUpdatePayload,
+    DocumentUpdateResponse,
     DocumentUploadResponse,
+    DocumentVersionItemResponse,
+    DocumentVersionUploadResponse,
 )
 from backend.app.schemas.envelope import (
     ApiErrorResponse,
@@ -117,11 +123,17 @@ __all__ = [
     "DepartmentResponse",
     "DepartmentUpdate",
     "DetailedHealthResponse",
+    "DocumentDeleteResponse",
+    "DocumentDetailResponse",
     "DocumentReference",
     "DocumentResponse",
     "DocumentSummaryResponse",
+    "DocumentUpdatePayload",
+    "DocumentUpdateResponse",
     "DocumentUploadResponse",
     "DocumentUploaderSummary",
+    "DocumentVersionItemResponse",
+    "DocumentVersionUploadResponse",
     "ErrorDetail",
     "GlobalSearchResponse",
     "GlobalSearchResultItem",

@@ -23,7 +23,9 @@ class TestDatabaseMigrations:
         assert alembic_ini.exists(), "backend/alembic.ini must exist"
 
         config = Config(str(alembic_ini))
-        config.set_main_option("script_location", str(root_dir / "backend" / "migrations").replace("\\", "/"))
+        config.set_main_option(
+            "script_location", str(root_dir / "backend" / "migrations").replace("\\", "/")
+        )
         config.set_main_option("version_locations", "")
         script = ScriptDirectory.from_config(config)
 
@@ -32,8 +34,7 @@ class TestDatabaseMigrations:
         assert len(revisions) >= 1, "At least one migration revision must be present"
 
         head_revision = script.get_current_head()
-        assert head_revision == "a1b2c3d4e5f6"
-
+        assert head_revision == "b2c3d4e5f6a7"
 
     def test_schema_metadata_tables_completeness(self):
         """Validates that Base.metadata contains all 14 core entity and association tables."""
