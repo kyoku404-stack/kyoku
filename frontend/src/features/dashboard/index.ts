@@ -1,9 +1,10 @@
-/**
- * Dashboard Feature Module
- * Workspace metrics, recent documents, activity logs, and system notifications.
- */
-export const DASHBOARD_FEATURE = {
-  name: 'dashboard',
-  version: '1.0.0',
-  description: 'Enterprise workspace metrics and system overview',
-};
+export * from './WelcomeSection';
+export * from './KPICardGrid';
+export * from './ActivityFeedWidget';
+export * from './ProjectsWidget';
+export * from './DocumentsWidget';
+export * from './AIAssistantWidget';
+export * from './NotificationsWidget';
+export * from './AnalyticsWidget';
+export * from './GlobalSearchBar';
+export * from './NotificationCenter';

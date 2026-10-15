@@ -1,28 +1,36 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { DashboardProvider } from '@/context/DashboardContext';
+import {
+  WelcomeSection,
+  KPICardGrid,
+  ProjectsWidget,
+  DocumentsWidget,
+  ActivityFeedWidget,
+  AIAssistantWidget,
+  NotificationsWidget,
+  AnalyticsWidget,
+} from '@/features/dashboard';
 import { ProjectList } from '@/features/projects/ProjectList';
 import { MeetingList } from '@/features/meetings/MeetingList';
 import { TaskList } from '@/features/tasks/TaskList';
 import { KnowledgeGraphView } from '@/features/knowledge/KnowledgeGraphView';
 import { ActivityLogTable } from '@/features/activity/ActivityLogTable';
+import { PermissionGate } from '@/components/authorization/PermissionGate';
+import { useAuthorization } from '@/hooks/useAuthorization';
 import type { Project } from '@/types/project';
 import type { Meeting } from '@/types/meeting';
 import type { Task } from '@/types/task';
 import type { KgEntity, KgRelationship } from '@/types/knowledge';
 import type { ActivityLog } from '@/types/activity';
 import {
-  FileText,
-  Cpu,
-  Database,
-  Users,
   FolderGit2,
   Video,
   CheckSquare,
   Network,
   Activity,
-  ArrowUpRight,
+  LayoutDashboard,
 } from 'lucide-react';
 
 const MOCK_PROJECTS: Project[] = [
@@ -165,29 +173,33 @@ const MOCK_LOGS: ActivityLog[] = [
   },
 ];
 
-export const DashboardPage: React.FC = () => {
+export const DashboardPageContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'meetings' | 'tasks' | 'knowledge' | 'audit'>('overview');
+  const { isRole, can } = useAuthorization();
+  const canViewAnalytics = can('analytics.view') || isRole(['OrgAdmin', 'SuperAdmin']);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto py-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto py-6 px-4 sm:px-6">
+      {/* Top Header & Navigation Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Enterprise Workspace Dashboard
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Enterprise Command Center
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Database-driven platform telemetry, persistence layer monitoring, and multi-tenant entities.
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            Real-time organizational telemetry, AI assistants, documents, and workspace coordination.
           </p>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border overflow-x-auto">
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border overflow-x-auto shrink-0">
           <Button
             size="sm"
             variant={activeTab === 'overview' ? 'secondary' : 'ghost'}
             onClick={() => setActiveTab('overview')}
-            className="text-xs"
+            className="text-xs flex items-center gap-1.5"
           >
+            <LayoutDashboard className="w-3.5 h-3.5" />
             Overview
           </Button>
           <Button
@@ -196,7 +208,8 @@ export const DashboardPage: React.FC = () => {
             onClick={() => setActiveTab('projects')}
             className="text-xs flex items-center gap-1.5"
           >
-            <FolderGit2 className="w-3.5 h-3.5" /> Projects
+            <FolderGit2 className="w-3.5 h-3.5" />
+            Projects
           </Button>
           <Button
             size="sm"
@@ -204,7 +217,8 @@ export const DashboardPage: React.FC = () => {
             onClick={() => setActiveTab('meetings')}
             className="text-xs flex items-center gap-1.5"
           >
-            <Video className="w-3.5 h-3.5" /> Meetings
+            <Video className="w-3.5 h-3.5" />
+            Meetings
           </Button>
           <Button
             size="sm"
@@ -212,7 +226,8 @@ export const DashboardPage: React.FC = () => {
             onClick={() => setActiveTab('tasks')}
             className="text-xs flex items-center gap-1.5"
           >
-            <CheckSquare className="w-3.5 h-3.5" /> Tasks
+            <CheckSquare className="w-3.5 h-3.5" />
+            Tasks
           </Button>
           <Button
             size="sm"
@@ -220,7 +235,8 @@ export const DashboardPage: React.FC = () => {
             onClick={() => setActiveTab('knowledge')}
             className="text-xs flex items-center gap-1.5"
           >
-            <Network className="w-3.5 h-3.5" /> Graph
+            <Network className="w-3.5 h-3.5" />
+            Graph
           </Button>
           <Button
             size="sm"
@@ -228,187 +244,112 @@ export const DashboardPage: React.FC = () => {
             onClick={() => setActiveTab('audit')}
             className="text-xs flex items-center gap-1.5"
           >
-            <Activity className="w-3.5 h-3.5" /> Audit Logs
+            <Activity className="w-3.5 h-3.5" />
+            Audit
           </Button>
         </div>
       </div>
 
-      {/* Top telemetry metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Ingested Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center text-emerald-600 dark:text-emerald-400">
-              <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
-              +14% from last week
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Indexed Chunks</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">48,920</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              pgvector 1536-dim embeddings
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Knowledge Graph Nodes</CardTitle>
-            <Cpu className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">3,412</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              8,109 semantic relationships
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Collaborators</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">84</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Across 5 departments
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tab content view */}
+      {/* Main Tab Content */}
       {activeTab === 'overview' && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Recent Ingestion Queue</CardTitle>
-              <CardDescription>Status of recent documents submitted to Celery</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <div>
-                      <div className="text-sm font-medium">Q3_Financial_Review.pdf</div>
-                      <div className="text-xs text-muted-foreground">4.2 MB &bull; Finance</div>
-                    </div>
-                  </div>
-                  <Badge variant="processed">PROCESSED</Badge>
-                </div>
+        <div className="space-y-6">
+          {/* Chapter 7: Personalized Welcome Section */}
+          <WelcomeSection />
 
-                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <div>
-                      <div className="text-sm font-medium">Architecture_Blueprint_v2.docx</div>
-                      <div className="text-xs text-muted-foreground">1.8 MB &bull; Engineering</div>
-                    </div>
-                  </div>
-                  <Badge variant="processing">PROCESSING</Badge>
-                </div>
+          {/* Chapter 8: KPI Cards */}
+          <KPICardGrid />
 
-                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <div>
-                      <div className="text-sm font-medium">Annual_Security_Audit.pdf</div>
-                      <div className="text-xs text-muted-foreground">8.4 MB &bull; Compliance</div>
-                    </div>
-                  </div>
-                  <Badge variant="pending">PENDING</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Chapter 4 & 21: Enterprise Main Workspace Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left & Center Columns (Span 2) */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Active Projects Widget */}
+              <ProjectsWidget />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Hybrid Search Distribution</CardTitle>
-              <CardDescription>Vector vs Full-text search utilization</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs font-medium mb-1">
-                  <span>Dense Semantic Retrieval (pgvector)</span>
-                  <span>68%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-primary rounded-full" style={{ width: '68%' }} />
-                </div>
-              </div>
+              {/* Recent Documents Widget */}
+              <DocumentsWidget />
 
-              <div>
-                <div className="flex justify-between text-xs font-medium mb-1">
-                  <span>Sparse Keyword BM25</span>
-                  <span>24%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-sky-500 rounded-full" style={{ width: '24%' }} />
-                </div>
-              </div>
+              {/* Recent Activity Feed */}
+              <ActivityFeedWidget />
 
-              <div>
-                <div className="flex justify-between text-xs font-medium mb-1">
-                  <span>Knowledge Graph Traversal</span>
-                  <span>8%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '8%' }} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Analytics Widget (OrgAdmin / SuperAdmin) */}
+              <PermissionGate
+                permission="analytics.view"
+                fallback={
+                  canViewAnalytics ? <AnalyticsWidget /> : null
+                }
+              >
+                <AnalyticsWidget />
+              </PermissionGate>
+            </div>
+
+            {/* Right Column / Assistant & Notification Lane (Span 1) */}
+            <div className="space-y-6">
+              {/* Chapter 12: Lightweight AI Assistant Widget */}
+              <AIAssistantWidget />
+
+              {/* Chapter 13: Notifications Center Widget */}
+              <NotificationsWidget />
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Subsystem Deep Dive Tabs */}
       {activeTab === 'projects' && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Enterprise Project Workspaces</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Enterprise Project Workspaces</h2>
+          </div>
           <ProjectList projects={MOCK_PROJECTS} />
         </Card>
       )}
 
       {activeTab === 'meetings' && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Scheduled & Transcribed Meetings</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Scheduled & Transcribed Meetings</h2>
+          </div>
           <MeetingList meetings={MOCK_MEETINGS} />
         </Card>
       )}
 
       {activeTab === 'tasks' && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Action Item Tasks</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Action Item Tasks</h2>
+          </div>
           <TaskList tasks={MOCK_TASKS} />
         </Card>
       )}
 
       {activeTab === 'knowledge' && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Knowledge Graph Entities & Relationships</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Knowledge Graph Entities & Relationships</h2>
+          </div>
           <KnowledgeGraphView entities={MOCK_KG_ENTITIES} relationships={MOCK_KG_RELATIONSHIPS} />
         </Card>
       )}
 
       {activeTab === 'audit' && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Security & Persistence Audit Trail</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Security & Persistence Audit Trail</h2>
+          </div>
           <ActivityLogTable logs={MOCK_LOGS} />
         </Card>
       )}
     </div>
   );
 };
+
+export const DashboardPage: React.FC = () => {
+  return (
+    <DashboardProvider>
+      <DashboardPageContent />
+    </DashboardProvider>
+  );
+};
+
+export default DashboardPage;

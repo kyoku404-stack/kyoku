@@ -9,6 +9,8 @@ import { RoleBadge } from '@/components/authorization/RoleBadge';
 import { Menu, Layers, ShieldCheck, Activity, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+import { GlobalSearchBar, NotificationCenter } from '@/features/dashboard';
+
 export const Header: React.FC = () => {
   const { toggleSidebar } = useUIStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -17,8 +19,8 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/80 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center space-x-3">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 gap-3">
+        <div className="flex items-center space-x-3 shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -44,16 +46,28 @@ export const Header: React.FC = () => {
           </Link>
         </div>
 
+        {/* Center Global Search (Phase 1.7) */}
+        {isAuthenticated && (
+          <div className="hidden md:flex flex-1 max-w-md mx-4">
+            <GlobalSearchBar className="w-full" />
+          </div>
+        )}
+
         {/* Center / Right actions */}
-        <div className="flex items-center space-x-3">
-          <Link to={ROUTES.HEALTH} className="hidden sm:flex items-center">
+        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <Link to={ROUTES.HEALTH} className="hidden lg:flex items-center">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               <Activity className="h-4 w-4 mr-1.5 text-emerald-500" />
               <span>Engine Status</span>
             </Button>
           </Link>
 
-          <div className="h-4 w-px bg-border hidden sm:block" />
+          {isAuthenticated && (
+            <>
+              <div className="h-4 w-px bg-border hidden lg:block" />
+              <NotificationCenter />
+            </>
+          )}
 
           <ThemeToggle />
 
@@ -64,7 +78,7 @@ export const Header: React.FC = () => {
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
                   <UserIcon className="h-4 w-4" />
                 </div>
-                <span className="hidden md:inline max-w-[120px] truncate">
+                <span className="hidden xl:inline max-w-[120px] truncate">
                   {user?.full_name || user?.email || 'Profile'}
                 </span>
               </Link>
