@@ -2183,4 +2183,75 @@ COMPLETED — Verified with 100% test pass rate (128/128 frontend tests OK acros
    - AI assistant prompt chip selection and SSE stream rendering.
    - Role-based analytics visibility for `OrgAdmin` vs restricted view for `Member`.
 
+---
+
+## Entry #025: Phase 1.7 — Dashboard Performance Benchmarks, Redis Caching, Playwright E2E Testing & Test Orchestrator
+
+### Date
+2026-10-15
+
+### Author Agent
+Member 4 (Integration & DevOps Lead)
+
+### Status
+COMPLETED ✓ — MANDATORY HUMAN GATING STOP
+
+### Implemented Features
+- **Comprehensive Dashboard Performance, Latency & Redis Caching Test Suite (`tests/integration/test_dashboard_performance.py`)**:
+  - Authored 7 comprehensive integration test benchmarks covering:
+    - Dashboard summary micro-latency benchmark (< 500ms cold DB aggregation SLA; < 25ms warm cached SLA via Redis/in-memory cache with > 1.2x speedup factor).
+    - Redis cache layer validation: verifies cache storage, TTL verification (60s dashboard, 300s analytics), and cache invalidation / eviction mechanics.
+    - Sliding-window rate limiting benchmark (60 requests/hour per user) and strict 429 `AI_RATE_LIMIT_EXCEEDED` exception verification on quota breach.
+    - Concurrent multi-widget load stress testing across `/dashboard`, `/activity`, `/projects/recent`, `/documents/recent`, and `/notifications` with 100% success rate, 0 unhandled 500 errors, and sub-60ms average latency under stress.
+    - Global multi-entity full-text search latency benchmark (< 100ms average, < 200ms peak bound) across projects, documents, users, and teams with > 10 req/s throughput.
+    - Activity feed pagination latency benchmark (< 50ms average) under rapid sequential access.
+- **Playwright E2E Test Suite (`tests/e2e/dashboard.spec.ts`)**:
+  - Authored comprehensive browser end-to-end scenarios covering:
+    - Command Center header, personalized welcome section greeting, KPI telemetry, and core widgets hydration.
+    - Deep-dive workspace navigation tabs (Overview, Projects, Meetings, Tasks, Graph, Audit).
+    - Theme switching and persistence across reload (Light / Dark mode toggle and `keep_ui_theme` in `localStorage`).
+    - Notification center popover toggle, unread badge counters, filtering (All, Unread only), and mark-as-read interaction.
+    - Lightweight AI assistant widget suggested prompt chips selection, query submission, and streaming text shell.
+    - Global search bar input with `Ctrl+K` keyboard shortcut and categorized result items.
+    - Responsive layout adaptations across Desktop (1440x900), Tablet (768x1024), and Mobile (375x667) viewports.
+- **Automated Test Orchestration Script (`scripts/test-dashboard.sh`)**:
+  - Created executable test runner supporting targeted test execution modes: `unit`, `integration`, `perf`, `cache`, `frontend`, `e2e`, `backend`, and `all` with formatted ANSI color status reporting.
+- **Full Monorepo Verification & Zero Regressions**:
+  - Total backend tests: **303/303 PASSED (100%)** (+7 new performance/caching integration tests).
+  - Total frontend tests: **128/128 PASSED (100%)** across 18 test files.
+  - Total monorepo tests: **431/431 PASSED (100%)**.
+  - Code quality: 0 ruff errors, 0 ESLint warnings.
+  - TypeScript compilation: clean (`tsc -p tests/e2e/tsconfig.json --noEmit` & `npm run build` -> 1,730 modules transformed, 0 errors).
+
+### Files Modified / Created
+- `tests/integration/test_dashboard_performance.py` (New — 7 performance benchmarks & stress tests)
+- `tests/e2e/dashboard.spec.ts` (New — Playwright E2E suite covering 5 required scenarios + search)
+- `scripts/test-dashboard.sh` (New — executable orchestration runner)
+- `PROJECT_STATE.md` (Modified — Phase 1.7 Member 4 completion & 431/431 test counts)
+- `docs/handoffs/agent-handoffs.md` (Modified — Entry #025 appended)
+
+### API Contracts Updated
+- No schema changes required (all tests conform to existing Phase 1.7 contract specifications in `docs/API/api-contract.md` Section 5).
+
+### Database Changes / Migrations
+- None required (verified against existing Phase 1.7 schema migration `a1b2c3d4e5f6`).
+
+### Verification & Tests Executed
+- [x] `./backend/.venv/bin/pytest tests/integration/test_dashboard_performance.py -v` → **7/7 PASSED**
+- [x] `./scripts/test-dashboard.sh backend` → **47/47 PASSED (100%)**
+- [x] `./backend/.venv/bin/pytest tests/unit/ tests/integration/` → **303/303 PASSED (100%)**
+- [x] `./scripts/test-frontend.sh` → **128/128 PASSED (100%)**
+- [x] `./scripts/lint.sh` → **0 lint errors across Python & ESLint**
+- [x] `./frontend/node_modules/.bin/tsc -p tests/e2e/tsconfig.json --noEmit` → **0 errors**
+- [x] `npm --prefix frontend run build` → **0 errors, 1,730 modules transformed**
+- [x] Feature branch: `agent/devops/feature/phase-1.7-dashboard-e2e-performance`
+
+#### Target Receiving Agent
+- **All Team Members & Human Gatekeeper**: Phase 1.7 is now fully COMPLETED across all 4 roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+
+#### Required Action for Receiving Agent
+- Human team review and PR merge of `agent/devops/feature/phase-1.7-dashboard-e2e-performance` into `main`.
+- Awaiting human authorization before proceeding to the next sub-phase (Phase 1.8 Document Processing & Ingestion Pipeline).
+
+
 
