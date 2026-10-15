@@ -2253,5 +2253,144 @@ COMPLETED ✓ — MANDATORY HUMAN GATING STOP
 - Human team review and PR merge of `agent/devops/feature/phase-1.7-dashboard-e2e-performance` into `main`.
 - Awaiting human authorization before proceeding to the next sub-phase (Phase 1.8 Document Processing & Ingestion Pipeline).
 
+---
+
+## Entry #026: Phase 1.8 — Document Management, Storage Hierarchy, Version Lineage & AI Ingestion Architecture
+
+### Date
+2026-10-15
+
+### Author Agent
+Member 1 (Project Lead & AI Architect)
+
+### Status
+COMPLETED ✓ — READY FOR MEMBER 2 (BACKEND LEAD), MEMBER 3 (FRONTEND LEAD), AND MEMBER 4 (DEVOPS LEAD)
+
+### Executive Summary
+Member 1 has delivered the architectural foundation, data schemas, API specifications, and typed contracts for Phase 1.8 (Document Upload, File Management & Storage System). This subsystem establishes the complete digital knowledge lifecycle for KEEP, separating binary assets into tenant-isolated storage directories while persisting structured metadata, version history, and 9-state processing status in PostgreSQL 16. It ensures full compatibility with the upcoming Phase 2 Retrieval-Augmented Generation (RAG) and Knowledge Graph (KG) ingestion pipelines.
+
+### Implemented Deliverables
+
+1. **Master Architecture Specification (`docs/Architecture/document-management-architecture.md`)**:
+   - Executive Summary & Phase 1.8 Objectives establishing the bridge between enterprise files and future AI intelligence.
+   - End-to-end 9-state processing state machine: `PENDING` -> `VALIDATED` -> `AWAITING_PROCESSING` -> `QUEUED` -> `EXTRACTING` -> `CHUNKING` -> `EMBEDDING` -> `READY_FOR_AI` (with operational branches `UPDATED`, `FAILED`, `ARCHIVED`, `DELETED`).
+   - Supported file format matrix across 11 formats (PDF, DOCX, TXT, MD, RTF, PPTX, XLSX, CSV, PNG, JPG/JPEG, WEBP) with canonical MIME types, magic byte signatures, and per-format file size limits (100MB PDF/PPTX, 50MB DOCX/XLSX, 20MB Text/Images).
+   - Multi-tenant directory layout: `storage/{organization_id}/documents/{document_id}/v{version_number}/{sanitized_filename}`, `previews/{document_id}/...`, `thumbnails/{document_id}/...`.
+   - Two-tier version lineage model (`Document` container + immutable `DocumentVersion` snapshots) with sequential versioning ($1, 2, 3, \dots$).
+   - 10 enterprise document categories (`POLICIES`, `REPORTS`, `MEETING_MINUTES`, `RESEARCH`, `LEGAL`, `FINANCE`, `HR`, `TECHNICAL_DOCUMENTATION`, `PRESENTATIONS`, `TRAINING_MATERIALS`).
+   - Document preview & thumbnail rendering architecture (PDF byte streaming, DOCX HTML conversion, Text viewer, WebP thumbnails).
+   - Compatibility seam linking document versions to `document_chunks` in pgvector for clean chunk activation and deactivation.
+   - Performance targets (<1s upload initiation, <3s metadata extraction, <5s preview generation, <500ms listing).
+
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - **ADR-023**: Document Storage Layout, Tenant Isolation & Storage Abstraction (Local Disk MVP with S3 Compatibility).
+   - **ADR-024**: Document Metadata Schema, SHA-256 Checksum Deduplication & Ingestion State Machine.
+   - **ADR-025**: Document Versioning Lineage, Vector Invalidation & RAG Ingestion Pipeline Seam.
+
+3. **REST API Contracts Specification Expansion (`docs/api/api-contract.md`)**:
+   - Expanded Section 3.3 with complete specifications for all 8 Phase 1.8 endpoints:
+     - `POST /api/v1/documents/upload` (Multipart file upload with validation & metadata)
+     - `GET /api/v1/documents` (Paginated, filtered by status/category/type/project/uploader/search)
+     - `GET /api/v1/documents/{id}` (Full metadata, versions history, processing status)
+     - `GET /api/v1/documents/{id}/download` (Secure binary file download stream with optional `version` query param)
+     - `GET /api/v1/documents/{id}/preview` (Rendered HTML/PDF/text/thumbnail preview stream)
+     - `PATCH /api/v1/documents/{id}` (Update display title, category, tags, description)
+     - `POST /api/v1/documents/{id}/version` (Upload revised version, bump version, change notes)
+     - `DELETE /api/v1/documents/{id}` (Soft-delete or archive document with ownership override)
+   - Updated Table 4 (API Endpoints Registry) with required permissions for all 8 endpoints.
+
+4. **Database Schema Specification Expansion (`docs/database/database-schema.md`)**:
+   - Updated Section 3.5 (`documents` Table): added `current_version_id`, `current_version_number`, `original_filename`, `title`, `description`, `mime_type`, `checksum_sha256`, `category`, and `tags`.
+   - Added Section 3.5.1 (`document_versions` Table): explicit version snapshots with `version_number`, `file_path`, `file_size`, `checksum_sha256`, `mime_type`, `uploader_id`, `change_notes`, `metadata_json`, and uniqueness constraint `(document_id, version_number)`.
+   - Updated Section 3.6 (`document_chunks` Table): added `document_version_id` foreign key.
+   - Updated Section 4 ERD: added `DOCUMENT ||--o{ DOCUMENT_VERSION : "tracks_versions"` and `DOCUMENT_VERSION ||--o{ DOCUMENT_CHUNK : "chunks_into"`.
+   - Updated Section 5 Indexing Matrix: added `idx_docs_org_checksum`, `idx_docs_category`, `idx_docs_project`, `idx_doc_versions_doc_ver`, and `idx_doc_versions_checksum`.
+
+5. **Typed AI & RAG Domain Contracts (`backend/app/services/rag/` & `backend/app/services/ai/`)**:
+   - `backend/app/services/rag/interfaces.py`:
+     - `DocumentProcessingState`: 9-state machine with `.is_terminal()`, `.is_ai_ready()`, and `.can_transition_to(target)`.
+     - `DocumentCategory`: 10 canonical enterprise categories.
+     - `SupportedFileType`, `FILE_TYPE_MIME_MAP`, `MAX_FILE_SIZES`, `MAGIC_BYTE_SIGNATURES`.
+     - `DocumentMetadata`, `DocumentVersionInfo`, `DocumentValidationResult` dataclasses.
+     - `BaseDocumentValidator`: Abstract interface for attribute checking, magic bytes sniffing, filename sanitization, and SHA-256 calculation.
+     - `BaseFileStorageService`: Abstract interface for tenant-isolated saving, reading, path resolution, deletion, quota checking, and preview path generation.
+     - `BaseRAGDocumentIngestionSeam`: Abstract interface for Celery task dispatch, processing status updates, chunk registration, and superseded chunk deactivation.
+   - `backend/app/services/rag/__init__.py`: Cleanly exported all new contracts with sorted imports and `__all__`.
+   - `backend/app/services/ai/interfaces.py`:
+     - Added `document.download`, `document.preview`, and `document.version` to `AIPermission`.
+     - Updated canonical role permissions: `VIEWER_PERMISSIONS` receives download and preview; `EMPLOYEE_PERMISSIONS` receives version; higher roles inherit.
+
+6. **Dedicated Unit Testing Suite (`tests/unit/test_document_storage_ai_contracts.py`)**:
+   - 28 unit tests covering state machine transitions, category validation, MIME mappings, size limits, dataclasses, role permission inheritance, mock validator (path traversal sanitization, magic bytes, SHA-256), mock storage (path synthesis, quota checks, read/delete), and mock RAG ingestion seam (task dispatch, status transitions, version chunk deactivation).
+   - 100% test pass rate (28/28 passed in 0.02s).
+
+### Files Modified / Created
+- `docs/Architecture/document-management-architecture.md` (Created — Master Phase 1.8 Architecture Specification)
+- `docs/decisions/decisions.md` (Modified — Added ADR-023, ADR-024, ADR-025)
+- `docs/api/api-contract.md` (Modified — Expanded Section 3.3 and Table 4 with 8 document endpoints)
+- `docs/database/database-schema.md` (Modified — Updated Section 3.5, added Section 3.5.1, ERD, and Indexing Matrix)
+- `backend/app/services/rag/interfaces.py` (Modified — Added Phase 1.8 domain contracts, enums, dataclasses, and abstract services)
+- `backend/app/services/rag/__init__.py` (Modified — Exported Phase 1.8 domain types)
+- `backend/app/services/ai/interfaces.py` (Modified — Added Phase 1.8 document permissions & role mappings)
+- `tests/unit/test_document_storage_ai_contracts.py` (Created — 28 unit tests)
+- `PROJECT_STATE.md` (Modified — Marked Phase 1.8 Member 1 complete, 459/459 tests green)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #026)
+
+### Verification & Tests Executed
+- [x] Unit test suite passed: `./backend/.venv/bin/pytest tests/unit/test_document_storage_ai_contracts.py -v` → **28/28 PASSED (100%)**
+- [x] Full backend test suite passed: `./backend/.venv/bin/pytest tests/unit/ tests/integration/` → **331/331 PASSED (100%)**
+- [x] Full frontend test suite passed: `npm --prefix frontend test -- --run` → **128/128 PASSED (100% across 18 test files)**
+- [x] Monorepo test suite total: **459/459 PASSED (100%)**
+- [x] Python & Frontend code quality passed: `./scripts/lint.sh` → **0 lint errors across Python & ESLint**
+- [x] Git branch isolation verified: `agent/ai-lead/feature/phase-1.8-document-storage-architecture`
+- [x] Zero hardcoded secrets, zero debug logs
+
+### Target Receiving Agents
+- **Member 2 (Backend Lead)**: Implement upload router, storage service, metadata persistence, version repository, validation logic, and Alembic database migration.
+- **Member 3 (Frontend Lead)**: Build drag-and-drop document upload interface, document explorer, file preview viewer, metadata editor, and version history timeline.
+- **Member 4 (DevOps Lead)**: Configure Docker storage volume mounts (`/app/storage`), author multi-tenant isolation tests, performance benchmark suites, and Playwright E2E tests.
+
+### Required Actions for Receiving Agents
+
+#### Member 2 (Backend Lead):
+1. **ORM Models & Alembic Migration**:
+   - Update `Document` SQLAlchemy model (`backend/app/models/document.py`) to add columns: `current_version_id`, `current_version_number`, `original_filename`, `title`, `description`, `mime_type`, `checksum_sha256`, `category`, and `tags`.
+   - Create `DocumentVersion` SQLAlchemy model (`backend/app/models/document_version.py`) matching `docs/database/database-schema.md` Section 3.5.1.
+   - Generate Alembic migration adding `document_versions` table and columns on `documents`.
+2. **Storage Service Implementation**:
+   - Implement `LocalStorageService` fulfilling `BaseFileStorageService` (`backend/app/services/storage_service.py`), creating tenant directories under `storage/{org_id}/documents/{doc_id}/v{version}/{filename}`.
+3. **Validation & Ingestion Logic**:
+   - Implement file validation logic matching `BaseDocumentValidator` (magic bytes, size limits, filename sanitization).
+4. **FastAPI Endpoints**:
+   - Implement all 8 endpoints in `backend/app/api/v1/documents.py` conforming strictly to `docs/api/api-contract.md` Section 3.3:
+     - `POST /api/v1/documents/upload`
+     - `GET /api/v1/documents`
+     - `GET /api/v1/documents/{id}`
+     - `GET /api/v1/documents/{id}/download`
+     - `GET /api/v1/documents/{id}/preview`
+     - `PATCH /api/v1/documents/{id}`
+     - `POST /api/v1/documents/{id}/version`
+     - `DELETE /api/v1/documents/{id}`
+
+#### Member 3 (Frontend Lead):
+1. **TypeScript Domain Types**:
+   - Define TypeScript interfaces in `frontend/src/types/document.ts` matching `docs/api/api-contract.md` Section 3.3 (`DocumentItem`, `DocumentDetail`, `DocumentVersionItem`, `DocumentUploadResponse`, `DocumentCategory`, `DocumentProcessingState`).
+2. **API Client Service**:
+   - Create `documentService` in `frontend/src/services/documentService.ts` for upload, listing, details, download, preview, metadata patch, version upload, and delete.
+3. **UI Components**:
+   - Build `DocumentUploadModal` with drag-and-drop zone and category/project selectors.
+   - Build `DocumentExplorer` table/card view with category tabs, search input, and status badges.
+   - Build `DocumentPreviewModal` with PDF/HTML/text/image preview.
+   - Build `VersionHistoryTimeline` displaying version revisions, change notes, and download actions.
+
+#### Member 4 (DevOps Lead):
+1. **Docker Storage Configuration**:
+   - Verify `/app/storage` persistent volume mounting in `docker-compose.yml`.
+2. **Integration & Security Tests**:
+   - Author integration test suite verifying tenant boundary isolation on file downloads and storage paths.
+   - Author upload concurrency and large file benchmark tests.
+3. **Playwright E2E Suite**:
+   - Author Playwright test covering upload, explorer filtering, preview opening, and version history display.
+
 
 

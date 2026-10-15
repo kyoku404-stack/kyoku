@@ -428,52 +428,84 @@
 
 ---
 
-### 3.3 Document Management (`/api/v1/documents`)
+### 3.3 Document Management & Storage System (`/api/v1/documents`)
 
 #### 3.3.1 Upload Document for Ingestion
 - **Method**: `POST`
 - **Path**: `/api/v1/documents/upload`
-- **Auth**: Bearer JWT (`OrgAdmin`, `Manager`, `Member`)
+- **Auth**: Bearer JWT (`document.create` permission)
 - **Content-Type**: `multipart/form-data`
 - **Form Fields**:
-  - `file`: Binary file (PDF, DOCX, TXT, PNG, JPG)
-  - `title`: string (optional)
-  - `tags`: string (comma-separated, optional)
+  - `file`: Binary file (PDF, DOCX, TXT, MD, RTF, PPTX, XLSX, CSV, PNG, JPG, WEBP)
+  - `title`: string (optional, defaults to filename without extension)
+  - `category`: string (optional, one of: `POLICIES`, `REPORTS`, `MEETING_MINUTES`, `RESEARCH`, `LEGAL`, `FINANCE`, `HR`, `TECHNICAL_DOCUMENTATION`, `PRESENTATIONS`, `TRAINING_MATERIALS`)
+  - `tags`: string (optional, comma-separated tags)
+  - `project_id`: UUID (optional, associated project container)
+  - `description`: string (optional)
 - **Response (202 Accepted)**:
 ```json
 {
   "success": true,
-  "message": "Document accepted for asynchronous processing.",
+  "message": "Document uploaded successfully and queued for AI ingestion.",
   "data": {
     "document_id": "99a85f64-5717-4562-b3fc-2c963f66af11",
     "filename": "Q3_Strategic_Plan.pdf",
-    "status": "PROCESSING",
+    "original_filename": "Q3 Strategic Plan Final.pdf",
+    "file_type": "application/pdf",
     "file_size": 2458120,
-    "created_at": "2026-09-30T10:00:00Z"
+    "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "category": "REPORTS",
+    "tags": ["strategy", "q3", "planning"],
+    "version_number": 1,
+    "status": "AWAITING_PROCESSING",
+    "ai_ready": false,
+    "project_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "uploader_id": "1fa85f64-5717-4562-b3fc-2c963f66afa1",
+    "created_at": "2026-10-15T10:00:00Z"
   }
 }
 ```
-- **Error Codes**: `UNSUPPORTED_FILE_TYPE` (400), `FILE_SIZE_EXCEEDED` (400), `AUTH_FORBIDDEN` (403)
+- **Error Codes**: `UNSUPPORTED_FILE_TYPE` (400), `FILE_SIZE_EXCEEDED` (400), `STORAGE_QUOTA_EXCEEDED` (400), `DUPLICATE_FILE_DETECTED` (409), `AUTH_PERMISSION_DENIED` (403)
 
-#### 3.3.2 List Documents (Paginated)
+#### 3.3.2 List Documents (Paginated & Filtered)
 - **Method**: `GET`
-- **Path**: `/api/v1/documents?page=1&page_size=20&status=PROCESSED`
-- **Auth**: Bearer JWT
+- **Path**: `/api/v1/documents`
+- **Auth**: Bearer JWT (`document.read` permission)
+- **Query Parameters**:
+  - `page`: integer (default: 1, min: 1)
+  - `page_size`: integer (default: 20, max: 100)
+  - `status`: string (optional: `PENDING`, `VALIDATED`, `AWAITING_PROCESSING`, `QUEUED`, `EXTRACTING`, `CHUNKING`, `EMBEDDING`, `READY_FOR_AI`, `FAILED`, `ARCHIVED`)
+  - `category`: string (optional, e.g. `REPORTS`, `POLICIES`)
+  - `file_type`: string (optional, e.g. `pdf`, `docx`, `png`)
+  - `project_id`: UUID (optional filter by project)
+  - `uploader_id`: UUID (optional filter by uploader)
+  - `search`: string (optional search in filename, title, tags)
+  - `sort_by`: string (optional: `created_at`, `filename`, `file_size`, default: `created_at`)
+  - `sort_order`: string (optional: `asc`, `desc`, default: `desc`)
 - **Response (200 OK)**:
 ```json
 {
   "success": true,
-  "message": "Documents retrieved.",
+  "message": "Documents retrieved successfully.",
   "data": {
     "items": [
       {
         "id": "99a85f64-5717-4562-b3fc-2c963f66af11",
         "filename": "Q3_Strategic_Plan.pdf",
+        "title": "Q3 Strategic Plan",
         "file_type": "application/pdf",
         "file_size": 2458120,
-        "status": "PROCESSED",
+        "category": "REPORTS",
+        "tags": ["strategy", "q3"],
+        "version_number": 1,
+        "status": "READY_FOR_AI",
+        "ai_ready": true,
         "chunk_count": 42,
-        "created_at": "2026-09-30T10:00:00Z"
+        "project_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "uploader_id": "1fa85f64-5717-4562-b3fc-2c963f66afa1",
+        "uploader_name": "Jane Doe",
+        "created_at": "2026-10-15T10:00:00Z",
+        "updated_at": "2026-10-15T10:05:00Z"
       }
     ],
     "total": 1,
@@ -484,17 +516,162 @@
 }
 ```
 
-#### 3.3.3 Delete Document (Soft Delete with Authorization Gating)
+#### 3.3.3 Retrieve Document Details & Version History
+- **Method**: `GET`
+- **Path**: `/api/v1/documents/{id}`
+- **Auth**: Bearer JWT (`document.read` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Document metadata retrieved successfully.",
+  "data": {
+    "id": "99a85f64-5717-4562-b3fc-2c963f66af11",
+    "organization_id": "8bc92d11-3456-4211-89ab-1234567890ab",
+    "project_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "uploader_id": "1fa85f64-5717-4562-b3fc-2c963f66afa1",
+    "filename": "Q3_Strategic_Plan.pdf",
+    "original_filename": "Q3 Strategic Plan Final.pdf",
+    "title": "Q3 Strategic Plan",
+    "description": "Executive strategic overview for Q3 initiatives.",
+    "file_type": "application/pdf",
+    "file_size": 2458120,
+    "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "category": "REPORTS",
+    "tags": ["strategy", "q3", "planning"],
+    "current_version_number": 2,
+    "status": "READY_FOR_AI",
+    "ai_ready": true,
+    "chunk_count": 42,
+    "metadata_json": {
+      "page_count": 14,
+      "author": "Jane Doe",
+      "word_count": 4200,
+      "language": "en",
+      "ocr_applied": false
+    },
+    "versions": [
+      {
+        "version_number": 2,
+        "file_size": 2458120,
+        "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uploader_id": "1fa85f64-5717-4562-b3fc-2c963f66afa1",
+        "change_notes": "Updated financial forecasts in Section 4.",
+        "created_at": "2026-10-15T12:00:00Z"
+      },
+      {
+        "version_number": 1,
+        "file_size": 2341000,
+        "checksum_sha256": "a1b2c3d4e5f6...",
+        "uploader_id": "1fa85f64-5717-4562-b3fc-2c963f66afa1",
+        "change_notes": "Initial upload.",
+        "created_at": "2026-10-15T10:00:00Z"
+      }
+    ],
+    "created_at": "2026-10-15T10:00:00Z",
+    "updated_at": "2026-10-15T12:00:00Z"
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404), `AUTH_PERMISSION_DENIED` (403), `AUTH_ORGANIZATION_MISMATCH` (403)
+
+#### 3.3.4 Download Document Binary Stream
+- **Method**: `GET`
+- **Path**: `/api/v1/documents/{id}/download`
+- **Auth**: Bearer JWT (`document.download` permission)
+- **Query Parameters**:
+  - `version`: integer (optional, defaults to current active version)
+- **Response Headers**:
+  - `Content-Type`: MIME type of document (e.g. `application/pdf`)
+  - `Content-Disposition`: `attachment; filename="Q3_Strategic_Plan.pdf"`
+  - `Content-Length`: Size in bytes
+- **Response**: Binary byte stream (200 OK)
+- **Error Codes**: `NOT_FOUND` (404), `AUTH_PERMISSION_DENIED` (403), `AUTH_ORGANIZATION_MISMATCH` (403)
+
+#### 3.3.5 Preview Document
+- **Method**: `GET`
+- **Path**: `/api/v1/documents/{id}/preview`
+- **Auth**: Bearer JWT (`document.preview` permission)
+- **Query Parameters**:
+  - `version`: integer (optional, defaults to current active version)
+  - `format`: string (optional: `html`, `text`, `thumbnail`, default depends on MIME type)
+- **Response Headers**:
+  - `Content-Type`: `application/pdf`, `text/html; charset=utf-8`, `text/plain; charset=utf-8`, or `image/webp`
+- **Response**: Rendered preview stream (200 OK)
+- **Error Codes**: `NOT_FOUND` (404), `AUTH_PERMISSION_DENIED` (403), `PREVIEW_UNAVAILABLE` (422)
+
+#### 3.3.6 Update Document Metadata
+- **Method**: `PATCH`
+- **Path**: `/api/v1/documents/{id}`
+- **Auth**: Bearer JWT (`document.update` permission or uploader ownership bypass)
+- **Request Body**:
+```json
+{
+  "title": "Q3 Enterprise Strategy Plan (Revised)",
+  "description": "Updated corporate objectives and revenue targets.",
+  "category": "REPORTS",
+  "tags": ["strategy", "q3", "executive"],
+  "project_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Document metadata updated successfully.",
+  "data": {
+    "id": "99a85f64-5717-4562-b3fc-2c963f66af11",
+    "title": "Q3 Enterprise Strategy Plan (Revised)",
+    "category": "REPORTS",
+    "tags": ["strategy", "q3", "executive"],
+    "updated_at": "2026-10-15T14:00:00Z"
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404), `AUTH_PERMISSION_DENIED` (403), `AUTH_ORGANIZATION_MISMATCH` (403)
+
+#### 3.3.7 Upload New Version
+- **Method**: `POST`
+- **Path**: `/api/v1/documents/{id}/version`
+- **Auth**: Bearer JWT (`document.version` permission or uploader ownership bypass)
+- **Content-Type**: `multipart/form-data`
+- **Form Fields**:
+  - `file`: Binary file (must match supported MIME formats)
+  - `change_notes`: string (required summary of changes)
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "New document version uploaded successfully and queued for AI re-indexing.",
+  "data": {
+    "document_id": "99a85f64-5717-4562-b3fc-2c963f66af11",
+    "version_number": 2,
+    "filename": "Q3_Strategic_Plan.pdf",
+    "file_size": 2458120,
+    "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "change_notes": "Updated financial forecasts in Section 4.",
+    "status": "AWAITING_PROCESSING",
+    "created_at": "2026-10-15T12:00:00Z"
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404), `UNSUPPORTED_FILE_TYPE` (400), `FILE_SIZE_EXCEEDED` (400), `STORAGE_QUOTA_EXCEEDED` (400), `AUTH_PERMISSION_DENIED` (403)
+
+#### 3.3.8 Archive or Soft-Delete Document
 - **Method**: `DELETE`
 - **Path**: `/api/v1/documents/{id}`
-- **Auth**: Bearer JWT (`document.delete` permission or ownership override for document author/uploader)
+- **Auth**: Bearer JWT (`document.delete` permission or uploader ownership bypass)
+- **Query Parameters**:
+  - `action`: string (optional: `archive` or `delete`, default: `delete`)
 - **Response (200 OK)**:
 ```json
 {
   "success": true,
   "message": "Document deleted successfully.",
   "data": {
-    "id": "99a85f64-5717-4562-b3fc-2c963f66af11"
+    "id": "99a85f64-5717-4562-b3fc-2c963f66af11",
+    "is_deleted": true,
+    "deleted_at": "2026-10-15T15:00:00Z"
   }
 }
 ```
@@ -711,7 +888,12 @@ Authorization evaluation occurs after JWT validation and tenant extraction. When
 | `/api/v1/members/{user_id}` | PATCH / DELETE | Member role & status updates | `user.manage` | Member 2 | Phase 1.5 |
 | `/api/v1/documents/upload` | POST | Multipart file ingestion | `document.create` | Member 2 & Member 1 | Phase 1.8 |
 | `/api/v1/documents` | GET | List tenant documents | `document.read` | Member 2 | Phase 1.8 |
-| `/api/v1/documents/{id}` | DELETE | Delete document (owner/admin) | `document.delete` | Member 2 | Phase 1.8 |
+| `/api/v1/documents/{id}` | GET | Retrieve document metadata & versions | `document.read` | Member 2 | Phase 1.8 |
+| `/api/v1/documents/{id}/download` | GET | Download binary file stream | `document.download` | Member 2 | Phase 1.8 |
+| `/api/v1/documents/{id}/preview` | GET | Rendered preview stream | `document.preview` | Member 2 | Phase 1.8 |
+| `/api/v1/documents/{id}` | PATCH | Update metadata (title/category/tags) | `document.update` (owner bypass) | Member 2 | Phase 1.8 |
+| `/api/v1/documents/{id}/version` | POST | Upload new revision | `document.version` (owner bypass) | Member 2 | Phase 1.8 |
+| `/api/v1/documents/{id}` | DELETE | Soft-delete / archive document | `document.delete` (owner bypass) | Member 2 | Phase 1.8 |
 | `/api/v1/search/hybrid` | POST | Hybrid semantic + BM25 search | `ai.search` | Member 1 & Member 2 | Phase 2.2 |
 | `/api/v1/chat/query` | POST | Citation-backed RAG Q&A | `ai.chat` | Member 1 & Member 2 | Phase 2.2 |
 | `/api/v1/chat/stream` | POST (SSE) | Real-time token streaming Q&A | `ai.chat` | Member 1 & Member 2 | Phase 2.2 |

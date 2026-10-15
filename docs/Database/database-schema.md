@@ -176,26 +176,57 @@ Enterprise initiatives, workspaces, and knowledge groupings.
 ---
 
 ### 3.5 `documents` Table
-Raw uploaded files and document metadata.
+Represents logical digital knowledge assets, metadata headers, and container references for document version lineage.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique document identifier |
-| `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` | Tenant boundary foreign key |
+| `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` ON DELETE CASCADE | Tenant boundary foreign key |
 | `uploader_id` | `UUID` | NOT NULL, FK -> `users.id` | User who uploaded the file |
-| `project_id` | `UUID` | NULL, FK -> `projects.id` | Associated project container |
-| `filename` | `VARCHAR(255)` | NOT NULL | Original filename |
-| `file_path` | `TEXT` | NOT NULL | Storage URI (local disk path or S3 key) |
-| `file_type` | `VARCHAR(50)` | NOT NULL | MIME type / file format (`pdf`, `docx`, `txt`, `png`) |
+| `project_id` | `UUID` | NULL, FK -> `projects.id` ON DELETE SET NULL | Associated project container |
+| `current_version_id`| `UUID` | NULL, FK -> `document_versions.id` ON DELETE SET NULL | Pointer to active document version snapshot |
+| `current_version_number`| `INT` | NOT NULL, Default `1` | Latest sequential version number |
+| `filename` | `VARCHAR(255)` | NOT NULL | Sanitized storage filename |
+| `original_filename`| `VARCHAR(255)` | NOT NULL | Original user filename at upload |
+| `title` | `VARCHAR(255)` | NULL | User-specified display title |
+| `description` | `TEXT` | NULL | Document description / abstract |
+| `file_path` | `TEXT` | NOT NULL | Storage path (`storage/{org_id}/documents/{doc_id}/v{ver}/{filename}`) |
+| `file_type` | `VARCHAR(50)` | NOT NULL | Normalized extension (`pdf`, `docx`, `txt`, `png`) |
+| `mime_type` | `VARCHAR(100)` | NOT NULL | Canonical MIME type (e.g. `application/pdf`) |
 | `file_size` | `BIGINT` | NOT NULL | File size in bytes |
-| `status` | `VARCHAR(50)` | NOT NULL, Default `'PENDING'` | Ingestion status (`PENDING`, `PROCESSING`, `PROCESSED`, `FAILED`) |
-| `chunk_count` | `INT` | NOT NULL, Default `0` | Number of generated chunks |
-| `error_message` | `TEXT` | NULL | Parsing error details if failed |
-| `metadata_json` | `JSONB` | NOT NULL, Default `'{}'::jsonb` | Extracted author, page count, OCR quality |
+| `checksum_sha256` | `VARCHAR(64)` | NOT NULL | SHA-256 cryptographic digest for integrity & deduplication |
+| `category` | `VARCHAR(50)` | NOT NULL, Default `'REPORTS'` | Category (`POLICIES`, `REPORTS`, `MEETING_MINUTES`, `RESEARCH`, `LEGAL`, `FINANCE`, `HR`, `TECHNICAL_DOCUMENTATION`, `PRESENTATIONS`, `TRAINING_MATERIALS`) |
+| `tags` | `JSONB` | NOT NULL, Default `'[]'::jsonb` | Categorization tags array |
+| `status` | `VARCHAR(50)` | NOT NULL, Default `'AWAITING_PROCESSING'` | State (`PENDING`, `VALIDATED`, `AWAITING_PROCESSING`, `QUEUED`, `EXTRACTING`, `CHUNKING`, `EMBEDDING`, `READY_FOR_AI`, `FAILED`, `ARCHIVED`) |
+| `chunk_count` | `INT` | NOT NULL, Default `0` | Number of generated chunks in pgvector |
+| `error_message` | `TEXT` | NULL | Parsing or vectorization failure details |
+| `metadata_json` | `JSONB` | NOT NULL, Default `'{}'::jsonb` | Extracted attributes (page_count, author, word_count, language, ocr_applied) |
 | `is_deleted` | `BOOLEAN` | NOT NULL, Default `FALSE` | Soft delete flag |
 | `deleted_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Soft delete timestamp |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Upload timestamp |
 | `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Last modification timestamp |
+
+---
+
+### 3.5.1 `document_versions` Table (Phase 1.8 Versioning & Lineage)
+Stores immutable physical file revisions, author attributions, change notes, and version snapshots for audit and rollback.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique version snapshot identifier |
+| `document_id` | `UUID` | NOT NULL, FK -> `documents.id` ON DELETE CASCADE | Parent document reference |
+| `version_number` | `INT` | NOT NULL | Sequential version index ($1, 2, 3, \dots$) |
+| `file_path` | `TEXT` | NOT NULL | Physical storage path on disk or cloud bucket |
+| `file_size` | `BIGINT` | NOT NULL | Revision file size in bytes |
+| `checksum_sha256` | `VARCHAR(64)` | NOT NULL | SHA-256 digest of this version's binary stream |
+| `mime_type` | `VARCHAR(100)` | NOT NULL | MIME type of this version's content |
+| `uploader_id` | `UUID` | NOT NULL, FK -> `users.id` | User who authored or uploaded this revision |
+| `change_notes` | `TEXT` | NULL | User-provided summary of modifications |
+| `metadata_json` | `JSONB` | NOT NULL, Default `'{}'::jsonb` | Version-specific extraction metadata |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Revision creation timestamp |
+
+**Table Constraints**:
+- `CONSTRAINT uq_doc_versions_doc_num UNIQUE (document_id, version_number)`
 
 ---
 
@@ -207,6 +238,7 @@ Stores text chunks, vector embeddings, and chunk metadata for Hybrid RAG.
 | `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique chunk identifier |
 | `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` ON DELETE CASCADE | Multi-tenant boundary |
 | `document_id` | `UUID` | NOT NULL, FK -> `documents.id` ON DELETE CASCADE | Parent document reference |
+| `document_version_id`| `UUID`| NULL, FK -> `document_versions.id` ON DELETE CASCADE | Provenanced version snapshot reference (Phase 1.8) |
 | `chunk_index` | `INT` | NOT NULL | Sequential chunk index within document |
 | `content` | `TEXT` | NOT NULL | Raw chunk text content |
 | `token_count` | `INT` | NOT NULL, Default `0` | Estimated token count |
@@ -406,7 +438,8 @@ erDiagram
     PROJECT ||--o{ MEETING : "schedules"
     PROJECT ||--o{ TASK : "tracks"
 
-    DOCUMENT ||--o{ DOCUMENT_CHUNK : "chunks_into"
+    DOCUMENT ||--o{ DOCUMENT_VERSION : "tracks_versions"
+    DOCUMENT_VERSION ||--o{ DOCUMENT_CHUNK : "chunks_into"
     DOCUMENT ||--o{ KG_ENTITY : "extracted_from"
 
     KG_ENTITY ||--o{ KG_RELATIONSHIP : "source_of"
@@ -431,9 +464,15 @@ erDiagram
 | `teams` | `idx_teams_dept` | B-tree | `organization_id, department_id` | Departmental team filtering |
 | `users` | `idx_users_org_email` | B-tree (Unique) | `organization_id, email` | Multi-tenant auth lookup |
 | `documents` | `idx_docs_org_status` | B-tree | `organization_id, status, created_at` | Ingestion status filtering |
+| `documents` | `idx_docs_org_checksum` | B-tree | `organization_id, checksum_sha256` | Multi-tenant duplicate document detection |
+| `documents` | `idx_docs_category` | B-tree | `organization_id, category` | Category-based document browsing & filtering |
+| `documents` | `idx_docs_project` | B-tree | `organization_id, project_id` | Project workspace containment & permissions |
+| `document_versions` | `idx_doc_versions_doc_ver` | B-tree (Unique) | `document_id, version_number` | Rapid version retrieval & lineage ordering |
+| `document_versions` | `idx_doc_versions_checksum` | B-tree | `checksum_sha256` | Version file integrity & global dedup check |
 | `document_chunks` | `idx_chunks_embedding_hnsw` | HNSW | `embedding (vector_cosine_ops)` | High-speed vector similarity |
 | `document_chunks` | `idx_chunks_tsv` | GIN | `tsv_content` | BM25 lexical full-text search |
 | `document_chunks` | `idx_chunks_org_doc` | B-tree | `organization_id, document_id` | Tenant chunk retrieval |
+| `document_chunks` | `idx_chunks_doc_version` | B-tree | `document_version_id` | Version-scoped chunk activation & pruning |
 | `kg_entities` | `idx_kg_entities_org_type` | B-tree | `organization_id, entity_type` | Semantic entity lookups |
 | `kg_relationships` | `idx_kg_rel_src` | B-tree | `organization_id, source_entity_id` | Forward graph traversals |
 | `kg_relationships` | `idx_kg_rel_tgt` | B-tree | `organization_id, target_entity_id` | Reverse graph traversals |
