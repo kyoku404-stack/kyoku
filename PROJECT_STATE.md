@@ -4,13 +4,27 @@
 Phase 1 — Core Platform Foundation
 
 ## Current Sub-Phase
-Phase 1.7 — Dashboard Development & User Experience
+Phase 1.8 — Document Upload, File Management & Storage System
 
 ## Repository Health
 GREEN
 
 ## Overall Status
-Phase 1.1, Phase 1.2, Phase 1.3, Phase 1.4, and Phase 1.5 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+Phase 1.1, Phase 1.2, Phase 1.3, Phase 1.4, Phase 1.5, Phase 1.6, and Phase 1.7 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+
+Phase 1.8 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Document Management, Storage Hierarchy, Version Lineage & AI Ingestion Architecture Specification (`docs/Architecture/document-management-architecture.md`) defining the 9-state processing state machine, multi-tenant directory layout (`storage/{organization_id}/documents/{document_id}/v{version}/{filename}`), supported format matrix, SHA-256 deduplication, version lineage, enterprise taxonomy, preview architecture, and performance SLAs.
+- Authored Architecture Decision Records ADR-023, ADR-024, and ADR-025 in `docs/decisions/decisions.md`.
+- Expanded official REST API Contract (`docs/api/api-contract.md`) Section 3.3 and Table 4 with all 8 Phase 1.8 endpoints: `POST /api/v1/documents/upload`, `GET /api/v1/documents`, `GET /api/v1/documents/{id}`, `GET /api/v1/documents/{id}/download`, `GET /api/v1/documents/{id}/preview`, `PATCH /api/v1/documents/{id}`, `POST /api/v1/documents/{id}/version`, `DELETE /api/v1/documents/{id}`.
+- Updated Database Schema Specification (`docs/database/database-schema.md`) Section 3.5 (`documents` table enhancements) and Section 3.5.1 (`document_versions` table), updated ERD with versioning, and added composite indexes.
+- Implemented typed domain contracts in `backend/app/services/rag/interfaces.py` and `backend/app/services/ai/interfaces.py`:
+  - `DocumentProcessingState`: 9-state machine with transition validation and terminal status evaluation.
+  - `DocumentCategory`: 10 enterprise document categories.
+  - `SupportedFileType`, `FILE_TYPE_MIME_MAP`, `MAX_FILE_SIZES`, `MAGIC_BYTE_SIGNATURES`.
+  - `DocumentMetadata`, `DocumentVersionInfo`, `DocumentValidationResult`.
+  - `BaseDocumentValidator`, `BaseFileStorageService`, `BaseRAGDocumentIngestionSeam`.
+  - Added `document.download`, `document.preview`, `document.version` to `AIPermission` and role permission matrices.
+- Authored dedicated unit test suite (`tests/unit/test_document_storage_ai_contracts.py`) with 28 tests passing 100%. Total backend tests: 331/331 OK. Monorepo tests: 459/459 OK (331 backend + 128 frontend).
 
 Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Authorization Architecture Specification (`docs/Architecture/authorization-architecture.md`) establishing the 7-step authorization pipeline, resource-level ownership evaluation, project containment checks, AI retrieval gating, and audit logging taxonomy.
@@ -112,19 +126,20 @@ Phase 1.7 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 
 | Module / Component | Status | Owner | Current Milestone | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.1 / 1.2 Baseline | `ARCHITECTURE.md`, `docs/Architecture/backend-architecture.md`, ADR-001 - ADR-009 |
+| **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Architecture | `ARCHITECTURE.md`, `docs/Architecture/document-management-architecture.md`, ADR-001 - ADR-025 |
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
 | **Authorization Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 Architecture | `docs/Architecture/authorization-architecture.md`, ADR-017 - ADR-019 |
 | **Dashboard Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.7 Architecture | `docs/Architecture/dashboard-architecture.md`, ADR-020 - ADR-022 |
-| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 AI Authorization | Typed security contracts in `services/rag/` & `services/ai/` verified |
-| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.7 Dashboard Endpoints | `docs/API/api-contract.md` updated with Section 5 (8 dashboard + AI query + search endpoints) |
-| **Backend Architecture & APIs** | COMPLETED (Phase 1.7) | Member 2 (Backend Lead) | Phase 1.7 Dashboard APIs | 8 dashboard endpoints, SSE streaming stub, Redis caching & search (296/296 tests OK) |
-| **Frontend Application** | COMPLETED (Phase 1.7) | Member 3 (Frontend Lead) | Phase 1.7 Dashboard UI | Enterprise dashboard UI, 8 widgets, SSE AI assistant, global search, 128/128 tests OK |
-| **Database & Persistence Layer** | COMPLETED (Phase 1.7) | Member 2 & 4 | Phase 1.7 Notifications Schema | `notifications` table, indexes, Alembic migration `a1b2c3d4e5f6` |
-| **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Concrete AIAuthorizationFilter implemented & tested |
+| **Document Storage & Lifecycle Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Architecture | `docs/Architecture/document-management-architecture.md`, ADR-023 - ADR-025 |
+| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Ingestion Contracts | Typed document processing, storage & ingestion seam contracts in `services/rag/` & `services/ai/` |
+| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.8 Document Endpoints | `docs/api/api-contract.md` updated with Section 3.3 (8 document endpoints) & Table 4 registry |
+| **Backend Architecture & APIs** | COMPLETED (Phase 1.7) | Member 2 (Backend Lead) | Phase 1.8 Document APIs | Ready for Member 2 implementation (upload, storage, versioning, metadata) |
+| **Frontend Application** | COMPLETED (Phase 1.7) | Member 3 (Frontend Lead) | Phase 1.8 Document UI | Ready for Member 3 implementation (uploader, explorer, preview, version timeline) |
+| **Database & Persistence Layer** | COMPLETED (Phase 1.7) | Member 2 & 4 | Phase 1.8 Versions Schema | Specification approved: `documents` enhancements + `document_versions` table |
+| **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Ingestion state machine & BaseRAGDocumentIngestionSeam established |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
-| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.7) | Member 4 (DevOps Lead) | Phase 1.7 Dashboard Perf & E2E Validation | 7 new perf benchmarks, Playwright E2E suite, test-dashboard.sh runner, 303/303 backend tests passing |
-| **QA & Verification Suite** | PASSING | All Members | Phase 1.7 All Roles Verified | 303 backend + 128 frontend = 431 tests OK (100%), 0 failures, clean build |
+| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.7) | Member 4 (DevOps Lead) | Phase 1.8 Storage Infrastructure | Ready for Member 4 Docker volume configs & test suites |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.8 Member 1 Verified | 331 backend + 128 frontend = 459 tests OK (100%), 0 failures, clean lint |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 ---
@@ -215,27 +230,27 @@ Phase 1.7 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 
 ### Backend
 Status: COMPLETED (Phase 1.7)  
-Next Milestone: Phase 1.8 Document Processing & Ingestion Pipeline (Member 2).
+Next Milestone: Phase 1.8 Document Upload APIs, Storage Services & Validation Logic (Member 2).
 
 ### Frontend
 Status: COMPLETED (Phase 1.7)  
-Next Milestone: Phase 1.8 Document Upload & Ingestion UI (Member 3).
+Next Milestone: Phase 1.8 Document Upload, Explorer & Preview UI (Member 3).
 
 ### Database / Persistence
-Status: COMPLETED (Phase 1.7)  
-Next Milestone: Phase 1.8 Document metadata schema and vector indexing.
+Status: SPECIFIED & APPROVED (Phase 1.8)  
+Next Milestone: Phase 1.8 Alembic migration for `document_versions` and `documents` enhancements (Member 2).
 
 ### AI / ML
-Status: SPECIFIED & SCAFFOLDED  
+Status: SPECIFIED & SCAFFOLDED (Phase 1.8)  
 Next Milestone: Phase 2.1 AI Knowledge Ingestion Pipeline & Phase 2.2 RAG Engine.
 
 ### DevOps / Infrastructure
 Status: COMPLETED (Phase 1.7)  
-Next Milestone: Phase 1.8 Document Processing & Vector Storage Infrastructure (Member 4).
+Next Milestone: Phase 1.8 Document Storage Volume Mounting & Performance Benchmark Suites (Member 4).
 
 ### QA / Testing
-Status: PASSING (303/303 backend + 128/128 frontend = 431/431 tests OK, 100%, 0 lint errors)  
-Next Milestone: Phase 1.8 Ingestion & knowledge processing test matrices.
+Status: PASSING (331/331 backend + 128/128 frontend = 459/459 tests OK, 100%, 0 lint errors)  
+Next Milestone: Phase 1.8 Backend & Frontend Integration and E2E Test Suites.
 
 ---
 
@@ -251,6 +266,6 @@ None.
 2026-10-15
 
 ## Last Updated By
-Member 4 — Integration & DevOps Lead
+Member 1 — Project Lead & AI Architect
 
 

@@ -8,6 +8,7 @@ Specification: devdocs/p1/p1.2.txt (Chapters 10, 11, 12, 19) & devdocs/p1/p1.3.t
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any
 from uuid import UUID
@@ -627,5 +628,378 @@ class BaseAIAuthorizationFilter(ABC):
         security_context: RAGSecurityContext,
     ) -> list[KGEntityRecord]:
         """Filters KG entities to only those from caller-accessible documents."""
+
+
+# ==============================================================================
+# Phase 1.8 Document Upload, File Management & Storage System Contracts
+# Specification: devdocs/p1/p1.8.txt (Chapters 1–21)
+# Architecture: docs/Architecture/document-management-architecture.md
+# ADRs: ADR-023, ADR-024, ADR-025
+# ==============================================================================
+
+
+class DocumentProcessingState(str, Enum):
+    """Explicit 9-state processing and ingestion state machine.
+
+    Ref: devdocs/p1/p1.8.txt Chapter 16 and docs/Architecture/document-management-architecture.md
+    """
+
+    PENDING = "PENDING"
+    VALIDATED = "VALIDATED"
+    AWAITING_PROCESSING = "AWAITING_PROCESSING"
+    QUEUED = "QUEUED"
+    EXTRACTING = "EXTRACTING"
+    CHUNKING = "CHUNKING"
+    EMBEDDING = "EMBEDDING"
+    READY_FOR_AI = "READY_FOR_AI"
+    UPDATED = "UPDATED"
+    FAILED = "FAILED"
+    ARCHIVED = "ARCHIVED"
+    DELETED = "DELETED"
+
+    def is_terminal(self) -> bool:
+        """Returns True if the state represents a terminal lifecycle point."""
+        return self in {DocumentProcessingState.FAILED, DocumentProcessingState.DELETED}
+
+    def is_ai_ready(self) -> bool:
+        """Returns True if document chunks are indexed and ready for semantic RAG search."""
+        return self == DocumentProcessingState.READY_FOR_AI
+
+    def can_transition_to(self, target: "DocumentProcessingState") -> bool:
+        """Evaluates whether transitioning to target state is legally permissible."""
+        valid_transitions: dict[DocumentProcessingState, set[DocumentProcessingState]] = {
+            DocumentProcessingState.PENDING: {
+                DocumentProcessingState.VALIDATED,
+                DocumentProcessingState.FAILED,
+            },
+            DocumentProcessingState.VALIDATED: {
+                DocumentProcessingState.AWAITING_PROCESSING,
+                DocumentProcessingState.FAILED,
+            },
+            DocumentProcessingState.AWAITING_PROCESSING: {
+                DocumentProcessingState.QUEUED,
+                DocumentProcessingState.FAILED,
+                DocumentProcessingState.ARCHIVED,
+                DocumentProcessingState.DELETED,
+            },
+            DocumentProcessingState.QUEUED: {
+                DocumentProcessingState.EXTRACTING,
+                DocumentProcessingState.FAILED,
+            },
+            DocumentProcessingState.EXTRACTING: {
+                DocumentProcessingState.CHUNKING,
+                DocumentProcessingState.FAILED,
+            },
+            DocumentProcessingState.CHUNKING: {
+                DocumentProcessingState.EMBEDDING,
+                DocumentProcessingState.FAILED,
+            },
+            DocumentProcessingState.EMBEDDING: {
+                DocumentProcessingState.READY_FOR_AI,
+                DocumentProcessingState.FAILED,
+            },
+            DocumentProcessingState.READY_FOR_AI: {
+                DocumentProcessingState.UPDATED,
+                DocumentProcessingState.ARCHIVED,
+                DocumentProcessingState.DELETED,
+            },
+            DocumentProcessingState.UPDATED: {
+                DocumentProcessingState.QUEUED,
+                DocumentProcessingState.ARCHIVED,
+                DocumentProcessingState.DELETED,
+            },
+            DocumentProcessingState.FAILED: {
+                DocumentProcessingState.AWAITING_PROCESSING,  # Retry
+                DocumentProcessingState.DELETED,
+            },
+            DocumentProcessingState.ARCHIVED: {
+                DocumentProcessingState.AWAITING_PROCESSING,  # Un-archive / restore
+                DocumentProcessingState.DELETED,
+            },
+            DocumentProcessingState.DELETED: set(),  # Terminal
+        }
+        return target in valid_transitions.get(self, set())
+
+
+class DocumentCategory(str, Enum):
+    """Canonical 10 enterprise document categories.
+
+    Ref: devdocs/p1/p1.8.txt Chapter 10.
+    """
+
+    POLICIES = "POLICIES"
+    REPORTS = "REPORTS"
+    MEETING_MINUTES = "MEETING_MINUTES"
+    RESEARCH = "RESEARCH"
+    LEGAL = "LEGAL"
+    FINANCE = "FINANCE"
+    HR = "HR"
+    TECHNICAL_DOCUMENTATION = "TECHNICAL_DOCUMENTATION"
+    PRESENTATIONS = "PRESENTATIONS"
+    TRAINING_MATERIALS = "TRAINING_MATERIALS"
+
+
+class SupportedFileType(str, Enum):
+    """Supported file extensions and document formats.
+
+    Ref: devdocs/p1/p1.8.txt Chapter 4.
+    """
+
+    PDF = "pdf"
+    DOCX = "docx"
+    TXT = "txt"
+    MD = "md"
+    RTF = "rtf"
+    PPTX = "pptx"
+    XLSX = "xlsx"
+    CSV = "csv"
+    PNG = "png"
+    JPG = "jpg"
+    JPEG = "jpeg"
+    WEBP = "webp"
+
+
+# Canonical MIME types mapping
+FILE_TYPE_MIME_MAP: dict[SupportedFileType, str] = {
+    SupportedFileType.PDF: "application/pdf",
+    SupportedFileType.DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    SupportedFileType.TXT: "text/plain",
+    SupportedFileType.MD: "text/markdown",
+    SupportedFileType.RTF: "application/rtf",
+    SupportedFileType.PPTX: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    SupportedFileType.XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    SupportedFileType.CSV: "text/csv",
+    SupportedFileType.PNG: "image/png",
+    SupportedFileType.JPG: "image/jpeg",
+    SupportedFileType.JPEG: "image/jpeg",
+    SupportedFileType.WEBP: "image/webp",
+}
+
+# Maximum file sizes in bytes (devdocs Chapter 6)
+MAX_FILE_SIZES: dict[SupportedFileType, int] = {
+    SupportedFileType.PDF: 100 * 1024 * 1024,  # 100 MB
+    SupportedFileType.DOCX: 50 * 1024 * 1024,  # 50 MB
+    SupportedFileType.TXT: 20 * 1024 * 1024,  # 20 MB
+    SupportedFileType.MD: 20 * 1024 * 1024,  # 20 MB
+    SupportedFileType.RTF: 20 * 1024 * 1024,  # 20 MB
+    SupportedFileType.PPTX: 100 * 1024 * 1024,  # 100 MB
+    SupportedFileType.XLSX: 50 * 1024 * 1024,  # 50 MB
+    SupportedFileType.CSV: 20 * 1024 * 1024,  # 20 MB
+    SupportedFileType.PNG: 20 * 1024 * 1024,  # 20 MB
+    SupportedFileType.JPG: 20 * 1024 * 1024,  # 20 MB
+    SupportedFileType.JPEG: 20 * 1024 * 1024,  # 20 MB
+    SupportedFileType.WEBP: 20 * 1024 * 1024,  # 20 MB
+}
+
+# Magic bytes signature prefixes for content validation
+MAGIC_BYTE_SIGNATURES: dict[SupportedFileType, list[bytes]] = {
+    SupportedFileType.PDF: [b"%PDF-"],
+    SupportedFileType.DOCX: [b"PK\x03\x04"],
+    SupportedFileType.PPTX: [b"PK\x03\x04"],
+    SupportedFileType.XLSX: [b"PK\x03\x04"],
+    SupportedFileType.PNG: [b"\x89PNG\r\n\x1a\n"],
+    SupportedFileType.JPG: [b"\xff\xd8\xff"],
+    SupportedFileType.JPEG: [b"\xff\xd8\xff"],
+    SupportedFileType.WEBP: [b"RIFF"],
+    SupportedFileType.RTF: [b"{\\rtf"],
+}
+
+
+@dataclass
+class DocumentMetadata:
+    """Core document metadata record matching Chapter 9."""
+
+    document_id: UUID
+    organization_id: UUID
+    uploader_id: UUID
+    filename: str
+    original_filename: str
+    file_type: str
+    mime_type: str
+    file_size_bytes: int
+    checksum_sha256: str
+    storage_path: str
+    version_number: int = 1
+    category: DocumentCategory = DocumentCategory.REPORTS
+    tags: list[str] = field(default_factory=list)
+    status: DocumentProcessingState = DocumentProcessingState.AWAITING_PROCESSING
+    ai_ready: bool = False
+    project_id: UUID | None = None
+    department_id: UUID | None = None
+    title: str | None = None
+    description: str | None = None
+    error_message: str | None = None
+    chunk_count: int = 0
+    extracted_metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+@dataclass
+class DocumentVersionInfo:
+    """Immutable version snapshot metadata record matching Chapter 11."""
+
+    version_id: UUID
+    document_id: UUID
+    version_number: int
+    file_path: str
+    file_size_bytes: int
+    checksum_sha256: str
+    mime_type: str
+    uploader_id: UUID
+    change_notes: str | None = None
+    metadata_json: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime | None = None
+
+
+@dataclass
+class DocumentValidationResult:
+    """Outcome of server-side file attribute and magic byte validation."""
+
+    is_valid: bool
+    sanitized_filename: str
+    detected_file_type: SupportedFileType | None = None
+    detected_mime_type: str | None = None
+    file_size_bytes: int = 0
+    checksum_sha256: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class BaseDocumentValidator(ABC):
+    """Abstract interface for server-side document validation (devdocs Chapter 6)."""
+
+    @abstractmethod
+    def validate_file_attributes(
+        self,
+        filename: str,
+        file_size: int,
+        mime_type: str | None = None,
+    ) -> DocumentValidationResult:
+        """Validates filename extension, size limit, and assigns sanitized attributes."""
+
+    @abstractmethod
+    def verify_magic_bytes(
+        self,
+        header_bytes: bytes,
+        expected_type: SupportedFileType,
+    ) -> bool:
+        """Sniffs header magic bytes to prevent MIME-type spoofing."""
+
+    @abstractmethod
+    def sanitize_filename(self, filename: str) -> str:
+        """Sanitizes filename against path traversal attacks and illegal characters."""
+
+    @abstractmethod
+    def compute_checksum(self, content: bytes) -> str:
+        """Calculates SHA-256 cryptographic digest of file contents."""
+
+
+class BaseFileStorageService(ABC):
+    """Abstract interface for multi-tenant physical/cloud file storage (devdocs Chapter 7 & 8)."""
+
+    @abstractmethod
+    async def save_file(
+        self,
+        organization_id: UUID,
+        document_id: UUID,
+        version: int,
+        filename: str,
+        content: bytes,
+    ) -> str:
+        """Stores binary document content in organization-isolated path and returns storage URI."""
+
+    @abstractmethod
+    async def get_file_path(
+        self,
+        organization_id: UUID,
+        document_id: UUID,
+        version: int,
+        filename: str,
+    ) -> str:
+        """Resolves physical filesystem or object storage path for a document version."""
+
+    @abstractmethod
+    async def read_file(
+        self,
+        organization_id: UUID,
+        document_id: UUID,
+        version: int,
+        filename: str,
+    ) -> bytes:
+        """Reads binary document bytes for streaming download or preview generation."""
+
+    @abstractmethod
+    async def delete_file(
+        self,
+        organization_id: UUID,
+        document_id: UUID,
+        version: int,
+        filename: str,
+    ) -> bool:
+        """Deletes binary document version from physical storage."""
+
+    @abstractmethod
+    async def get_storage_usage(self, organization_id: UUID) -> int:
+        """Aggregates total bytes stored for the given organization tenant."""
+
+    @abstractmethod
+    async def check_quota(
+        self,
+        organization_id: UUID,
+        additional_bytes: int,
+        quota_limit: int,
+    ) -> bool:
+        """Verifies if tenant storage quota allows storing additional bytes."""
+
+    @abstractmethod
+    def generate_preview_path(
+        self,
+        organization_id: UUID,
+        document_id: UUID,
+        version: int,
+        preview_format: str = "pdf",
+    ) -> str:
+        """Generates tenant-isolated path for cached preview artifact."""
+
+
+class BaseRAGDocumentIngestionSeam(ABC):
+    """Abstract interface linking Phase 1.8 document storage to Phase 2 RAG ingestion pipeline."""
+
+    @abstractmethod
+    async def dispatch_ingestion_task(
+        self,
+        document_id: UUID,
+        version_number: int,
+        organization_id: UUID,
+    ) -> str:
+        """Dispatches asynchronous Celery ingestion task and returns the queued task ID."""
+
+    @abstractmethod
+    async def update_processing_status(
+        self,
+        document_id: UUID,
+        new_status: DocumentProcessingState,
+        error_message: str | None = None,
+    ) -> bool:
+        """Transitions document processing state during async extraction and embedding."""
+
+    @abstractmethod
+    async def register_version_chunks(
+        self,
+        document_id: UUID,
+        version_number: int,
+        chunk_ids: list[UUID],
+    ) -> int:
+        """Associates generated vector chunks with the specific document version snapshot."""
+
+    @abstractmethod
+    async def deactivate_superseded_version_chunks(
+        self,
+        document_id: UUID,
+        active_version: int,
+    ) -> int:
+        """Deactivates semantic chunks belonging to prior versions when new revision reaches READY_FOR_AI."""
+
 
 

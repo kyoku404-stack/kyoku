@@ -103,6 +103,11 @@ class AIPermission(str, Enum):
     ORGANIZATION_CREATE = "organization.create"
     PROJECT_CREATE_ACTION = "project.create"
 
+    # Phase 1.8 Document Management & File Storage System
+    DOCUMENT_DOWNLOAD = "document.download"
+    DOCUMENT_PREVIEW = "document.preview"
+    DOCUMENT_VERSION = "document.version"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -121,6 +126,9 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.AI_SEARCH.value,
     AIPermission.USER_VIEW.value,
     AIPermission.ANALYTICS_VIEW.value,
+    # Phase 1.8 document permissions
+    AIPermission.DOCUMENT_DOWNLOAD.value,
+    AIPermission.DOCUMENT_PREVIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -137,6 +145,8 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     AIPermission.DOCUMENT_CREATE.value,
     AIPermission.DOCUMENT_UPDATE.value,
     AIPermission.PROJECT_CREATE_ACTION.value,
+    # Phase 1.8 document permissions
+    AIPermission.DOCUMENT_VERSION.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {

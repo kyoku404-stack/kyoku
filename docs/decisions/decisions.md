@@ -646,3 +646,104 @@ Member 2 implements `POST /api/v1/ai/query` stub with SSE response. Member 3 imp
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-023 — Document Storage Layout, Tenant Isolation & Storage Abstraction (Local Disk MVP with S3 Compatibility)
+
+#### Date
+2026-10-15
+
+#### Context
+`devdocs/p1/p1.8.txt` (Chapters 7 & 8) mandates enterprise-grade document storage with strict organization-level isolation. Binary assets must be physically and logically segregated to guarantee that zero-trust tenant boundaries are upheld at both the relational persistence layer and the storage filesystem layer. While production deployments will leverage cloud object storage (Amazon S3 / Azure Blob Storage / MinIO), local development and test environments require a Docker-mounted volume without external cloud dependencies.
+
+#### Decision
+1. Abstract all physical storage operations behind an abstract interface `BaseFileStorageService` in `backend/app/services/rag/interfaces.py`, defining async methods:
+   - `save_file(organization_id, document_id, version, filename, content_stream)`
+   - `get_file_path(organization_id, document_id, version, filename)`
+   - `delete_file(organization_id, document_id, version)`
+   - `get_storage_usage(organization_id)`
+   - `check_quota(organization_id, additional_bytes)`
+2. Enforce a canonical hierarchical storage path structure:
+   `storage/{organization_id}/documents/{document_id}/v{version_number}/{sanitized_filename}`
+   `storage/{organization_id}/previews/{document_id}/v{version_number}/{preview_file}`
+   `storage/{organization_id}/thumbnails/{document_id}/thumb_300x300.webp`
+3. Prohibit direct web exposure of the `storage/` directory. All file downloads, streaming, and preview requests must route through authenticated FastAPI endpoints verifying caller permissions and tenant boundaries.
+4. Implement `LocalStorageService` as the default provider for Phase 1.8 local containerized development.
+
+#### Alternatives Considered
+- Storing binary file data directly in PostgreSQL as `BYTEA` / BLOB columns: Rejected — causes extreme database bloat, degrades backup/restore performance, and exhausts database connection memory during multi-megabyte transfers.
+- Single flat storage directory with hashed filenames: Rejected — loses tenant-level physical isolation, complicates organization data deletion / GDPR compliance, and risks catastrophic multi-tenant data exposure on configuration error.
+
+#### Reason
+Physical directory-level tenant isolation provides defense-in-depth security. The abstract storage service interface guarantees zero code refactoring when deploying to AWS S3 in production.
+
+#### Impact
+Member 2 implements `LocalStorageService` and integrates path generation into document service workflows. Member 4 configures Docker volume mounts for `/app/storage`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-024 — Document Metadata Schema, SHA-256 Checksum Deduplication & Ingestion State Machine
+
+#### Date
+2026-10-15
+
+#### Context
+`devdocs/p1/p1.8.txt` (Chapters 5, 6, 9, 14, 16) specifies that every uploaded file must capture rich technical, structural, and domain metadata, enforce validation checks (file types, size limits, filename sanitization), compute cryptographic checksums for duplicate detection, and progress through an explicit multi-step state machine leading to AI ingestion.
+
+#### Decision
+1. Define a standardized document metadata schema combining relational typed columns (`id`, `organization_id`, `project_id`, `uploader_id`, `filename`, `original_filename`, `file_type`, `mime_type`, `file_size`, `checksum_sha256`, `category`, `current_version_number`, `status`) with a rich `metadata_json` JSONB payload for dynamic extraction attributes (page count, author, word count, OCR applied, orientation, language).
+2. Calculate SHA-256 checksums on the fly during upload streaming to enable instant duplicate detection against existing active documents within the tenant.
+3. Establish an explicit 9-state processing state machine:
+   `PENDING` -> `VALIDATED` -> `AWAITING_PROCESSING` -> `QUEUED` -> `EXTRACTING` -> `CHUNKING` -> `EMBEDDING` -> `READY_FOR_AI` (with terminal / operational branches `FAILED`, `ARCHIVED`, `DELETED`).
+4. Validate incoming files against registered magic byte headers and size limits per format (PDF: 100MB, DOCX: 50MB, PPTX: 100MB, Images/Text/CSV: 20MB).
+
+#### Alternatives Considered
+- Synchronous text parsing and OCR during upload request: Rejected — parsing large PDFs or images exceeds HTTP timeout limits (e.g. 30–60s) and degrades API gateway responsiveness.
+- Coarse status flags (`is_processed: bool`): Rejected — lacks observability into where background workers fail (e.g. OCR failure vs embedding model API timeout).
+
+#### Reason
+A 9-state pipeline provides clear visibility across long-running asynchronous worker operations and establishes idempotent recovery seams for Celery task retries.
+
+#### Impact
+Member 1 provides typed dataclasses and state machine contracts in `backend/app/services/rag/interfaces.py`. Member 2 implements upload validation, metadata persistence, and state transitions.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-025 — Document Versioning Lineage, Vector Invalidation & RAG Ingestion Pipeline Seam
+
+#### Date
+2026-10-15
+
+#### Context
+`devdocs/p1/p1.8.txt` (Chapter 11) requires document revision and version tracking. When a user uploads a revised version of an existing document, the system must maintain complete historical lineage, allow previous versions to be inspected and downloaded, while ensuring the upcoming Phase 2 RAG vector indexing pipeline remains consistent and free of stale or duplicate semantic chunks.
+
+#### Decision
+1. Implement a two-tier relational model:
+   - `documents` table represents the persistent knowledge entity (logical document).
+   - `document_versions` table represents immutable physical revisions (`version_number: int`, `file_path`, `file_size`, `checksum_sha256`, `uploader_id`, `change_notes`, `metadata_json`, `created_at`).
+2. Version numbers increment sequentially ($1, 2, 3, \dots$). `documents.current_version_id` points to the latest active version.
+3. In Phase 2, `document_chunks` store both `document_id` and `document_version_id`.
+4. When a new version is uploaded:
+   - The new version snapshot is recorded and status set to `QUEUED`.
+   - Previous version chunks remain active in RAG search until the new version successfully achieves `READY_FOR_AI`.
+   - Upon successful completion, previous version chunks are deactivated (`is_active = FALSE`), preventing duplicate or conflicting citations while preserving historical citation provenance.
+
+#### Alternatives Considered
+- Destructive in-place overwrite of files: Rejected — destroys document auditability, violates enterprise compliance policies, and breaks provenance of citations in existing chat sessions.
+- Non-linear branching version tree (DAG): Rejected — unnecessary complexity for enterprise knowledge management where documents evolve in linear revisions.
+
+#### Reason
+Linear immutable snapshots provide clean, audit-compliant document history and eliminate vector index corruption during concurrent asynchronous re-ingestion.
+
+#### Impact
+Member 1 specifies `document_versions` schema in `docs/database/database-schema.md` and typed interfaces. Member 2 creates SQLAlchemy model and Alembic migration. Member 3 develops version history timeline UI.
+
+#### Status
+ACCEPTED
