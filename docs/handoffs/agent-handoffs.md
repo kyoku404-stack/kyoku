@@ -2072,3 +2072,115 @@ COMPLETED — Verified with 100% test pass rate (296/296 tests OK). Ready for Me
 1. Ensure Redis container is running in Docker environment for cache persistence.
 2. Run Playwright E2E test suite covering dashboard hydration, widget rendering, and SSE streaming.
 
+---
+
+## Entry #024: Phase 1.7 — Enterprise Dashboard UI, Dynamic Widgets, Global Search & AI Assistant Shell
+
+#### Date
+2026-10-15
+
+#### Author Agent
+Member 3 (Frontend Lead)
+
+#### Status
+COMPLETED — Verified with 100% test pass rate (128/128 frontend tests OK across 18 test files), zero TypeScript errors, zero ESLint warnings, and clean production build (`tsc && vite build`). Ready for Member 4 (DevOps Lead) E2E integration and cross-browser validation.
+
+#### Implemented Features
+1. **Typed Domain Contracts (`frontend/src/types/dashboard.ts`)**:
+   - Authored complete TypeScript interfaces aligned with backend Pydantic schemas (`backend/app/schemas/dashboard.py`) and architecture specifications (`docs/Architecture/dashboard-architecture.md` Section 3): `DashboardSummary`, `DashboardKPI`, `DashboardUser`, `DashboardOrg`, `ActivityEvent`, `ActivityFeedFilterParams`, `ProjectSummary`, `DocumentSummary`, `NotificationItem`, `DashboardAnalyticsSummary`, `GlobalSearchResultItem`, `AIQueryRequest`, `AIStreamToken`, `AIStreamDone`, and `DocumentReference`.
+   - Exported through `frontend/src/types/index.ts`.
+
+2. **Typed Client Service (`frontend/src/services/dashboardService.ts`)**:
+   - Implemented typed API client consuming all 8 Phase 1.7 backend REST endpoints:
+     - `GET /api/v1/dashboard`: User summary, greeting, and live KPI counters.
+     - `GET /api/v1/activity`: Chronological organizational event feed with pagination and resource type filtering.
+     - `GET /api/v1/projects/recent`: Caller-scoped active projects with team members and deadlines.
+     - `GET /api/v1/documents/recent`: Recent knowledge files, file sizes, and AI summary status.
+     - `GET /api/v1/notifications`, `PATCH /api/v1/notifications/{id}/read`, `POST /api/v1/notifications/read-all`: Multi-category user notifications.
+     - `GET /api/v1/analytics/summary`: Period-filtered metrics (week/month/quarter/year) for OrgAdmin/SuperAdmin.
+     - `GET /api/v1/search`: Real-time full-text multi-entity search across projects, documents, users, and teams.
+     - `POST /api/v1/ai/query`: Resilient Server-Sent Events (SSE) streaming reader `streamAIQuery()` using `ReadableStream` and `TextDecoder`, dispatches token-by-token callbacks and parses `done` citations.
+   - Provided both envelope-preserving and `unwrapData` helper functions. Exported through `frontend/src/services/index.ts`.
+
+3. **State Management & Context (`frontend/src/context/DashboardContext.tsx`)**:
+   - Created `DashboardContext` and `DashboardProvider` managing active workspace summary, telemetry loading states, and live unread notification badge counts with background refresh intervals.
+   - Exported `useDashboard` and `useDashboardContext` hooks with safe fallback support.
+
+4. **Independent Custom Hooks (`frontend/src/hooks/useDashboard.ts`)**:
+   - Built modular, self-contained hooks ensuring widget-level API independence:
+     - `useDashboardSummary`: Global telemetry and user greeting.
+     - `useActivityFeed`: Paginated event stream with category filtering.
+     - `useRecentProjects`: Project workspace retrieval with reload capability.
+     - `useRecentDocuments`: Knowledge file list with auto-refresh.
+     - `useNotifications`: User alerts with unread badge counter and mark-as-read mutations.
+     - `useAnalyticsSummary`: Period-switched time series metrics.
+     - `useGlobalSearch`: Real-time 250ms debounced search with query reset.
+     - `useAIAssistant`: Interactive query state machine (`IDLE` -> `LOADING` -> `STREAMING` -> `COMPLETE`), abort controller cancellation, and citation parsing.
+
+5. **Enterprise Dashboard Widgets (`frontend/src/features/dashboard/`)**:
+   - `WelcomeSection.tsx`: Personalized greeting with time-of-day icon (Sunrise/Sun/Sunset), full name, organization plan badge, and quick metric summaries.
+   - `KPICardGrid.tsx`: Modern KPI telemetry cards with dynamic storage quota progress bar, byte formatters, and permission-gated metrics.
+   - `ProjectsWidget.tsx`: Workspace cards with progress bars, priority badges, member avatars, deadlines, and direct navigation links.
+   - `DocumentsWidget.tsx`: Ingested knowledge assets with filetype badges, file size formatting, AI readiness badges, and upload shortcuts.
+   - `ActivityFeedWidget.tsx`: Chronological organizational event log with resource filter dropdown (`all`, `document`, `project`, `meeting`, `user`) and relative timestamps.
+   - `NotificationsWidget.tsx`: Comprehensive notifications center with unread status indicators, category badges, and quick mark-as-read controls.
+   - `NotificationCenter.tsx`: Header popover dropdown with real-time unread badge counter, category icons (info, warning, success, reminder, security), and mark-all-as-read action.
+   - `AnalyticsWidget.tsx`: Admin-gated visualization with period switcher (week, month, quarter, year), horizontal metric distribution bars, and project status breakdowns.
+   - `GlobalSearchBar.tsx`: Multi-entity workspace search with `Ctrl+K` keyboard shortcut, categorized result rows, relevance score badges, and keyboard navigation.
+   - `AIAssistantWidget.tsx`: Lightweight AI workspace assistant with role-tailored prompt suggestion chips, token-by-token streaming response display, and grounding citations list.
+   - `index.ts`: Clean barrel export for all widgets and components.
+
+6. **Master Workspace Assembly & Navigation Integration**:
+   - `DashboardPage.tsx`: Replaced legacy placeholder with full Phase 1.7 enterprise dashboard layout (WelcomeSection, KPICardGrid, 3-column responsive widget grid, PermissionGate-wrapped AnalyticsWidget) while preserving drill-down tabs for deep entity management.
+   - `Header.tsx`: Integrated `GlobalSearchBar` and `NotificationCenter` popover alongside existing role badges and theme controls.
+
+7. **Verification & Testing Suites**:
+   - `frontend/src/tests/dashboardService.test.ts`: 7 unit tests covering all Phase 1.7 API client methods and query parameters.
+   - `frontend/src/tests/dashboardComponents.test.tsx`: 12 component tests covering widget rendering, skeleton loading states, role-gated widgets, search inputs, and page assembly.
+
+#### Files Modified / Created
+- `frontend/src/types/dashboard.ts` (CREATED)
+- `frontend/src/types/index.ts` (MODIFIED — exported dashboard types)
+- `frontend/src/services/dashboardService.ts` (CREATED)
+- `frontend/src/services/index.ts` (MODIFIED — exported dashboardService)
+- `frontend/src/context/DashboardContext.tsx` (CREATED)
+- `frontend/src/hooks/useDashboard.ts` (CREATED)
+- `frontend/src/features/dashboard/WelcomeSection.tsx` (CREATED)
+- `frontend/src/features/dashboard/KPICardGrid.tsx` (CREATED)
+- `frontend/src/features/dashboard/ProjectsWidget.tsx` (CREATED)
+- `frontend/src/features/dashboard/DocumentsWidget.tsx` (CREATED)
+- `frontend/src/features/dashboard/ActivityFeedWidget.tsx` (CREATED)
+- `frontend/src/features/dashboard/NotificationsWidget.tsx` (CREATED)
+- `frontend/src/features/dashboard/NotificationCenter.tsx` (CREATED)
+- `frontend/src/features/dashboard/AnalyticsWidget.tsx` (CREATED)
+- `frontend/src/features/dashboard/GlobalSearchBar.tsx` (CREATED)
+- `frontend/src/features/dashboard/AIAssistantWidget.tsx` (CREATED)
+- `frontend/src/features/dashboard/index.ts` (CREATED)
+- `frontend/src/components/common/Header.tsx` (MODIFIED — integrated GlobalSearchBar & NotificationCenter)
+- `frontend/src/pages/DashboardPage.tsx` (MODIFIED — assembled enterprise Phase 1.7 layout)
+- `frontend/src/tests/dashboardService.test.ts` (CREATED — 7 tests)
+- `frontend/src/tests/dashboardComponents.test.tsx` (CREATED — 12 tests)
+- `PROJECT_STATE.md` (MODIFIED — marked Phase 1.7 Member 3 complete)
+- `docs/handoffs/agent-handoffs.md` (MODIFIED — appended Entry #024)
+
+#### Verification & Tests Executed
+- [x] TypeScript compiler passed: `npx tsc --noEmit` → **0 errors**
+- [x] ESLint validation passed: `npm run lint` → **0 errors, 0 warnings**
+- [x] Full test suite passed: `npm test -- --run` → **128/128 passed (100% across 18 test files)**
+- [x] Production build passed: `npm run build` (`tsc && vite build`) → **0 errors, 1730 modules transformed**
+- [x] Zero unhandled exceptions or console errors.
+
+#### Target Receiving Agent
+- **Member 4 (DevOps & Integration Lead)**: Conduct containerized end-to-end integration testing, Playwright verification, and CI test runner validation for Phase 1.7.
+
+#### Required Action for Receiving Agent
+**Member 4 (DevOps Lead)**:
+1. Verify containerized deployment with Redis cache, PostgreSQL, Celery, and frontend Vite server.
+2. Author Playwright E2E tests validating:
+   - Dashboard page loading and widget hydration under 2 seconds.
+   - Global search popup opening via Ctrl+K and executing queries.
+   - Notification popover display and mark-as-read mutation.
+   - AI assistant prompt chip selection and SSE stream rendering.
+   - Role-based analytics visibility for `OrgAdmin` vs restricted view for `Member`.
+
+

@@ -22,3 +22,4 @@ export * from './taskService';
 export * from './knowledgeService';
 export * from './activityService';
 export * from './auditService';
+export * from './dashboardService';
