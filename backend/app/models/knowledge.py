@@ -18,6 +18,11 @@ class DocumentChunk(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     document_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("documents.id", ondelete="CASCADE"), index=True, nullable=False
     )
+    document_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+    )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
@@ -26,6 +31,7 @@ class DocumentChunk(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
 
     document = relationship("Document", back_populates="chunks")
+    document_version = relationship("DocumentVersion", back_populates="chunks")
 
 
 class KgEntity(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):

@@ -3,7 +3,10 @@
 from backend.app.repositories.base import BaseRepository
 from backend.app.repositories.dashboard_repo import DashboardRepository
 from backend.app.repositories.department_repo import DepartmentRepository
-from backend.app.repositories.document_repo import DocumentRepository
+from backend.app.repositories.document_repo import (
+    DocumentRepository,
+    DocumentVersionRepository,
+)
 from backend.app.repositories.invitation_repo import InvitationRepository
 from backend.app.repositories.notification_repo import NotificationRepository
 from backend.app.repositories.org_repo import OrganizationRepository
@@ -16,6 +19,7 @@ __all__ = [
     "DashboardRepository",
     "DepartmentRepository",
     "DocumentRepository",
+    "DocumentVersionRepository",
     "InvitationRepository",
     "NotificationRepository",
     "OrganizationRepository",

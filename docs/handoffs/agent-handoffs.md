@@ -2392,5 +2392,152 @@ Member 1 has delivered the architectural foundation, data schemas, API specifica
 3. **Playwright E2E Suite**:
    - Author Playwright test covering upload, explorer filtering, preview opening, and version history display.
 
+---
+
+### Handoff Entry #027: Phase 1.8 — Document Upload APIs, Storage Services, Version Lineage & Database Migration
+
+#### Date
+2026-10-15
+
+#### Author Agent
+Member 2 (Backend and Database Lead)
+
+#### Status
+COMPLETED / READY FOR FRONTEND & DEVOPS INTEGRATION
+
+#### Implemented Features
+1. **Document Lineage & Version Tracking ORM Models**:
+   - Implemented `DocumentVersion` model (`backend/app/models/document_version.py`) capturing immutable revision snapshots: `version_number`, `file_path`, `file_size`, `checksum_sha256`, `mime_type`, `uploader_id`, `change_notes`, `metadata_json`, with `UniqueConstraint("document_id", "version_number")` and relationship to `DocumentChunk`.
+   - Enhanced `Document` model (`backend/app/models/document.py`) with `current_version_id` (`use_alter=True`), `current_version_number`, `original_filename`, `title`, `description`, `mime_type`, `checksum_sha256`, `category`, `tags`, `chunk_count`, `error_message`, and `metadata_json`.
+   - Updated `DocumentChunk` model (`backend/app/models/knowledge.py`) with `document_version_id` foreign key.
+
+2. **Alembic Database Migration (`b2c3d4e5f6a7`)**:
+   - Authored migration script `backend/migrations/versions/b2c3d4e5f6a7_phase_1_8_document_versions.py` chained from `a1b2c3d4e5f6` to `b2c3d4e5f6a7 (head)`.
+   - Creates `document_versions` table with foreign keys, checks, indexes, and cascades.
+   - Adds 11 metadata/lineage columns and indexes to `documents` table.
+   - Adds `document_version_id` column and index to `document_chunks`.
+   - Verified clean upgrade and downgrade against SQLite and PostgreSQL dialects.
+
+3. **Document Validation Engine (`DocumentValidator`)**:
+   - Implemented `DocumentValidator` (`backend/app/services/document_validator.py`) satisfying `BaseDocumentValidator`.
+   - Sanitizes filenames against directory traversal (`..`, `/`, `\`), illegal characters, unicode normalization, and 255-character limits.
+   - Enforces format support across 11 extensions (`pdf`, `docx`, `txt`, `md`, `csv`, `xlsx`, `pptx`, `html`, `png`, `jpg`, `webp`).
+   - Validates per-format maximum file sizes (100MB PDF, 50MB Office, 20MB Images, 10MB Text).
+   - Validates file headers via magic-byte sniffing against spoofed MIME extensions.
+   - Computes deterministic SHA-256 cryptographic digests for duplicate detection.
+
+4. **Tenant-Isolated Local Storage Service (`LocalStorageService`)**:
+   - Implemented `LocalStorageService` (`backend/app/services/storage_service.py`) fulfilling `BaseFileStorageService`.
+   - Implements structured multi-tenant directory layout: `storage/{organization_id}/documents/{document_id}/v{version}/{filename}`.
+   - Provides atomic save, read, and delete operations with path traversal quarantine.
+   - Computes aggregate organizational storage utilization and checks organization quota limits (default 10 GB).
+   - Generates and manages preview cache paths and preview artifacts (`.preview.html`, `.preview.pdf`).
+
+5. **Asynchronous RAG Ingestion Seam (`RAGDocumentIngestionSeam`)**:
+   - Implemented `RAGDocumentIngestionSeam` (`backend/app/services/rag_seam.py`) satisfying `BaseRAGDocumentIngestionSeam`.
+   - Synthesizes asynchronous ingestion task dispatch tokens (`rag_task_...`).
+   - Updates document processing state machine (`VALIDATED` -> `QUEUED` -> `EXTRACTING` -> `CHUNKING` -> `EMBEDDING` -> `READY_FOR_AI`).
+   - Deactivates previous version chunks when a new document version is uploaded (`deactivate_superseded_version_chunks`).
+
+6. **FastAPI Endpoints Router (`/api/v1/documents`)**:
+   - Implemented all 8 endpoints in `backend/app/api/v1/documents.py` conforming strictly to `docs/api/api-contract.md` Section 3.3:
+     - `POST /api/v1/documents/upload`: Multipart upload with magic-bytes sniffing, duplicate file detection (409 Conflict), quota enforcement (400 Bad Request), and 202 Accepted response.
+     - `GET /api/v1/documents`: Paginated document listing with category, status, project, and search filters, sorting, and total counts.
+     - `GET /api/v1/documents/recent`: Preserved for dashboard widgets (5 latest documents).
+     - `GET /api/v1/documents/{id}`: Full document metadata including ordered `versions` array.
+     - `GET /api/v1/documents/{id}/download`: Binary stream with `Content-Disposition`, supporting optional `?version=N` query.
+     - `GET /api/v1/documents/{id}/preview`: Preview stream (PDF, image, text, HTML conversion) with fallback to raw file or 422 `PREVIEW_UNAVAILABLE`.
+     - `PATCH /api/v1/documents/{id}`: Metadata modification (title, description, category, tags) with resource ownership evaluation.
+     - `POST /api/v1/documents/{id}/version`: Revision upload creating a new `document_versions` row, bumping `current_version_number`, and dispatching re-ingestion.
+     - `DELETE /api/v1/documents/{id}`: Soft-delete (`?action=delete`) and archiving (`?action=archive`) with uploader ownership override bypass.
+
+7. **Data Repositories & Schemas**:
+   - `DocumentRepository` and `DocumentVersionRepository` (`backend/app/repositories/document_repo.py`).
+   - Pydantic v2 request/response schemas in `backend/app/schemas/document.py`.
+   - Core exceptions `StorageQuotaExceededException`, `DuplicateFileException`, `PreviewUnavailableException` in `backend/app/core/exceptions.py`.
+
+#### Files Modified / Created
+- `backend/app/models/document_version.py` (Created — DocumentVersion SQLAlchemy ORM model)
+- `backend/app/models/document.py` (Modified — Added versioning, taxonomy, and lineage fields)
+- `backend/app/models/knowledge.py` (Modified — Added document_version_id FK on DocumentChunk)
+- `backend/app/models/__init__.py` (Modified — Exported DocumentVersion)
+- `backend/migrations/versions/b2c3d4e5f6a7_phase_1_8_document_versions.py` (Created — Phase 1.8 Alembic migration)
+- `backend/app/core/constants.py` (Modified — Added storage error codes and document processing statuses)
+- `backend/app/core/exceptions.py` (Modified — Added StorageQuotaExceededException, DuplicateFileException, PreviewUnavailableException)
+- `backend/app/core/config.py` (Modified — Added STORAGE_ROOT and DEFAULT_STORAGE_QUOTA_BYTES settings)
+- `backend/app/services/document_validator.py` (Created — DocumentValidator service)
+- `backend/app/services/storage_service.py` (Created — LocalStorageService implementation)
+- `backend/app/services/rag_seam.py` (Created — RAGDocumentIngestionSeam implementation)
+- `backend/app/services/document_service.py` (Modified — Full document domain and storage business logic)
+- `backend/app/services/__init__.py` (Modified — Exported document validator, storage, and seam services)
+- `backend/app/schemas/document.py` (Modified — Complete Pydantic v2 schemas for all 8 endpoints)
+- `backend/app/schemas/__init__.py` (Modified — Exported document schemas)
+- `backend/app/repositories/document_repo.py` (Modified — DocumentRepository search/filter & DocumentVersionRepository)
+- `backend/app/repositories/__init__.py` (Modified — Exported DocumentVersionRepository)
+- `backend/app/api/v1/documents.py` (Modified — Implemented all 8 REST endpoints)
+- `tests/unit/test_document_management_service.py` (Created — 14 unit tests for validator, storage, seam)
+- `tests/integration/test_document_management_endpoints.py` (Created — 10 integration tests for all 8 endpoints)
+- `tests/integration/test_db_migrations.py` (Modified — Updated head migration assertion to b2c3d4e5f6a7)
+- `PROJECT_STATE.md` (Modified — Updated Phase 1.8 progress matrix, deliverables, and test metrics)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #027)
+
+#### API Contracts Updated
+- `[POST] /api/v1/documents/upload` (202 Accepted, multipart/form-data)
+- `[GET] /api/v1/documents` (200 OK, paginated/filtered list)
+- `[GET] /api/v1/documents/recent` (200 OK, recent documents list)
+- `[GET] /api/v1/documents/{id}` (200 OK, metadata + versions array)
+- `[GET] /api/v1/documents/{id}/download` (200 OK, FileResponse stream)
+- `[GET] /api/v1/documents/{id}/preview` (200 OK, Response stream)
+- `[PATCH] /api/v1/documents/{id}` (200 OK, metadata update)
+- `[POST] /api/v1/documents/{id}/version` (201 Created, multipart/form-data)
+- `[DELETE] /api/v1/documents/{id}` (200 OK, soft delete / archive)
+
+#### Database Changes / Migrations
+- Migration file: `backend/migrations/versions/b2c3d4e5f6a7_phase_1_8_document_versions.py`
+- Schema changes:
+  - Created `document_versions` table with columns: `id`, `document_id`, `version_number`, `file_path`, `file_size`, `checksum_sha256`, `mime_type`, `uploader_id`, `change_notes`, `metadata_json`, `created_at`, `updated_at`.
+  - Added columns to `documents`: `current_version_id`, `current_version_number`, `original_filename`, `title`, `description`, `mime_type`, `checksum_sha256`, `category`, `tags`, `chunk_count`, `error_message`, `metadata_json`.
+  - Added column to `document_chunks`: `document_version_id`.
+  - Composite indexes: `ix_document_versions_doc_ver`, `ix_document_versions_checksum`, `ix_documents_org_checksum`, `ix_documents_category`, `ix_documents_project_id`, `ix_document_chunks_document_version_id`.
+
+#### Verification & Tests Executed
+- [x] Unit test suite passed: `./backend/.venv/bin/pytest tests/unit/test_document_management_service.py` → **14/14 PASSED (100%)**
+- [x] Integration test suite passed: `./backend/.venv/bin/pytest tests/integration/test_document_management_endpoints.py` → **10/10 PASSED (100%)**
+- [x] Migration consistency passed: `./backend/.venv/bin/pytest tests/integration/test_db_migrations.py` → **4/4 PASSED (100%)**
+- [x] Full backend test suite passed: `./backend/.venv/bin/pytest tests/` → **355/355 PASSED (100%)**
+- [x] Full frontend test suite passed: `npm --prefix frontend test` → **128/128 PASSED (100%)**
+- [x] Monorepo test suite total: **483/483 PASSED (100%)**
+- [x] Code quality passed: `./scripts/lint.sh` → **0 lint errors across Python & ESLint**
+- [x] Zero leftover test files in `storage/`
+
+#### Target Receiving Agents
+- **Member 3 (Frontend Lead)**: Build the Phase 1.8 Document Management UI: drag-and-drop uploader modal, document explorer (list/grid view with filters and search), document preview viewer (PDF/HTML/text/image), metadata editor modal, and version history timeline.
+- **Member 4 (DevOps Lead)**: Configure Docker storage volume mounts (`/app/storage`), author multi-tenant isolation integration tests, upload/download performance benchmarks, and Playwright E2E tests.
+
+#### Required Action for Receiving Agents
+
+##### Member 3 (Frontend Lead):
+1. **TypeScript Types (`frontend/src/types/document.ts`)**:
+   - Consume existing shapes and align with backend schemas: `DocumentItem`, `DocumentDetail`, `DocumentVersionItem`, `DocumentUploadResponse`, `DocumentVersionUploadResponse`, `DocumentDeleteResponse`, `DocumentCategory`, `DocumentProcessingState`.
+2. **API Client Service (`frontend/src/services/documentService.ts`)**:
+   - Implement client functions calling all 8 endpoints: `uploadDocument`, `listDocuments`, `getDocumentDetail`, `downloadDocument`, `getPreviewUrl`, `updateMetadata`, `uploadNewVersion`, `deleteDocument`.
+3. **UI Components & Pages**:
+   - `DocumentUploadModal`: Drag-and-drop zone with file validation, category selection, and upload progress.
+   - `DocumentExplorer`: Card and table views with category tabs, search input, status badges, and action menus.
+   - `DocumentPreviewModal`: Rendering inline preview for PDF, images, text, and HTML formatted content.
+   - `VersionHistoryTimeline`: Visual revision history with version numbers, timestamps, uploader badges, change notes, and download buttons.
+   - Register `/documents` in router and add navigation link to `Sidebar.tsx`.
+
+##### Member 4 (DevOps Lead):
+1. **Container Storage Volume Configuration**:
+   - Ensure `docker-compose.yml` mounts a persistent volume to `/app/storage` for backend container.
+2. **Security & Boundary Tests**:
+   - Add integration tests verifying tenant-isolated storage path quarantine and prevention of cross-tenant download tampering.
+3. **Performance & Stress Tests**:
+   - Add benchmarks for concurrent uploads, large file handling (up to 100MB), and preview streaming throughput.
+4. **Playwright E2E Tests**:
+   - Author end-to-end tests covering upload modal interaction, document explorer filtering, preview drawer display, and version upload.
+
+
 
 

@@ -257,3 +257,52 @@ class RateLimitExceededException(AppException):
             details=details,
         )
 
+
+class StorageQuotaExceededException(AppException):
+    """Raised when an upload exceeds organizational storage allowance."""
+
+    def __init__(
+        self,
+        message: str = "Storage quota exceeded for this organization.",
+        code: str | ErrorCode = ErrorCode.STORAGE_QUOTA_EXCEEDED,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class DuplicateFileException(ConflictException):
+    """Raised when an uploaded document matches an existing active document's checksum."""
+
+    def __init__(
+        self,
+        message: str = "Duplicate document detected in this organization.",
+        code: str | ErrorCode = ErrorCode.DUPLICATE_FILE_DETECTED,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            details=details,
+        )
+
+
+class PreviewUnavailableException(AppException):
+    """Raised when document preview generation or streaming fails."""
+
+    def __init__(
+        self,
+        message: str = "Preview unavailable for this document format.",
+        code: str | ErrorCode = ErrorCode.PREVIEW_UNAVAILABLE,
+        details: Any | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
+            details=details,
+        )

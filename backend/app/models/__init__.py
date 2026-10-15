@@ -2,6 +2,7 @@ from backend.app.models.activity import ActivityLog
 from backend.app.models.chat import ChatMessage, ChatSession
 from backend.app.models.department import Department
 from backend.app.models.document import Document
+from backend.app.models.document_version import DocumentVersion
 from backend.app.models.invitation import Invitation
 from backend.app.models.knowledge import DocumentChunk, KgEntity, KgRelationship
 from backend.app.models.meeting import Meeting
@@ -19,6 +20,7 @@ __all__ = [
     "Department",
     "Document",
     "DocumentChunk",
+    "DocumentVersion",
     "Invitation",
     "KgEntity",
     "KgRelationship",
