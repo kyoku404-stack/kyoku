@@ -2538,6 +2538,116 @@ COMPLETED / READY FOR FRONTEND & DEVOPS INTEGRATION
 4. **Playwright E2E Tests**:
    - Author end-to-end tests covering upload modal interaction, document explorer filtering, preview drawer display, and version upload.
 
+---
+
+### Handoff Entry #028: Phase 1.8 — Document Upload Interface, Drag-and-Drop, Explorer, Preview, Metadata & Version History UI
+
+#### Date
+2026-10-21
+
+#### Author Agent
+Member 3 (Frontend Lead)
+
+#### Status
+COMPLETED / READY FOR DEVOPS (MEMBER 4) & FINAL INTEGRATION
+
+#### Implemented Features
+1. **TypeScript Domain Models & Enums (`frontend/src/types/document.ts`)**:
+   - Implemented typed interfaces matching backend schemas and Phase 1.8 REST contract: `DocumentItem`, `DocumentDetail`, `DocumentVersionItem`, `DocumentUploadPayload`, `DocumentUploadResponse`, `DocumentVersionUploadResponse`, `DocumentUpdatePayload`, `DocumentUpdateResponse`, `DocumentDeleteResponse`, `DocumentListParams`.
+   - Defined `DocumentProcessingState`, `DocumentCategory`, `DOCUMENT_CATEGORIES`, `SUPPORTED_MIME_TYPES`, `SUPPORTED_EXTENSIONS` (11 formats: `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.txt`, `.md`, `.csv`, `.rtf`, `.png`, `.jpg`, `.jpeg`, `.webp`), and `MAX_FILE_SIZES` lookup.
+2. **Typed Document API Service (`frontend/src/services/documentService.ts`)**:
+   - Implemented client methods connecting to all 8 Phase 1.8 endpoints:
+     - `uploadDocument(file, options)`: Multipart POST with optional title, description, category, tags array, and project container.
+     - `listDocuments(params)`: GET paginated and filtered document catalog (`search`, `category`, `status`, `project_id`).
+     - `getDocumentDetail(id)`: GET complete document metadata including version lineage array.
+     - `downloadDocument(id, filename)`: Programmatic blob streaming download with dynamic anchor element trigger.
+     - `getDownloadUrl(id)`: Direct URL generator for binary downloads.
+     - `getPreviewUrl(id)`: Direct URL generator for inline preview streams.
+     - `updateMetadata(id, payload)`: PATCH metadata (title, description, category, tags, project_id).
+     - `uploadNewVersion(id, file, changeNotes)`: Multipart POST uploading revised version with change summary notes.
+     - `deleteDocument(id, action)`: DELETE supporting soft deletion (`delete`) or archiving (`archive`).
+3. **Document Upload Modal (`frontend/src/features/upload/DocumentUploadModal.tsx`)**:
+   - Drag-and-drop file upload zone with interactive visual highlight and click-to-browse.
+   - Client-side pre-validation checking file extensions against supported formats and validating maximum file size thresholds (e.g. 100MB PDF/PPTX, 50MB DOCX).
+   - Multi-file batch queue with individual status badges (`pending`, `uploading`, `success`, `error`), progress bar animation, title/category/tag editors, and single/batch upload actions.
+4. **Document Explorer (`frontend/src/features/upload/DocumentExplorer.tsx`)**:
+   - Dual presentation layouts: responsive Card Grid view and dense Table view with toggle.
+   - Real-time search with 300ms debounce across title, filename, and tags.
+   - Category filtering dropdown across all 10 enterprise document categories.
+   - Processing status chips (`PROCESSED`, `PROCESSING`, `PENDING`, `AWAITING_PROCESSING`, `FAILED`) with contextual color accents and spinners.
+   - AI Ready badge displaying chunk count and readiness indicator for Phase 2 RAG.
+   - Action menus per document: inline preview, direct download, metadata edit modal (`MetadataEditModal`), revision upload modal (`VersionUploadModal`), and deletion.
+   - Multi-page pagination controls with page indicators and previous/next navigation.
+5. **Document Inline Preview Modal (`frontend/src/features/upload/DocumentPreviewModal.tsx`)**:
+   - Embedded PDF preview using sandboxed iframe byte streaming.
+   - Image preview (PNG, JPG, WEBP) with zoom in, zoom out, scale display, and reset controls.
+   - Text & Markdown viewer with syntax pre-formatting and automatic bearer token fetching.
+   - Unsupported format fallback banner with direct file download button.
+   - Quick header actions: open in new tab, direct download, and keyboard `Escape` dismissal.
+6. **Version History Timeline (`frontend/src/features/upload/VersionHistoryTimeline.tsx`)**:
+   - Vertical timeline visualization of document revisions sorted newest first.
+   - Version number pills with `Current` and `Latest` indicators.
+   - Change notes display, uploader attribution, formatted byte sizes, relative timestamps, and SHA-256 hash snippets.
+   - Per-version download actions allowing users to retrieve any historic version snapshot.
+7. **Page Integration & Navigation**:
+   - Created `DocumentsPage` (`frontend/src/pages/DocumentsPage.tsx`) with knowledge repository header, permission-gated upload CTA, and feature highlights.
+   - Registered `/documents` and `/upload` routes in `frontend/src/routes/index.tsx`.
+   - Updated navigation in `frontend/src/components/common/Sidebar.tsx` with `Knowledge Repository` item and violet `New` badge.
+8. **Comprehensive Unit & Component Test Suite**:
+   - Authored `frontend/src/tests/documentManagement.test.tsx` (33 tests) covering API client methods, `DocumentUploadModal`, `VersionHistoryTimeline`, `DocumentExplorer`, `DocumentPreviewModal`, and `DocumentsPage`.
+   - Updated `frontend/src/tests/domainServices.test.ts` for Phase 1.8 payload alignment.
+   - Total frontend tests: **161/161 PASSED (100%)** across 19 test files.
+   - Total monorepo tests: **516/516 PASSED (100%)** (355 backend + 161 frontend).
+   - Clean ESLint (0 errors, 0 warnings) and clean production build (`tsc && vite build` -> 1,737 modules transformed, 0 errors).
+
+#### Files Modified / Created
+- `frontend/src/types/document.ts` (Modified — Phase 1.8 document types, categories, and constraints)
+- `frontend/src/services/documentService.ts` (Modified — Added all 8 Phase 1.8 REST client methods)
+- `frontend/src/features/upload/DocumentUploadModal.tsx` (Created — Drag-and-drop uploader modal)
+- `frontend/src/features/upload/DocumentExplorer.tsx` (Created — Document browser with grid/table views and filters)
+- `frontend/src/features/upload/DocumentPreviewModal.tsx` (Created — Inline preview for PDF/images/text)
+- `frontend/src/features/upload/VersionHistoryTimeline.tsx` (Created — Revision timeline component)
+- `frontend/src/features/upload/index.ts` (Modified — Feature exports)
+- `frontend/src/pages/DocumentsPage.tsx` (Created — Master knowledge repository page)
+- `frontend/src/routes/index.tsx` (Modified — Mounted DocumentsPage at /documents and /upload)
+- `frontend/src/components/common/Sidebar.tsx` (Modified — Added Knowledge Repository nav link)
+- `frontend/src/tests/documentManagement.test.tsx` (Created — 33 unit and component tests)
+- `frontend/src/tests/domainServices.test.ts` (Modified — Payload alignment)
+- `PROJECT_STATE.md` (Modified — Phase 1.8 Member 3 status and metrics update)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #028)
+
+#### API Contracts Updated
+- Conforms 100% to Section 3.3 of `docs/api/api-contract.md`. No changes or breaking deviations required.
+
+#### Database Changes / Migrations
+- None. (Frontend scope strictly `/frontend/src/` and documentation).
+
+#### Verification & Tests Executed
+- [x] Frontend test suite passed (`npm test` → **161/161 tests OK, 100%**)
+- [x] Unit test suite passed (`npx vitest run src/tests/documentManagement.test.tsx` → **33/33 tests OK, 100%**)
+- [x] Code quality lint passed (`npm run lint` → **0 errors, 0 warnings across all files**)
+- [x] TypeScript strict compilation check passed (`npx tsc --noEmit` → **0 errors**)
+- [x] Production build verified (`npm run build` → **1,737 modules transformed, 0 errors**)
+- [x] Git branch isolation verified (`agent/frontend/feature/phase-1.8-document-management-ui`)
+- [x] Zero hardcoded secrets, zero debug console logs
+
+#### Target Receiving Agent
+- **Member 4 (DevOps Lead)**: Configure Docker storage volumes, author multi-tenant boundary tests, concurrency stress tests, and Playwright E2E browser tests for the document management flows.
+
+#### Required Action for Receiving Agent
+1. **Container Storage Volume**:
+   - Ensure `docker-compose.yml` mounts `/app/storage` as a persistent volume for the backend container.
+2. **End-to-End Browser Tests**:
+   - Author Playwright test in `tests/e2e/document_management.spec.ts` testing:
+     - Navigation to `/documents` from sidebar.
+     - Opening upload modal, dragging file or browsing.
+     - Filtering by category and search querying.
+     - Opening preview modal and inspecting preview stream.
+     - Opening version history side panel and inspecting revision list.
+3. **Integration Benchmark Suites**:
+   - Verify concurrent uploads and large document downloads.
+
+
 
 
 

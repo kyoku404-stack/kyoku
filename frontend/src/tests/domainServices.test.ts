@@ -226,8 +226,17 @@ describe('Domain API Services', () => {
         data: {
           document_id: 'doc-1',
           filename: 'handbook.pdf',
-          status: 'PROCESSING',
+          original_filename: 'handbook.pdf',
+          file_type: 'application/pdf',
           file_size: 14,
+          checksum_sha256: 'abc123',
+          category: 'REPORTS',
+          tags: ['policy', 'hr'],
+          version_number: 1,
+          status: 'PROCESSING',
+          ai_ready: false,
+          project_id: null,
+          uploader_id: null,
           created_at: '2026-10-01T00:00:00Z',
         },
       };
@@ -236,8 +245,7 @@ describe('Domain API Services', () => {
 
       const result = await documentService.uploadDocument(
         mockFile,
-        'Employee Handbook',
-        'policy,hr'
+        { title: 'Employee Handbook', tags: ['policy', 'hr'] }
       );
 
       expect(apiClient.post).toHaveBeenCalledWith(

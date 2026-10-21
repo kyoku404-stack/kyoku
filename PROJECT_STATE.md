@@ -41,6 +41,16 @@ Phase 1.8 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
 - Authored comprehensive unit test suite `tests/unit/test_document_management_service.py` (14 tests) and integration test suite `tests/integration/test_document_management_endpoints.py` (10 tests).
 - Verified 100% test pass rate across 483 monorepo tests (355 backend + 128 frontend tests OK) and 0 lint errors.
 
+Phase 1.8 Member 3 (Frontend Lead) deliverables are COMPLETED:
+- Implemented comprehensive typed domain contracts (`frontend/src/types/document.ts`) matching backend schemas and architecture specifications for `DocumentItem`, `DocumentDetail`, `DocumentVersionItem`, `DocumentUploadResponse`, `DocumentVersionUploadResponse`, `DocumentDeleteResponse`, `DocumentCategory`, `DOCUMENT_CATEGORIES`, `SUPPORTED_MIME_TYPES`, `SUPPORTED_EXTENSIONS`, `MAX_FILE_SIZES`, and `DocumentProcessingState`.
+- Implemented complete typed client service `documentService` (`frontend/src/services/documentService.ts`) for all 8 REST endpoints: `uploadDocument` (multipart with progress/cancellation), `listDocuments` (filtered, paginated), `getDocumentDetail`, `downloadDocument` (blob stream with programmatic file save), `getDownloadUrl`, `getPreviewUrl`, `updateMetadata` (PATCH), `uploadNewVersion` (POST multipart), and `deleteDocument` (soft delete / archive).
+- Implemented `DocumentUploadModal` (`frontend/src/features/upload/DocumentUploadModal.tsx`) with drag-and-drop zone, client-side format/size validation, per-file metadata inputs (title, category, tags), batch upload queue, and upload progress indicators.
+- Implemented `DocumentExplorer` (`frontend/src/features/upload/DocumentExplorer.tsx`) providing responsive Grid and Table views, instant search with 300ms debounce, category dropdown filter, AI ready status chips, chunk counts, relative time formatting, pagination controls, inline action menus, metadata editor modal (`MetadataEditModal`), and revision upload modal (`VersionUploadModal`).
+- Implemented `DocumentPreviewModal` (`frontend/src/features/upload/DocumentPreviewModal.tsx`) offering inline preview rendering for PDFs (interactive iframe), images (zoom in/out/reset controls), text/markdown files (syntax pre block), and clear fallback for unsupported binary files.
+- Implemented `VersionHistoryTimeline` (`frontend/src/features/upload/VersionHistoryTimeline.tsx`) visual revision lineage tree with version tags (Current, Latest), uploader attribution, change notes, file sizes, relative timestamps, SHA-256 digests, and per-version download actions.
+- Implemented master `DocumentsPage` (`frontend/src/pages/DocumentsPage.tsx`), registered `/documents` and `/upload` routes in `frontend/src/routes/index.tsx`, and added `Knowledge Repository` navigation item with `New` badge in `Sidebar.tsx`.
+- Authored comprehensive test suite `frontend/src/tests/documentManagement.test.tsx` (33 unit and component tests passing 100%) and updated `domainServices.test.ts`. Total frontend tests: 161/161 OK across 19 test files. Total monorepo tests: 516/516 OK (355 backend + 161 frontend). Verified clean lint (0 errors, 0 warnings) and production build.
+
 Phase 1.6 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Authorization Architecture Specification (`docs/Architecture/authorization-architecture.md`) establishing the 7-step authorization pipeline, resource-level ownership evaluation, project containment checks, AI retrieval gating, and audit logging taxonomy.
 - Authored Architecture Decision Records ADR-017, ADR-018, and ADR-019 in `docs/decisions/decisions.md`.
@@ -149,7 +159,7 @@ Phase 1.7 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 | **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Ingestion Contracts | Typed document processing, storage & ingestion seam contracts in `services/rag/` & `services/ai/` |
 | **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.8 Document Endpoints | `docs/api/api-contract.md` updated with Section 3.3 (8 document endpoints) & Table 4 registry |
 | **Backend Architecture & APIs** | COMPLETED (Phase 1.8) | Member 2 (Backend Lead) | Phase 1.8 Document APIs | 8 REST endpoints, LocalStorageService, DocumentValidator, DocumentService, RAG seam |
-| **Frontend Application** | COMPLETED (Phase 1.7) | Member 3 (Frontend Lead) | Phase 1.8 Document UI | Ready for Member 3 implementation (uploader, explorer, preview, version timeline) |
+| **Frontend Application** | COMPLETED (Phase 1.8) | Member 3 (Frontend Lead) | Phase 1.8 Document UI | Implemented uploader, explorer, preview, version timeline |
 | **Database & Persistence Layer** | COMPLETED (Phase 1.8) | Member 2 & 4 | Phase 1.8 Versions Schema | Alembic migration `b2c3d4e5f6a7`, `document_versions` table, `documents` enhancements |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Ingestion state machine & BaseRAGDocumentIngestionSeam established |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
@@ -248,8 +258,8 @@ Status: COMPLETED (Phase 1.8)
 Next Milestone: Phase 1.8 Document Upload, Explorer & Preview UI (Member 3).
 
 ### Frontend
-Status: COMPLETED (Phase 1.7)  
-Next Milestone: Phase 1.8 Document Upload, Explorer & Preview UI (Member 3).
+Status: COMPLETED (Phase 1.8)  
+Next Milestone: Phase 1.8 Storage Infrastructure & End-to-End Testing (Member 4).
 
 ### Database / Persistence
 Status: COMPLETED (Phase 1.8)  
@@ -264,8 +274,8 @@ Status: COMPLETED (Phase 1.7)
 Next Milestone: Phase 1.8 Document Storage Volume Mounting & Performance Benchmark Suites (Member 4).
 
 ### QA / Testing
-Status: PASSING (355/355 backend + 128/128 frontend = 483/483 tests OK, 100%, 0 lint errors)  
-Next Milestone: Phase 1.8 Frontend & DevOps Testing Suites.
+Status: PASSING (355/355 backend + 161/161 frontend = 516/516 tests OK, 100%, 0 lint errors)  
+Next Milestone: Phase 1.8 DevOps Testing Suites (Member 4).
 
 ---
 
@@ -278,9 +288,9 @@ None.
 ---
 
 ## Last Updated
-2026-10-15
+2026-10-21
 
 ## Last Updated By
-Member 2 — Backend and Database Lead
+Member 3 — Frontend Lead
 
 

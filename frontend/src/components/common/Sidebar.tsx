@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   X,
+  FileStack,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -39,7 +40,14 @@ const navItems: NavItem[] = [
   { label: 'Workspaces & Projects', path: ROUTES.PROJECTS, icon: FolderKanban },
   { label: 'Members & Access', path: ROUTES.MEMBERS, icon: Users, requiredPermission: Permission.MEMBER_READ },
   { label: 'Semantic Search', path: ROUTES.SEARCH, icon: Search, requiredPermission: Permission.AI_SEARCH },
-  { label: 'Document Ingestion', path: ROUTES.UPLOAD, icon: UploadCloud, requiredPermission: Permission.DOCUMENT_CREATE },
+  {
+    label: 'Knowledge Repository',
+    path: ROUTES.DOCUMENTS,
+    icon: FileStack,
+    requiredPermission: Permission.DOCUMENT_CREATE,
+    badge: 'New',
+  },
+  { label: 'Document Upload', path: ROUTES.UPLOAD, icon: UploadCloud, requiredPermission: Permission.DOCUMENT_CREATE },
   { label: 'RAG Knowledge Chat', path: ROUTES.CHAT, icon: MessageSquare, requiredPermission: Permission.AI_CHAT },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
@@ -127,7 +135,9 @@ export const Sidebar: React.FC = () => {
                       'rounded-full px-2 py-0.5 text-[10px] font-semibold',
                       item.badge === 'RBAC'
                         ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
-                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : item.badge === 'New'
+                          ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
+                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                     )}
                   >
                     {item.badge}
@@ -163,7 +173,7 @@ export const Sidebar: React.FC = () => {
                 </span>
               )}
             </div>
-            <span className="text-[10px] text-muted-foreground">Phase 1.6</span>
+            <span className="text-[10px] text-muted-foreground">Phase 1.8</span>
           </div>
         </div>
       </aside>
