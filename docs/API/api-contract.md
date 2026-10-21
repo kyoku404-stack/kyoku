@@ -1264,3 +1264,241 @@ data: {"sources": [], "query_id": "uuid"}
   }
 }
 ```
+
+---
+
+## 6. Observability, Health Check & System Monitoring API Contracts
+
+### 6.1 Overview & Architecture
+`devdocs/p1/p1.9.txt` mandates a comprehensive observability framework exposing multi-tier health probes, standard Prometheus metrics exposition, and an aggregated JSON metrics summary for enterprise UI dashboards.
+
+---
+
+### 6.2 GET /health
+
+**Purpose**: Composite health probe evaluating overall platform operational readiness across all subsystem dependencies.
+
+**Authorization**: Public (accessible to load balancers, container orchestrators, and uptime monitors).
+
+**Headers**:
+- Response includes `X-Request-ID` correlation identifier.
+
+**Response Status Codes**:
+- `200 OK`: All critical dependencies are operational (`"healthy"` or `"degraded"`).
+- `503 Service Unavailable`: One or more critical subsystems (e.g., Database) are offline (`"unhealthy"`).
+
+**Response Shape (200 OK)**:
+```json
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2026-10-21T21:45:00Z",
+  "uptime_seconds": 86400,
+  "environment": "production",
+  "dependencies": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 1.25,
+      "connection_pool": {
+        "size": 20,
+        "checked_out": 2,
+        "overflow": 0
+      },
+      "vector_extension_enabled": true
+    },
+    "storage": {
+      "status": "healthy",
+      "latency_ms": 0.82,
+      "writable": true,
+      "free_space_bytes": 107374182400,
+      "used_percent": 14.5
+    },
+    "api": {
+      "status": "healthy",
+      "memory_rss_mb": 145.2,
+      "active_requests": 3
+    },
+    "auth": {
+      "status": "healthy",
+      "jwt_secret_configured": true,
+      "algorithm": "HS256"
+    }
+  }
+}
+```
+
+---
+
+### 6.3 GET /health/database
+
+**Purpose**: Isolated database health probe verifying PostgreSQL connection pool responsiveness and pgvector extension readiness.
+
+**Authorization**: Public / Orchestrator probe.
+
+**Response Status Codes**:
+- `200 OK`: Database connected and ping query succeeded.
+- `503 Service Unavailable`: Connection failed or timeout.
+
+**Response Shape (200 OK)**:
+```json
+{
+  "status": "healthy",
+  "latency_ms": 1.15,
+  "database": "postgresql",
+  "version": "PostgreSQL 16.4",
+  "vector_extension": true,
+  "pool": {
+    "size": 20,
+    "checked_out": 1,
+    "overflow": 0
+  }
+}
+```
+
+---
+
+### 6.4 GET /health/storage
+
+**Purpose**: Isolated storage filesystem health probe validating write/read accessibility and capacity thresholds.
+
+**Authorization**: Public / Orchestrator probe.
+
+**Response Status Codes**:
+- `200 OK`: Storage root directory writable and disk usage below critical threshold (< 95%).
+- `503 Service Unavailable`: Storage unmounted, read-only filesystem, or disk full.
+
+**Response Shape (200 OK)**:
+```json
+{
+  "status": "healthy",
+  "storage_root": "/app/storage",
+  "writable": true,
+  "latency_ms": 0.90,
+  "total_bytes": 1073741824000,
+  "used_bytes": 155692564480,
+  "free_bytes": 918049259520,
+  "used_percent": 14.5
+}
+```
+
+---
+
+### 6.5 GET /health/api
+
+**Purpose**: Process-level runtime probe inspecting API gateway uptime, event loop latency, and memory footprint.
+
+**Authorization**: Public / Orchestrator probe.
+
+**Response Shape (200 OK)**:
+```json
+{
+  "status": "healthy",
+  "uptime_seconds": 86400,
+  "python_version": "3.12.3",
+  "memory_rss_mb": 145.2,
+  "cpu_percent": 2.4,
+  "active_requests": 2
+}
+```
+
+---
+
+### 6.6 GET /health/auth
+
+**Purpose**: Authentication readiness probe validating JWT secret keys, cryptographic providers, and token revocation infrastructure.
+
+**Authorization**: Public / Orchestrator probe.
+
+**Response Shape (200 OK)**:
+```json
+{
+  "status": "healthy",
+  "jwt_secret_configured": true,
+  "algorithm": "HS256",
+  "access_token_expire_minutes": 60,
+  "refresh_token_expire_days": 7
+}
+```
+
+---
+
+### 6.7 GET /metrics
+
+**Purpose**: Standard Prometheus text exposition endpoint scraping operational counters, gauges, and latency histograms.
+
+**Authorization**: Internal / Prometheus scraper (or protected via basic auth/Bearer in production).
+
+**Content-Type**: `text/plain; version=0.0.4; charset=utf-8`
+
+**Sample Output**:
+```text
+# HELP http_requests_total Total number of HTTP requests processed.
+# TYPE http_requests_total counter
+http_requests_total{handler="/api/v1/documents",method="GET",status="200"} 412.0
+http_requests_total{handler="/api/v1/auth/login",method="POST",status="200"} 89.0
+http_requests_total{handler="/api/v1/auth/login",method="POST",status="401"} 3.0
+
+# HELP http_request_duration_seconds HTTP request latency histogram.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{handler="/api/v1/documents",le="0.01"} 120.0
+http_request_duration_seconds_bucket{handler="/api/v1/documents",le="0.05"} 390.0
+http_request_duration_seconds_bucket{handler="/api/v1/documents",le="+Inf"} 412.0
+http_request_duration_seconds_sum{handler="/api/v1/documents"} 8.42
+http_request_duration_seconds_count{handler="/api/v1/documents"} 412.0
+
+# HELP db_pool_active_connections Current active database connections.
+# TYPE db_pool_active_connections gauge
+db_pool_active_connections 2.0
+
+# HELP storage_used_bytes Total storage bytes used.
+# TYPE storage_used_bytes gauge
+storage_used_bytes 155692564480.0
+```
+
+---
+
+### 6.8 GET /api/v1/metrics/summary
+
+**Purpose**: Aggregated JSON metrics endpoint powering the frontend System Status, Monitoring Dashboard, and Admin Telemetry cards.
+
+**Authorization**: Authenticated User (`audit.read` or `system.metrics` permission).
+
+**Response Shape (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "System telemetry summary retrieved successfully.",
+  "data": {
+    "system_status": "healthy",
+    "uptime_seconds": 86400,
+    "timestamp": "2026-10-21T21:45:00Z",
+    "kpis": {
+      "requests_per_second": 14.2,
+      "p95_latency_ms": 38.5,
+      "error_rate_percent": 0.05,
+      "active_users": 18,
+      "total_documents": 240,
+      "storage_used_bytes": 155692564480,
+      "storage_capacity_bytes": 1073741824000,
+      "storage_percent": 14.5,
+      "database_pool_usage_percent": 10.0
+    },
+    "alerts": [
+      {
+        "id": "alt-001",
+        "severity": "INFO",
+        "title": "Scheduled Storage Backup",
+        "message": "Automated snapshot completed with SHA-256 verification.",
+        "timestamp": "2026-10-21T21:00:00Z"
+      }
+    ],
+    "subsystem_health": {
+      "database": "healthy",
+      "storage": "healthy",
+      "api": "healthy",
+      "auth": "healthy"
+    }
+  }
+}
+```
+

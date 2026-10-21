@@ -2738,3 +2738,94 @@ Member 4 has completed all DevOps, infrastructure, testing, and operational deli
 4. **Member 4 (DevOps Lead)**:
    - Provision Celery worker containers, Redis task broker, and pgvector HNSW indexing performance benchmarks.
 
+---
+
+### Handoff Entry #030: Phase 1.9 — Observability, Monitoring Architecture, Health Probes & AI Telemetry Foundation
+
+#### Date
+2026-10-21
+
+#### Author Agent
+Member 1 (Project Lead & AI Architect)
+
+#### Status
+COMPLETED / READY FOR MEMBER 2 (BACKEND LEAD) & MEMBER 3 (FRONTEND LEAD)
+
+#### Executive Summary
+Member 1 has delivered the architectural blueprint, API/Database specifications, Architecture Decision Records (ADR-026, ADR-027, ADR-028), and typed domain contracts for Phase 1.9 (Logging, Monitoring & System Observability). This establishes the foundational contracts for centralized structured JSON logging, correlation tracking (`X-Request-ID`, W3C `traceparent`), multi-tier health check probes (`/health`, `/health/database`, `/health/storage`, `/health/api`, `/health/auth`), Prometheus metric exposition (`/metrics`), frontend telemetry summary (`/api/v1/metrics/summary`), and specialized AI/RAG observability metrics in preparation for Phase 2.
+
+#### Completed Deliverables
+1. **Master Observability Architecture Specification (`docs/Architecture/observability-architecture.md`)**:
+   - Comprehensive distributed observability topology (logging, metrics, tracing, health probes, alerting thresholds, and retention policies).
+   - Canonical structured JSON log schema conforming to devdocs Chapter 6.
+   - 5-tier health check specification with dependency isolation and SLA targets.
+   - Operational KPIs for API, database, storage, and authentication.
+   - Alerting matrix with trigger conditions, evaluation windows, and runbook actions.
+   - Dedicated Phase 2 AI Observability Framework covering LLM tokens, cost attribution, embedding latency, vector retrieval scoring, and citation grounding.
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - **ADR-026**: Centralized JSON Structured Logging & W3C TraceContext Propagation.
+   - **ADR-027**: Prometheus & OpenTelemetry Metrics Topology with Multi-Tier Health Check Probing.
+   - **ADR-028**: AI Model, Embedding, and RAG Pipeline Observability Framework (Phase 2 Preparation).
+3. **Official REST API Contract Expansion (`docs/api/api-contract.md`)**:
+   - Added Section 6 defining 7 health check and system monitoring endpoints:
+     - `GET /health` (Composite platform health)
+     - `GET /health/database` (PostgreSQL connection pool & pgvector probe)
+     - `GET /health/storage` (Storage volume write/read & quota probe)
+     - `GET /health/api` (Runtime uptime & memory RSS probe)
+     - `GET /health/auth` (JWT key verification probe)
+     - `GET /metrics` (Prometheus exposition format)
+     - `GET /api/v1/metrics/summary` (Aggregated JSON telemetry for UI dashboards)
+4. **Database Schema Specification Update (`docs/database/database-schema.md`)**:
+   - Added Section 3.12 standardizing `activity_logs.metadata_json` schema for distributed trace context and defining `ai_telemetry_logs` schema for Phase 2.
+5. **Typed Domain Contracts (`backend/app/services/ai/observability.py` & `services/rag/interfaces.py`)**:
+   - `AIOperationType` (11 enum operations) & `AILogLevel` (5 enum levels).
+   - `AIExecutionMetrics`: Token counting, latency, TTFT, cost estimation, provider/model attribution.
+   - `RAGRetrievalMetrics`: Candidate count, rerank count, similarity scores, retrieval latency, token footprints.
+   - `AIObservabilityEvent`: Structured JSON log serialization (`to_json_dict`).
+   - `AIMonitoringKPIs`: Aggregate statistics computation (p95 latency, error rate, token sums).
+   - `BaseAICostCalculator` & `DefaultAICostCalculator`: Financial cost estimation catalog for OpenAI and zero-cost local models.
+   - `BaseAIObservabilityCollector` & `InMemoryAIObservabilityCollector`: Thread-safe collector with capacity management and multi-tenant isolation.
+   - `RAGObservabilityTelemetry`: End-to-end RAG profiling contract.
+6. **Dedicated Unit Test Suite (`tests/unit/test_observability_ai_contracts.py`)**:
+   - 19 test cases validating enums, metrics serialization, cost calculations, capacity trimming, multi-tenant isolation, and Chapter 6 JSON log schema conformance. 100% pass rate.
+
+#### Files Modified / Created
+- `docs/Architecture/observability-architecture.md` (Created — Master architecture specification)
+- `docs/decisions/decisions.md` (Modified — Appended ADR-026, ADR-027, ADR-028)
+- `docs/api/api-contract.md` (Modified — Added Section 6 with 7 health & metrics endpoints)
+- `docs/database/database-schema.md` (Modified — Added Section 3.12 observability schemas)
+- `backend/app/services/ai/observability.py` (Created — AI Observability & Monitoring domain contracts)
+- `backend/app/services/ai/__init__.py` (Modified — Exported observability constructs)
+- `backend/app/services/rag/interfaces.py` (Modified — Enriched AIQueryLogRecord & added RAGObservabilityTelemetry)
+- `backend/app/services/rag/__init__.py` (Modified — Exported RAGObservabilityTelemetry)
+- `tests/unit/test_observability_ai_contracts.py` (Created — 19 unit tests)
+- `PROJECT_STATE.md` (Modified — Updated status, progress matrix, and Phase 1.9 milestones)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #030)
+
+#### Verification & Tests Executed
+- [x] Dedicated Unit Test Suite passed (`./backend/.venv/bin/pytest tests/unit/test_observability_ai_contracts.py` -> **19/19 PASSED, 100%**)
+- [x] Full Backend Test Suite passed (`./backend/.venv/bin/pytest tests/` -> **386/386 PASSED, 100%**)
+- [x] Frontend Vitest Suite passed (`npm --prefix frontend test` -> **161/161 PASSED, 100%**)
+- [x] Monorepo Test Suite passed -> **547/547 PASSED (100%)**
+- [x] Ruff Linting passed (`ruff check backend/ tests/` -> **All checks passed, 0 errors**)
+- [x] Git branch isolation verified (`agent/ai-lead/feature/phase-1.9-observability-architecture-ai-monitoring`)
+- [x] Zero hardcoded secrets, zero debug logs, zero residual test artifacts
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**: Ready to implement FastAPI health check routes, structured logging middleware, Prometheus metrics registry, and metrics summary endpoint.
+- **Member 3 (Frontend Lead)**: Ready to implement system status indicators, monitoring dashboards, and telemetry charts.
+- **Member 4 (DevOps & Integration Lead)**: Ready to provision Prometheus, Grafana, and Loki in `docker-compose.yml`.
+
+#### Required Action for Receiving Agent
+1. **Member 2 (Backend Lead)**:
+   - Implement structured JSON logging middleware with `X-Request-ID` and trace context propagation.
+   - Implement `/health`, `/health/database`, `/health/storage`, `/health/api`, `/health/auth` endpoints conforming to `docs/api/api-contract.md` Section 6.
+   - Implement `/metrics` Prometheus exposition endpoint and `/api/v1/metrics/summary` endpoint.
+2. **Member 3 (Frontend Lead)**:
+   - Implement `systemService` consuming `/health` and `/api/v1/metrics/summary`.
+   - Build System Status & Observability dashboard with subsystem status cards, latency charts, and alert indicators.
+3. **Member 4 (DevOps Lead)**:
+   - Add Prometheus and Grafana containers to `docker-compose.yml`.
+   - Configure alert rules and load test benchmarks for health check latency.
+
+

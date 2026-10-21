@@ -413,6 +413,51 @@ Stores user-directed notifications with status tracking, categorization, action 
 
 ---
 
+### 3.12 System Observability, Request Tracing & AI Telemetry Schemas
+
+To support distributed tracing, structured audit querying, and Phase 2 AI observability, operational records are linked with correlation identifiers.
+
+#### `activity_logs` Observability Metadata Schema
+The `metadata_json` JSONB column in `activity_logs` is formally standardized to capture distributed tracing and latency context across all recorded audit operations:
+
+```json
+{
+  "request_id": "req-98f24a1b-312c-47ea-8d19-bca128f73110",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "execution_time_ms": 14.82,
+  "module": "authorization_engine",
+  "decision": "ALLOW",
+  "required_permission": "document.read",
+  "actor_role": "Member",
+  "details": {
+    "document_id": "e8b23f11-9a1c-4b62-9e22-83bfa99321e1"
+  }
+}
+```
+
+#### `ai_telemetry_logs` Specification (Phase 2 Ingestion & RAG Foundation)
+For high-volume AI telemetry (LLM calls, embeddings, vector retrieval evaluations), operational events in Phase 2 are structured with the following schema:
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Primary Key, Default `gen_random_uuid()` | Unique AI telemetry event ID |
+| `organization_id` | `UUID` | NOT NULL, FK -> `organizations.id` | Tenant boundary for AI cost attribution |
+| `user_id` | `UUID` | NULL, FK -> `users.id` | Invoking user |
+| `project_id` | `UUID` | NULL, FK -> `projects.id` | Associated workspace container |
+| `operation_type` | `VARCHAR(50)` | NOT NULL | `EMBEDDING_GENERATION`, `VECTOR_SEARCH`, `LLM_COMPLETION`, `RAG_QUERY` |
+| `model_name` | `VARCHAR(100)` | NOT NULL | Model identifier (e.g., `gpt-4o`, `text-embedding-3-small`) |
+| `prompt_tokens` | `INT` | NOT NULL, Default `0` | Number of prompt tokens |
+| `completion_tokens` | `INT` | NOT NULL, Default `0` | Number of completion tokens |
+| `total_tokens` | `INT` | NOT NULL, Default `0` | Sum of prompt and completion tokens |
+| `latency_ms` | `FLOAT` | NOT NULL, Default `0.0` | Total operation latency in milliseconds |
+| `cost_usd` | `NUMERIC(10, 6)` | NOT NULL, Default `0.000000` | Estimated financial cost in USD |
+| `trace_id` | `VARCHAR(64)` | NULL | W3C trace identifier |
+| `request_id` | `VARCHAR(64)` | NULL | Request correlation identifier |
+| `metrics_json` | `JSONB` | NOT NULL, Default `'{}'::jsonb` | Additional telemetry (TTFT, similarity scores, candidate count) |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, Default `NOW()` | Event timestamp |
+
+---
+
 ## 4. Entity Relationship Diagram (ERD)
 
 ```mermaid
