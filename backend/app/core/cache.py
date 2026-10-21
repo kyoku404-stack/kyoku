@@ -201,7 +201,7 @@ class CacheManager:
                 pipe.expire(key, window_seconds)
                 results = await pipe.execute()
                 count = int(results[1]) if len(results) > 1 else 0
-                is_allowed = bool(count < limit)
+                is_allowed = count < limit
                 remaining = max(0, limit - count)
                 return is_allowed, remaining
             except Exception as e:  # noqa: BLE001

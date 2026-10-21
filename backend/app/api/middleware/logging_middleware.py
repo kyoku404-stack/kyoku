@@ -12,11 +12,10 @@ from __future__ import annotations
 
 import re
 import time
-from collections.abc import Callable
 
 from backend.app.core.logging import get_logger
 from backend.app.core.metrics import metrics_registry
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -37,7 +36,7 @@ def normalize_handler_path(path: str) -> str:
 class LoggingMiddleware(BaseHTTPMiddleware):
     """Middleware measuring request execution time, updating metrics, and emitting structured logs."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         start_time = time.perf_counter()
         request_id = getattr(request.state, "request_id", "req-unknown")
         trace_id = getattr(request.state, "trace_id", None)

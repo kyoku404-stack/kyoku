@@ -12,13 +12,12 @@ from __future__ import annotations
 
 import re
 import uuid
-from collections.abc import Callable
 
 from backend.app.core.logging import (
     clear_request_context,
     set_request_context,
 )
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -36,7 +35,7 @@ W3C_TRACEPARENT_REGEX = re.compile(
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware that injects, validates, and propagates distributed correlation identifiers."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # 1. Resolve or generate Request ID (must be standard UUID)
         raw_request_id = request.headers.get(REQUEST_ID_HEADER)
         if raw_request_id and raw_request_id.strip():
