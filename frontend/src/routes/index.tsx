@@ -62,6 +62,9 @@ const AuditLogsPage = lazy(() =>
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 );
+const DocumentsPage = lazy(() =>
+  import('@/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage }))
+);
 
 import { RequirePermission, RequireRole } from '@/routes/guards';
 import { Permission } from '@/types/permission';
@@ -205,7 +208,7 @@ export const router = createBrowserRouter([
         path: 'documents',
         element: (
           <SuspenseWrapper>
-            <DashboardPage />
+            <DocumentsPage />
           </SuspenseWrapper>
         ),
       },
@@ -213,7 +216,7 @@ export const router = createBrowserRouter([
         path: 'upload',
         element: (
           <SuspenseWrapper>
-            <DashboardPage />
+            <DocumentsPage />
           </SuspenseWrapper>
         ),
       },
