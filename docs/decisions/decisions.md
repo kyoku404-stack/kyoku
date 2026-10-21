@@ -747,3 +747,103 @@ Member 1 specifies `document_versions` schema in `docs/database/database-schema.
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-026 — Centralized JSON Structured Logging & W3C TraceContext Propagation
+
+#### Date
+2026-10-21
+
+#### Context
+`devdocs/p1/p1.9.txt` (Chapters 4, 5, 6, 11) mandates centralized logging across all application components (API, Auth, Database, Storage, Workers, AI) with structured attributes (timestamp, level, module, action, status, user_id, organization_id, request_id, execution_time_ms). Plain text unstructured logs (`print()` or default string logging) prevent machine parsing, query filtering in Grafana Loki, automated threshold alerting, and cross-service trace reconstruction during incident triage.
+
+#### Decision
+1. Standardize all log output to newline-delimited JSON (`ndjson`) emitted to `stdout`.
+2. Adopt the canonical log schema defined in `docs/Architecture/observability-architecture.md`:
+   `timestamp`, `level`, `module`, `action`, `status`, `user_id`, `organization_id`, `request_id`, `trace_id`, `execution_time_ms`, `ip_address`, `message`, `metadata`.
+3. Implement request context middleware in FastAPI that:
+   - Extracts incoming `X-Request-ID` or generates a UUIDv4 if missing.
+   - Parses or initializes W3C `traceparent` headers (`trace_id`).
+   - Binds `request_id`, `user_id`, and `organization_id` to Python `contextvars` for automatic injection into every log emission across synchronous and asynchronous call trees.
+   - Echoes `X-Request-ID` in HTTP response headers.
+
+#### Alternatives Considered
+- Writing plain text log files locally to disk: Rejected — causes Docker volume contention, requires manual log rotation scripts, and prevents centralized aggregation in Loki/ELK.
+- Requiring developers to pass `request_id` manually to every logging call: Rejected — error-prone and leads to missing correlation IDs deep inside repository and service layers.
+
+#### Reason
+Standardized JSON with contextvars-driven correlation propagation enables zero-overhead distributed log tracing and automated ingestion into Loki and Grafana.
+
+#### Impact
+Member 2 implements logging middleware and structured formatters. Member 4 configures Promtail/Loki log aggregation.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-027 — Prometheus & OpenTelemetry Metrics Topology with Multi-Tier Health Check Probing
+
+#### Date
+2026-10-21
+
+#### Context
+`devdocs/p1/p1.9.txt` (Chapters 7, 8, 15) requires continuous performance metrics collection (API latency, throughput, error rates, database connections, storage utilization) and a multi-tier health probe architecture. Without granular probes, orchestrators like Docker Compose and Kubernetes cannot differentiate between a transient slow query and a hard crash, risking unnecessary container restarts or routing traffic to dead dependencies.
+
+#### Decision
+1. Expose Prometheus metrics at standard endpoint `GET /metrics` utilizing `prometheus_client` exposition format.
+2. Provide a lightweight JSON aggregation endpoint `GET /api/v1/metrics/summary` for the frontend dashboard to display live operational telemetry without direct TSDB query dependencies.
+3. Decouple health checks into five granular probe endpoints:
+   - `GET /health`: Composite system health returning HTTP 200 (healthy/degraded) or 503 (unhealthy) with detailed sub-system dependency statuses.
+   - `GET /health/database`: Verifies PostgreSQL connectivity (`SELECT 1`), active pool connections, and `pgvector` extension presence.
+   - `GET /health/storage`: Validates storage directory write/read permissions and quota headroom.
+   - `GET /health/api`: Reports process uptime, memory RSS, and active request count.
+   - `GET /health/auth`: Verifies JWT secret key health and token signing readiness.
+
+#### Alternatives Considered
+- Single monolithic `/health` endpoint that performs heavy write/read checks on every ping: Rejected — causes database and disk I/O overhead under aggressive container liveness polling (e.g. every 5 seconds).
+- Proprietary metrics JSON endpoint only: Rejected — prevents integration with standard industry observability stacks (Prometheus, Grafana, Datadog).
+
+#### Reason
+Multi-tier health checks allow load balancers to perform ultra-fast liveness checks (< 2ms) while enabling administrators to diagnose exact subsystem degradation. Prometheus standards ensure turnkey container infrastructure monitoring.
+
+#### Impact
+Member 2 implements health routes and Prometheus metric counters/histograms. Member 3 develops system status UI pages. Member 4 provisions Prometheus and Grafana services in Docker.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-028 — AI Model, Embedding, and RAG Pipeline Observability Framework (Phase 2 Preparation)
+
+#### Date
+2026-10-21
+
+#### Context
+Phase 1.9 introduces system-wide observability while Phase 2 introduces production AI workloads (document chunking, embedding generation, dense/sparse RAG vector queries, and LLM answer generation). AI operations present unique failure modes: silent hallucinations, retrieval quality degradation, context window overflow, API rate limits (429), and uncontrolled token costs. Without purpose-built telemetry contracts established now, Phase 2 AI services will lack visibility.
+
+#### Decision
+1. Establish a dedicated AI Observability domain contract package in `backend/app/services/ai/observability.py`.
+2. Define typed telemetry models:
+   - `AIOperationType`: Categorizes AI operations (`EMBEDDING_GENERATION`, `VECTOR_SEARCH`, `LLM_COMPLETION`, `LLM_STREAM`, `RAG_QUERY`, `GRAPH_EXTRACTION`, `AGENT_TOOL_CALL`).
+   - `AIExecutionMetrics`: Measures prompt tokens, completion tokens, total tokens, latency (TTFT and total), estimated cost in USD, and provider/model identifier.
+   - `RAGRetrievalMetrics`: Measures query text, candidate chunk counts, rerank counts, top similarity scores, retrieval latency, and context token footprint.
+   - `AIObservabilityEvent`: Unified audit and telemetry record capturing `trace_id`, `request_id`, `organization_id`, `user_id`, `project_id`, execution metrics, retrieval metrics, error details, and status.
+3. Define abstract interfaces `BaseAIObservabilityCollector`, `BaseAICostCalculator`, and `BaseAITraceContext`.
+4. Provide a thread-safe `InMemoryAIObservabilityCollector` for local testing and lightweight in-process metric aggregation, ensuring zero external vendor lock-in.
+
+#### Alternatives Considered
+- Direct coupling to proprietary LLM observability SaaS (e.g., LangSmith, Arize Phoenix, Weights & Biases): Rejected — introduces external network dependencies, privacy risks for sensitive enterprise tenant data, and cloud vendor lock-in.
+- Postponing AI metrics to Phase 2.5: Rejected — without foundational contracts established in Phase 1.9, Phase 2.1 and Phase 2.2 would require ad-hoc logging that diverges across team members.
+
+#### Reason
+Clean interface abstraction in `services/ai/` guarantees that Phase 2 ingestion and RAG engines emit structured, auditable, and cost-attributed telemetry from Day 1.
+
+#### Impact
+Member 1 implements typed contracts and unit test verification. Member 2 integrates AI metrics into application metrics registry. Member 3 builds AI usage widget charts. Member 4 configures AI alert thresholds.
+
+#### Status
+ACCEPTED
+

@@ -270,6 +270,64 @@ class AIQueryLogRecord:
     latency_ms: float
     model_name: str
     citations_count: int = 0
+    trace_id: str | None = None
+    request_id: str | None = None
+    cost_usd: float = 0.0
+
+
+@dataclass
+class RAGObservabilityTelemetry:
+    """End-to-end telemetry profile for a hybrid RAG query execution."""
+
+    query: str
+    trace_id: str | None = None
+    request_id: str | None = None
+    organization_id: UUID | None = None
+    user_id: UUID | None = None
+    model_name: str = "gpt-4o"
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float = 0.0
+    embedding_latency_ms: float = 0.0
+    retrieval_latency_ms: float = 0.0
+    rerank_latency_ms: float = 0.0
+    generation_latency_ms: float = 0.0
+    total_latency_ms: float = 0.0
+    candidate_chunks_count: int = 0
+    reranked_chunks_count: int = 0
+    top_similarity_score: float = 0.0
+    citation_count: int = 0
+    is_cached: bool = False
+    status: str = "success"
+    error_message: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializes telemetry profile to a dictionary."""
+        return {
+            "query": self.query,
+            "trace_id": self.trace_id,
+            "request_id": self.request_id,
+            "organization_id": str(self.organization_id) if self.organization_id else None,
+            "user_id": str(self.user_id) if self.user_id else None,
+            "model_name": self.model_name,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "total_tokens": self.total_tokens,
+            "estimated_cost_usd": round(self.estimated_cost_usd, 6),
+            "embedding_latency_ms": round(self.embedding_latency_ms, 2),
+            "retrieval_latency_ms": round(self.retrieval_latency_ms, 2),
+            "rerank_latency_ms": round(self.rerank_latency_ms, 2),
+            "generation_latency_ms": round(self.generation_latency_ms, 2),
+            "total_latency_ms": round(self.total_latency_ms, 2),
+            "candidate_chunks_count": self.candidate_chunks_count,
+            "reranked_chunks_count": self.reranked_chunks_count,
+            "top_similarity_score": round(self.top_similarity_score, 4),
+            "citation_count": self.citation_count,
+            "is_cached": self.is_cached,
+            "status": self.status,
+            "error_message": self.error_message,
+        }
 
 
 # ---------------------------------------------------------------------------

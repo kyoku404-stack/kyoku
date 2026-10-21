@@ -4,13 +4,31 @@
 Phase 1 — Core Platform Foundation
 
 ## Current Sub-Phase
-Phase 1.8 — Document Upload, File Management & Storage System
+Phase 1.9 — Logging, Monitoring & System Observability
 
 ## Repository Health
 GREEN
 
 ## Overall Status
-Phase 1.1, Phase 1.2, Phase 1.3, Phase 1.4, Phase 1.5, Phase 1.6, and Phase 1.7 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+Phase 1.1 through Phase 1.8 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+
+Phase 1.9 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Observability, Monitoring & Logging Architecture Specification (`docs/Architecture/observability-architecture.md`) establishing centralized structured JSON logging, distributed trace context propagation (W3C TraceContext & Request ID), 5-tier health check topology (`/health`, `/health/database`, `/health/storage`, `/health/api`, `/health/auth`), Prometheus metric exposition (`/metrics`), KPI thresholds, alerting matrix, and specialized AI/RAG observability telemetry for Phase 2.
+- Authored Architecture Decision Records ADR-026, ADR-027, and ADR-028 in `docs/decisions/decisions.md`.
+- Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 6 defining all 7 observability and health check endpoints (`GET /health`, `GET /health/database`, `GET /health/storage`, `GET /health/api`, `GET /health/auth`, `GET /metrics`, `GET /api/v1/metrics/summary`).
+- Updated Database Schema Specification (`docs/database/database-schema.md`) Section 3.12 defining observability metadata standards for `activity_logs` and the `ai_telemetry_logs` schema specification.
+- Implemented typed AI Observability & Monitoring domain contracts in `backend/app/services/ai/observability.py` and `backend/app/services/rag/interfaces.py`:
+  - `AIOperationType`: 11 operation types (`EMBEDDING_GENERATION`, `VECTOR_SEARCH`, `HYBRID_SEARCH`, `LLM_COMPLETION`, `LLM_STREAM`, `RAG_QUERY`, etc.).
+  - `AILogLevel`: Standardized severity taxonomy (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`).
+  - `AIExecutionMetrics`: Token counting, latency profiling, TTFT, cost estimation, provider/model attribution.
+  - `RAGRetrievalMetrics`: Candidate count, rerank count, similarity scores, retrieval latency, token footprints.
+  - `AIObservabilityEvent`: Canonical JSON log serialization conforming to devdocs Chapter 6 specification.
+  - `AIMonitoringKPIs`: Aggregate metrics computation (p95 latency, error rates, token sums, costs).
+  - `BaseAICostCalculator` & `DefaultAICostCalculator`: Financial cost estimation catalog for OpenAI and zero-cost local models.
+  - `BaseAIObservabilityCollector` & `InMemoryAIObservabilityCollector`: Thread-safe collector with capacity management and multi-tenant isolation.
+  - `RAGObservabilityTelemetry`: End-to-end RAG profiling contract.
+- Authored dedicated unit test suite (`tests/unit/test_observability_ai_contracts.py`) with 19 tests passing 100%. Total monorepo tests: 547/547 OK (386 backend + 161 frontend, 100% pass rate). 0 lint errors.
+
 
 Phase 1.8 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Document Management, Storage Hierarchy, Version Lineage & AI Ingestion Architecture Specification (`docs/Architecture/document-management-architecture.md`) defining the 9-state processing state machine, multi-tenant directory layout (`storage/{organization_id}/documents/{document_id}/v{version}/{filename}`), supported format matrix, SHA-256 deduplication, version lineage, enterprise taxonomy, preview architecture, and performance SLAs.
@@ -185,20 +203,21 @@ Phase 1.8 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 
 | Module / Component | Status | Owner | Current Milestone | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Architecture | `ARCHITECTURE.md`, `docs/Architecture/document-management-architecture.md`, ADR-001 - ADR-025 |
+| **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.9 Architecture | `ARCHITECTURE.md`, `docs/Architecture/observability-architecture.md`, ADR-001 - ADR-028 |
+| **Observability & Monitoring Framework** | IN PROGRESS (Phase 1.9) | Member 1 (Lead) & All | Phase 1.9 Architecture & AI Telemetry | Master spec, health checks, Prometheus metrics, structured logs |
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
 | **Authorization Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 Architecture | `docs/Architecture/authorization-architecture.md`, ADR-017 - ADR-019 |
 | **Dashboard Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.7 Architecture | `docs/Architecture/dashboard-architecture.md`, ADR-020 - ADR-022 |
 | **Document Storage & Lifecycle Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Architecture | `docs/Architecture/document-management-architecture.md`, ADR-023 - ADR-025 |
-| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Ingestion Contracts | Typed document processing, storage & ingestion seam contracts in `services/rag/` & `services/ai/` |
-| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.8 Document Endpoints | `docs/api/api-contract.md` updated with Section 3.3 (8 document endpoints) & Table 4 registry |
+| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.9 AI Observability | Typed observability contracts, token/cost estimation, retrieval metrics in `services/ai/` & `services/rag/` |
+| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.9 Health & Observability | `docs/api/api-contract.md` Section 6 (7 health & metrics endpoints) |
 | **Backend Architecture & APIs** | COMPLETED (Phase 1.8) | Member 2 (Backend Lead) | Phase 1.8 Document APIs | 8 REST endpoints, LocalStorageService, DocumentValidator, DocumentService, RAG seam |
 | **Frontend Application** | COMPLETED (Phase 1.8) | Member 3 (Frontend Lead) | Phase 1.8 Document UI | Implemented uploader, explorer, preview, version timeline |
 | **Database & Persistence Layer** | COMPLETED (Phase 1.8) | Member 2 & 4 | Phase 1.8 Versions Schema | Alembic migration `b2c3d4e5f6a7`, `document_versions` table, `documents` enhancements |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Ingestion state machine & BaseRAGDocumentIngestionSeam established |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
 | **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.8) | Member 4 (DevOps Lead) | Phase 1.8 Storage Infrastructure | Docker storage volume mounting, security suite, latency benchmarks, Playwright E2E, backup/restore scripts |
-| **QA & Verification Suite** | PASSING | All Members | Phase 1.8 Fully Verified | 367 backend + 161 frontend = 528 tests OK (100%), 0 failures, clean lint & build |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.9 AI Contracts Verified | 386 backend + 161 frontend = 547 tests OK (100%), 0 failures, clean lint & build |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 ---
