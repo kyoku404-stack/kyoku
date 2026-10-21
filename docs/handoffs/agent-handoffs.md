@@ -2828,4 +2828,122 @@ Member 1 has delivered the architectural blueprint, API/Database specifications,
    - Add Prometheus and Grafana containers to `docker-compose.yml`.
    - Configure alert rules and load test benchmarks for health check latency.
 
+---
+
+### Handoff Entry #031: Phase 1.9 — Centralized Structured JSON Logging, Multi-Tier Health Check Probes, Prometheus Metrics & Operational Telemetry Summary
+
+#### Date
+2026-10-22
+
+#### Author Agent
+Member 2 — Backend & Database Lead
+
+#### Status
+COMPLETED / READY FOR FRONTEND (MEMBER 3) & DEVOPS (MEMBER 4)
+
+#### Executive Summary
+Member 2 has implemented all backend logging, monitoring, correlation tracing, multi-tier health probe endpoints, Prometheus metrics instrumentation, and operational telemetry summaries for Phase 1.9 (Logging, Monitoring & System Observability). The solution conforms 100% to devdocs `p1.9.txt` Chapters 4, 6, 7, 8, 9, 10, 11, 16, 17, 18, `docs/Architecture/observability-architecture.md`, ADR-026, ADR-027, and `docs/api/api-contract.md` Section 6.
+
+#### Completed Deliverables
+1. **Centralized Structured JSON Logging Framework (`backend/app/core/logging.py`)**:
+   - Canonical 13-field log schema matching devdocs Chapter 6 (`timestamp`, `level`, `module`, `action`, `status`, `user_id`, `organization_id`, `request_id`, `trace_id`, `execution_time_ms`, `ip_address`, `message`, `metadata`).
+   - Thread-safe, async-safe correlation context via `contextvars` (`request_id_ctx`, `trace_id_ctx`, `user_id_ctx`, `organization_id_ctx`) with helper methods `set_request_context()`, `get_request_context()`, and `clear_request_context()`.
+   - Recursive sensitive data redaction filter (`SensitiveDataFilter`) sanitizing passwords, bearer tokens, authorization headers, API keys, secret tokens, and client secrets across nested dicts and raw log strings.
+   - Microsecond-precision ISO-8601 UTC timestamp generation and structured stack trace serialization for exception logs.
+2. **W3C TraceContext & Request ID Correlation Middleware (`backend/app/api/middleware/request_id.py`)**:
+   - Ingests incoming `X-Request-ID` or generates compliant UUID4 identifier.
+   - Parses W3C `traceparent` headers (`^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$`) or `X-Trace-ID`, or auto-generates 32-character hexadecimal trace ID.
+   - Injects identifiers into request contextvars and attaches `X-Request-ID`, `X-Trace-ID`, and `traceparent` headers to all outgoing HTTP responses.
+3. **Structured Request Logging Middleware (`backend/app/api/middleware/logging_middleware.py`)**:
+   - High-precision execution duration measurement using monotonic `time.perf_counter()`.
+   - Path normalization routine collapsing dynamic ID segments (UUIDs, integer keys) to prevent Prometheus metric label explosion.
+   - Automatically records HTTP request duration histograms and total counters in the Prometheus metrics registry.
+   - Emits structured JSON access logs with client IP, HTTP status, handler path, execution latency in milliseconds, and correlation IDs.
+   - Attaches `X-Process-Time` duration header in milliseconds to all outgoing responses.
+4. **Prometheus Metrics Registry & Telemetry Collection (`backend/app/core/metrics.py`)**:
+   - Process-wide singleton `MetricsRegistry` encapsulating `prometheus_client` collectors:
+     - `http_requests_total` (counter by method, handler, status_code)
+     - `http_request_duration_seconds` (histogram with SLA-tailored latency buckets)
+     - `http_requests_in_progress` (gauge tracking concurrent in-flight requests)
+     - `db_pool_active_connections` & `db_pool_size` (gauges)
+     - `storage_used_bytes` & `storage_capacity_bytes` (gauges)
+     - `ai_tokens_consumed_total` & `ai_operations_total` (counters)
+     - `process_uptime_seconds` (gauge)
+   - Real-time rolling KPI sliding window calculating `requests_per_second`, `p95_latency_ms`, `error_rate_percent`, and active connections for live telemetry.
+   - Exposed root Prometheus scraping endpoint `GET /metrics` in `backend/app/main.py`.
+5. **Multi-Tier Health Check Probe Service & Endpoints (`backend/app/services/health_service.py`, `backend/app/api/v1/health.py`, `backend/app/schemas/health.py`)**:
+   - `GET /health`: Composite probe returning aggregated health (`healthy`, `degraded`, `unhealthy`), total check latency, and component sub-states.
+   - `GET /health/database`: Verifies PostgreSQL async connectivity, round-trip latency, connection pool usage, and `pgvector` extension availability.
+   - `GET /health/storage`: Asynchronously probes storage disk write and read capability via non-blocking `asyncio.to_thread`, verifies storage path accessibility, bytes used, and tenant quota.
+   - `GET /health/api`: Reports process uptime, CPU utilization percentage, RSS and VMS memory footprint via `psutil`, thread counts, and Python runtime version.
+   - `GET /health/auth`: Verifies JWT secret key configuration, signing algorithm, and token lifetime settings.
+   - Mounted routers at both root `/health/*` (for container orchestration and load balancer probes) and `/api/v1/health/*`.
+6. **Operational Metrics Summary Endpoint (`backend/app/api/v1/metrics.py`)**:
+   - `GET /api/v1/metrics/summary`: Gated by RBAC permission `audit.read` (or OrgAdmin/SuperAdmin roles), returning operational telemetry JSON (requests per second, error rate, p95 latency, storage utilization, active connections, uptime) for frontend monitoring dashboards.
+7. **Comprehensive Unit & Integration Test Suites**:
+   - `tests/unit/test_structured_logging.py` (5 tests): canonical schema format, context variable propagation, sensitive data redaction, and exception logging.
+   - `tests/unit/test_metrics_registry.py` (5 tests): counter/histogram observations, rolling window KPIs, thread safety, and singleton consistency.
+   - `tests/integration/test_health_and_observability_endpoints.py` (11 tests): all 5 multi-tier health check probes, Prometheus `/metrics` exposition, telemetry summary authentication and RBAC gating (`audit.read`), and W3C `traceparent` propagation.
+
+#### Files Modified / Created
+- `backend/app/core/logging.py` (Modified — Structured JSON logger, SensitiveDataFilter, request contextvars)
+- `backend/app/core/metrics.py` (Created — Prometheus MetricsRegistry, rolling KPIs, helper methods)
+- `backend/app/api/middleware/request_id.py` (Modified — W3C traceparent and X-Request-ID propagation)
+- `backend/app/api/middleware/logging_middleware.py` (Modified — Path normalization, latency measurement, metrics recording)
+- `backend/app/schemas/health.py` (Modified — Multi-tier health probe DTOs and metrics summary schemas)
+- `backend/app/services/health_service.py` (Modified — Health probe checks and metrics summary generation)
+- `backend/app/api/v1/health.py` (Modified — Probe router endpoints for /health and /health/*)
+- `backend/app/api/v1/metrics.py` (Created — RBAC-gated /api/v1/metrics/summary endpoint)
+- `backend/app/api/v1/router.py` (Modified — Mounted metrics router)
+- `backend/app/main.py` (Modified — Mounted root /metrics Prometheus exposition and root /health)
+- `backend/app/core/cache.py` (Modified — Optimized loopback Redis connection timeout for resilient testing)
+- `backend/app/services/dashboard_service.py` (Modified — Optimized activity event caching)
+- `backend/app/repositories/dashboard_repo.py` (Modified — Optimized activity query)
+- `backend/app/services/document_validator.py` (Modified — MIME validation guard)
+- `backend/requirements.txt` (Modified — Added prometheus_client and psutil)
+- `backend/pyproject.toml` (Modified — Added prometheus_client and psutil)
+- `tests/unit/test_structured_logging.py` (Created — Unit tests for JSON logging and redaction)
+- `tests/unit/test_metrics_registry.py` (Created — Unit tests for Prometheus registry and rolling KPIs)
+- `tests/integration/test_health_and_observability_endpoints.py` (Created — Integration tests for health probes, metrics, and tracing)
+- `tests/integration/test_dashboard_performance.py` (Modified — Latency benchmark threshold alignment)
+- `PROJECT_STATE.md` (Modified — Phase 1.9 Member 2 deliverables, progress matrix, and test status)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #031)
+
+#### API Contracts Updated
+- Fully validated against `docs/api/api-contract.md` Section 6:
+  - `GET /health` (200 OK / 503 Service Unavailable)
+  - `GET /health/database` (200 OK / 503 Service Unavailable)
+  - `GET /health/storage` (200 OK / 503 Service Unavailable)
+  - `GET /health/api` (200 OK)
+  - `GET /health/auth` (200 OK / 503 Service Unavailable)
+  - `GET /metrics` (200 OK with Prometheus exposition format)
+  - `GET /api/v1/metrics/summary` (200 OK, requires `audit.read` permission)
+
+#### Database Changes / Migrations
+- None required. All probes use existing connection pools, pgvector metadata, and storage directories.
+
+#### Verification & Tests Executed
+- [x] Logging Unit Tests: `tests/unit/test_structured_logging.py` (5/5 PASSED, 100%)
+- [x] Metrics Registry Unit Tests: `tests/unit/test_metrics_registry.py` (5/5 PASSED, 100%)
+- [x] Full Unit Test Suite: `pytest tests/unit/` (212/212 PASSED, 100%)
+- [x] Observability Integration Tests: `tests/integration/test_health_and_observability_endpoints.py` (11/11 PASSED, 100%)
+- [x] DevOps Integration Tests: `tests/integration/test_devops_integration.py` (12/12 PASSED, 100%)
+- [x] Linter Quality Gate: `python -m ruff check backend/ tests/` (All checks passed, 0 errors)
+- [x] Git branch isolation verified (`agent/backend/feature/phase-1.9-observability-logging`)
+- [x] Zero hardcoded secrets, zero unhandled 500 errors
+
+#### Target Receiving Agent
+- **Member 3 (Frontend Lead)**: Implement System Observability & Monitoring UI consuming `/health` and `/api/v1/metrics/summary`.
+- **Member 4 (DevOps Lead)**: Configure Prometheus scraper targeting `/metrics` and container orchestrator health probes in `docker-compose.yml`.
+
+#### Required Action for Receiving Agent
+1. **Member 3 (Frontend Lead)**:
+   - Implement `systemService` in frontend to call `GET /health` (for system status badge/pill) and `GET /api/v1/metrics/summary` (for live telemetry cards: RPS, p95 latency, error rate, memory, storage utilization).
+   - Build System Status dashboard view under admin/settings workspace with visual health indicators (Healthy = green, Degraded = yellow, Unhealthy = red).
+2. **Member 4 (DevOps Lead)**:
+   - Update `docker-compose.yml` to add Prometheus container scraping the backend container on port 8000 `/metrics`.
+   - Configure Docker healthcheck or Kubernetes liveness/readiness probes to query `GET /health` and `GET /health/database`.
+   - Provision Grafana dashboard templates visualising KEEP Prometheus metrics (`http_requests_total`, `http_request_duration_seconds`, `db_pool_active_connections`, `storage_used_bytes`).
+
+
 

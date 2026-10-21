@@ -6,6 +6,7 @@ and multi-entity global search strictly scoped to the tenant organization.
 
 from uuid import UUID
 
+from backend.app.core.cache import cache
 from backend.app.models.activity import ActivityLog
 from backend.app.models.document import Document
 from backend.app.models.meeting import Meeting
@@ -26,7 +27,7 @@ from backend.app.schemas.dashboard import (
 )
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 
 class DashboardRepository:
@@ -271,19 +272,26 @@ class DashboardRepository:
         if filter_type != "all":
             base_filters.append(ActivityLog.resource_type == filter_type)
 
-        count_stmt = select(func.count(ActivityLog.id)).where(*base_filters)
-        count_res = await db.execute(count_stmt)
-        total = count_res.scalar() or 0
+        count_cache_key = f"activity_count:{org_id}:{filter_type}"
+        cached_count = await cache.get(count_cache_key)
+        if cached_count is not None:
+            total = int(cached_count)
+        else:
+            count_stmt = select(func.count(ActivityLog.id)).where(*base_filters)
+            count_res = await db.execute(count_stmt)
+            total = count_res.scalar() or 0
+            await cache.set(count_cache_key, str(total), ttl=30)
 
         offset = (page - 1) * page_size
         stmt = (
             select(ActivityLog)
-            .options(selectinload(ActivityLog.user))
+            .options(joinedload(ActivityLog.user))
             .where(*base_filters)
             .order_by(ActivityLog.created_at.desc())
             .offset(offset)
             .limit(page_size)
         )
+
         res = await db.execute(stmt)
         logs = res.scalars().all()
 

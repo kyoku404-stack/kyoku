@@ -15,6 +15,7 @@ from backend.app.api.v1.documents import router as documents_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.invitations import router as invitations_router
 from backend.app.api.v1.members import router as members_router
+from backend.app.api.v1.metrics import router as metrics_router
 from backend.app.api.v1.notifications import router as notifications_router
 from backend.app.api.v1.organizations import router as organizations_router
 from backend.app.api.v1.projects import router as projects_router
@@ -43,3 +44,5 @@ api_v1_router.include_router(chat_router)
 api_v1_router.include_router(ai_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(health_router)
+api_v1_router.include_router(metrics_router)
+

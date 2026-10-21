@@ -14,9 +14,11 @@ from backend.app.api.middleware import (
     register_exception_handlers,
 )
 from backend.app.api.v1 import api_v1_router
+from backend.app.api.v1.health import router as health_router
 from backend.app.core.config import settings
 from backend.app.core.logging import get_logger, setup_logging
-from fastapi import FastAPI, status
+from backend.app.core.metrics import metrics_registry
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 logger = get_logger("main")
@@ -110,6 +112,22 @@ register_exception_handlers(app)
 
 # 5. Mount API v1 Router
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
+
+# 6. Mount Root-Level Observability & Health Probes (/health, /health/*)
+app.include_router(health_router)
+
+
+# Root Prometheus Metrics Exposition Endpoint
+@app.get(
+    "/metrics",
+    tags=["Health"],
+    summary="Prometheus text metrics exposition endpoint",
+    description="Exposes application and infrastructure operational metrics in standard Prometheus text format.",
+)
+async def prometheus_metrics() -> Response:
+    """Returns application and infrastructure metrics in standard Prometheus text exposition format."""
+    content, content_type = metrics_registry.generate_prometheus_text()
+    return Response(content=content, media_type=content_type)
 
 
 # Root Discovery Endpoint

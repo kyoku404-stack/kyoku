@@ -6,7 +6,7 @@ Specification: devdocs/p1/p1.8.txt Chapter 6 & docs/Architecture/document-manage
 """
 
 import hashlib
-import os
+import posixpath
 import re
 import unicodedata
 
@@ -50,7 +50,8 @@ class DocumentValidator(BaseDocumentValidator):
 
         # Remove null bytes and path components
         cleaned = cleaned.replace("\0", "")
-        cleaned = os.path.basename(cleaned)
+        cleaned = posixpath.basename(cleaned)
+
 
         # Replace directory separators and backslashes
         cleaned = re.sub(r"[\\/]+", "_", cleaned)

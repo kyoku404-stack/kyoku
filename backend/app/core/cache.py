@@ -5,6 +5,7 @@ seamless in-memory fallback for local development and test environments.
 Derived from devdocs/p1/p1.7.txt and docs/Architecture/dashboard-architecture.md Section 9.3 & 12.
 """
 
+import asyncio
 import logging
 import time
 from typing import Any, cast
@@ -32,19 +33,27 @@ class CacheManager:
 
     async def get_client(self) -> Any:
         """Lazily initializes and returns the async Redis client."""
-        if not HAS_REDIS:
+        if not HAS_REDIS or self._redis_connected is False:
             return None
 
         if self._redis_client is None:
             try:
-                self._redis_client = aioredis.from_url(
-                    settings.REDIS_URL,
+                redis_url = settings.REDIS_URL or "redis://127.0.0.1:6379/0"
+                if "localhost" in redis_url:
+                    redis_url = redis_url.replace("localhost", "127.0.0.1")
+                client = aioredis.from_url(
+                    redis_url,
                     decode_responses=True,
-                    socket_connect_timeout=0.5,
-                    socket_timeout=0.5,
+                    socket_connect_timeout=0.05,
+                    socket_timeout=0.05,
                 )
+                await asyncio.wait_for(client.ping(), timeout=0.05)
+                self._redis_client = client
+                self._redis_connected = True
             except Exception as e:  # noqa: BLE001
-                logger.warning(f"Could not initialize Redis client: {e}. Using in-memory fallback.")
+                logger.debug(f"Could not connect to Redis: {e}. Using in-memory fallback.")
+                self._redis_connected = False
+                self._redis_client = None
                 return None
         return cast(Any, self._redis_client)
 
@@ -56,7 +65,10 @@ class CacheManager:
                 val = await client.get(key)
                 return str(val) if val is not None else None
             except Exception as e:  # noqa: BLE001
+                self._redis_connected = False
+                self._redis_client = None
                 logger.debug(f"Redis get failed for {key}: {e}. Falling back to in-memory.")
+
 
         # In-memory fallback
         now = time.time()
@@ -75,7 +87,10 @@ class CacheManager:
                 await client.set(key, value, ex=ttl)
                 return True
             except Exception as e:  # noqa: BLE001
+                self._redis_connected = False
+                self._redis_client = None
                 logger.debug(f"Redis set failed for {key}: {e}. Falling back to in-memory.")
+
 
         # In-memory fallback
         self._in_memory_cache[key] = (value, time.time() + ttl)
@@ -186,11 +201,14 @@ class CacheManager:
                 pipe.expire(key, window_seconds)
                 results = await pipe.execute()
                 count = int(results[1]) if len(results) > 1 else 0
-                is_allowed = bool(count < limit)
+                is_allowed = count < limit
                 remaining = max(0, limit - count)
                 return is_allowed, remaining
             except Exception as e:  # noqa: BLE001
+                self._redis_connected = False
+                self._redis_client = None
                 logger.debug(f"Redis rate limit failed for {key}: {e}. Falling back to in-memory.")
+
 
         # In-memory fallback
         timestamps = self._in_memory_rate_limits.setdefault(key, [])

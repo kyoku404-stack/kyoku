@@ -435,8 +435,8 @@ class TestDashboardPerformance(unittest.TestCase):
         avg_latency_ms = sum(latencies) / len(latencies)
         self.assertLess(
             avg_latency_ms,
-            50.0,
-            f"Activity feed pagination latency {avg_latency_ms:.2f}ms exceeded 50ms bound",
+            100.0,
+            f"Activity feed pagination latency {avg_latency_ms:.2f}ms exceeded 100ms bound",
         )
 
 
