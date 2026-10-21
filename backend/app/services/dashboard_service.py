@@ -153,22 +153,68 @@ class DashboardService:
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedData[ActivityEventResponse]:
-        """Returns paginated activity events for tenant."""
-        items, total = await self.dashboard_repo.get_activity_feed(
+        """Returns paginated activity events for tenant with 15s cache."""
+        page_cache_key = f"activity_feed:{current_user.organization_id}:{filter_type}:{page}:{page_size}"
+        cached = await cache.get(page_cache_key)
+        if cached:
+            try:
+                return PaginatedData[ActivityEventResponse].model_validate_json(cached)
+            except (ValueError, TypeError) as exc:
+                logger.debug("Failed to deserialize cached activity feed: %s", exc)
+
+        feed_cache_key = f"activity_feed_stream:{current_user.organization_id}:{filter_type}"
+        cached_stream = await cache.get(feed_cache_key)
+        if cached_stream:
+            try:
+                cached_data = json.loads(cached_stream)
+                all_items_dicts = cached_data.get("items", [])
+                total = cached_data.get("total", len(all_items_dicts))
+                offset = (page - 1) * page_size
+                page_slice = all_items_dicts[offset : offset + page_size]
+                items = [ActivityEventResponse.model_validate(x) for x in page_slice]
+                total_pages = max(1, (total + page_size - 1) // page_size) if total > 0 else 1
+                result = PaginatedData(
+                    items=items,
+                    total=total,
+                    page=page,
+                    page_size=page_size,
+                    total_pages=total_pages,
+                )
+                await cache.set(page_cache_key, result.model_dump_json(), ttl=15)
+                return result
+            except (ValueError, TypeError) as exc:
+                logger.debug("Failed to parse cached activity feed stream: %s", exc)
+
+        # Cache miss: fetch active stream for tenant
+        stream_items, total = await self.dashboard_repo.get_activity_feed(
             db=db,
             org_id=current_user.organization_id,
             filter_type=filter_type,
-            page=page,
-            page_size=page_size,
+            page=1,
+            page_size=200,
         )
+        await cache.set(
+            feed_cache_key,
+            json.dumps({
+                "items": [item.model_dump(mode="json") for item in stream_items],
+                "total": total,
+            }),
+            ttl=15,
+        )
+
+        offset = (page - 1) * page_size
+        items = stream_items[offset : offset + page_size]
         total_pages = max(1, (total + page_size - 1) // page_size) if total > 0 else 1
-        return PaginatedData(
+        result = PaginatedData(
             items=items,
             total=total,
             page=page,
             page_size=page_size,
             total_pages=total_pages,
         )
+        await cache.set(page_cache_key, result.model_dump_json(), ttl=15)
+        return result
+
 
     async def get_recent_projects(
         self,
