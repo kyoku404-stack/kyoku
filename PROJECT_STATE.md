@@ -145,6 +145,40 @@ Phase 1.7 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 - Built automated test orchestration script `scripts/test-dashboard.sh` supporting targeted test suite execution (`unit`, `integration`, `perf`, `cache`, `frontend`, `e2e`, `backend`, `all`) with ANSI status reporting.
 - Verified 100% test pass rate across 431 monorepo tests (303 backend + 128 frontend tests OK), 0 ruff errors, 0 ESLint warnings, clean TypeScript compilation, and production build.
 
+Phase 1.8 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
+- Configured multi-tenant Docker storage infrastructure:
+  - Mounted persistent named volume `storage_data:/app/storage` in `docker-compose.yml` and declared `storage_data` in root named volumes.
+  - Added `STORAGE_ROOT` and `DEFAULT_STORAGE_QUOTA_BYTES` environment settings in `docker-compose.yml` and `.env.example`.
+  - Configured directory provisioning and permissions for non-root `appuser` in `docker/Dockerfile.backend`.
+- Authored Storage Security, Multi-Tenant Isolation & Path Traversal Quarantine Test Suite (`tests/integration/test_document_storage_security.py`):
+  - Verified cross-tenant boundary isolation: Org Beta cannot read, download, preview, patch, version, or delete Org Alpha assets (403 `AUTH_ORGANIZATION_MISMATCH` / 404 `DOCUMENT_NOT_FOUND`).
+  - Verified path traversal attack quarantine: payloads (`../../../../etc/passwd.txt`, `..\\..\\windows\\system32\\calc.txt`, null bytes) sanitized and strictly confined inside `storage/{org_id}/documents/{doc_id}/v1/`.
+  - Verified storage quota enforcement: uploads exceeding tenant quota trigger strict 400 `STORAGE_QUOTA_EXCEEDED` without orphaned DB records.
+  - Verified MIME & magic-byte sniffing: disguised executables (ELF, Windows MZ) and shell scripts masquerading as PDF/PNG/DOCX rejected with 422 `UNSUPPORTED_FILE_TYPE`.
+  - Verified RBAC role boundaries: Viewer blocked from document creation/updates/deletion (403 Forbidden); non-admin Member cannot delete another Member's document; OrgAdmin administrative override deletion verified (200 OK).
+  - Verified SHA-256 duplicate file detection: duplicate upload within same org returns 409 `DUPLICATE_FILE_DETECTED`; duplicate cross-tenant upload allowed.
+- Authored Storage Performance, Latency & Concurrency Stress Test Suite (`tests/integration/test_document_storage_performance.py`):
+  - Upload initiation micro-latency benchmark (< 8ms mean, < 25ms peak vs 1000ms SLA).
+  - Metadata & version lineage retrieval benchmark (< 3ms mean vs 500ms SLA).
+  - Preview streaming benchmark (< 3ms mean vs 5000ms SLA).
+  - Document catalog listing & multi-attribute filtering benchmark (< 4ms mean vs 500ms SLA).
+  - High-concurrency upload stress testing: 8 parallel worker threads with 100% success rate (202 Accepted) and zero race conditions.
+  - Large binary handling: 2MB payload upload (235 MB/s) and streaming download (309 MB/s) with verified SHA-256 cryptographic match.
+- Authored Playwright E2E Test Suite (`tests/e2e/document_management.spec.ts`):
+  - Validates Knowledge Repository header, feature pills, upload trigger button, and document explorer hydration.
+  - Validates Grid View vs Table View layout mode toggling.
+  - Validates debounced search input, clear button, and category dropdown filtering.
+  - Validates upload modal drag-and-drop zone, metadata inputs, and keyboard dismissal.
+  - Validates inline preview modal rendering and dismiss triggers.
+  - Validates responsive viewport adaptations across Desktop (1440x900), Tablet (768x1024), and Mobile (375x667).
+- Implemented Storage Disaster Recovery & Automation Scripts:
+  - `scripts/storage-backup.sh`: automated compressed snapshot creation with SHA-256 manifest generation and retention pruning.
+  - `scripts/storage-restore.sh`: integrity validation and snapshot restoration.
+  - `scripts/test-document-management.sh`: master test runner supporting targeted suites (`all`, `security`, `perf`, `backend`, `unit`, `frontend`, `e2e`).
+- Authored Operational & Deployment Documentation:
+  - `docs/Deployment/storage-infrastructure-and-benchmarks.md`: architecture overview, Docker volume layouts, threat modeling, backup/restore runbook, and measured benchmark metrics.
+- Verified 100% test pass rate across 528 tests (367 backend + 161 frontend OK), 0 ruff errors, 0 ESLint warnings, clean TypeScript compilation, and migration consistency.
+
 ---
 
 ## Progress Matrix
@@ -163,8 +197,8 @@ Phase 1.7 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 | **Database & Persistence Layer** | COMPLETED (Phase 1.8) | Member 2 & 4 | Phase 1.8 Versions Schema | Alembic migration `b2c3d4e5f6a7`, `document_versions` table, `documents` enhancements |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Ingestion state machine & BaseRAGDocumentIngestionSeam established |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
-| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.7) | Member 4 (DevOps Lead) | Phase 1.8 Storage Infrastructure | Ready for Member 4 Docker volume configs & test suites |
-| **QA & Verification Suite** | PASSING | All Members | Phase 1.8 Member 2 Verified | 355 backend + 128 frontend = 483 tests OK (100%), 0 failures, clean lint |
+| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.8) | Member 4 (DevOps Lead) | Phase 1.8 Storage Infrastructure | Docker storage volume mounting, security suite, latency benchmarks, Playwright E2E, backup/restore scripts |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.8 Fully Verified | 367 backend + 161 frontend = 528 tests OK (100%), 0 failures, clean lint & build |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 ---
@@ -270,12 +304,12 @@ Status: SPECIFIED & SCAFFOLDED (Phase 1.8)
 Next Milestone: Phase 2.1 AI Knowledge Ingestion Pipeline & Phase 2.2 RAG Engine.
 
 ### DevOps / Infrastructure
-Status: COMPLETED (Phase 1.7)  
-Next Milestone: Phase 1.8 Document Storage Volume Mounting & Performance Benchmark Suites (Member 4).
+Status: COMPLETED (Phase 1.8)  
+Next Milestone: Phase 2.1 AI Knowledge Ingestion Pipeline & Async Worker Infrastructure (Member 4).
 
 ### QA / Testing
-Status: PASSING (355/355 backend + 161/161 frontend = 516/516 tests OK, 100%, 0 lint errors)  
-Next Milestone: Phase 1.8 DevOps Testing Suites (Member 4).
+Status: PASSING (367/367 backend + 161/161 frontend = 528/528 tests OK, 100%, 0 lint errors)  
+Next Milestone: Phase 2.1 Testing & Performance Suites (Member 4).
 
 ---
 
@@ -291,6 +325,6 @@ None.
 2026-10-21
 
 ## Last Updated By
-Member 3 — Frontend Lead
+Member 4 — Backend and DevOps Lead
 
 

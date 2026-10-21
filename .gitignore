@@ -115,3 +115,9 @@ devdocs/
 agent_role.txt
 
 templates/MASTER_SUBPHASE_PROMPT.md
+
+# Storage & Upload directories
+storage/*
+!storage/.gitkeep
+uploads/*
+!uploads/.gitkeep

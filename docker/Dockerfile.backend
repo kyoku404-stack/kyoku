@@ -29,8 +29,8 @@ RUN addgroup --system appgroup && adduser --system --group appuser
 # Copy application source code and migrations
 COPY backend/ /app/backend/
 
-# Ensure uploads directory exists and permissions are set
-RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app
+# Ensure uploads and storage directories exist and permissions are set
+RUN mkdir -p /app/uploads /app/storage && chown -R appuser:appgroup /app
 
 USER appuser
 

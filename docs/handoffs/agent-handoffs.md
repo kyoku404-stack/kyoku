@@ -2647,7 +2647,94 @@ COMPLETED / READY FOR DEVOPS (MEMBER 4) & FINAL INTEGRATION
 3. **Integration Benchmark Suites**:
    - Verify concurrent uploads and large document downloads.
 
+---
 
+### Handoff Entry #029: Phase 1.8 — Document Storage Volume Infrastructure, Multi-Tenant Security Suite, Performance Benchmarks, Disaster Recovery & Playwright E2E Tests
 
+#### Date
+2026-10-21
 
+#### Author Agent
+Member 4 (Backend and DevOps Lead)
+
+#### Status
+COMPLETED / ALL PHASE 1 SUB-PHASES (1.1 - 1.8) FULLY INTEGRATED & VERIFIED / READY FOR PHASE 2.1
+
+#### Executive Summary
+Member 4 has completed all DevOps, infrastructure, testing, and operational deliverables for Phase 1.8 (Document Upload, File Management & Storage System). This finalizes Phase 1 Foundation & Architecture across all 4 team members. The storage layer is containerized with dedicated Docker named volume persistence, strictly quarantined per tenant organization, fortified against directory traversal and MIME spoofing attacks, verified under high-throughput concurrent load, and integrated with automated disaster recovery snapshots and Playwright browser E2E test suites.
+
+#### Completed Deliverables
+1. **Multi-Tenant Docker Storage Volume Infrastructure**:
+   - Configured named Docker volume `storage_data` mounted to `/app/storage` in `docker-compose.yml`.
+   - Updated `docker/Dockerfile.backend` to provision `/app/storage` and configure non-root ownership (`appuser:appgroup`).
+   - Added `STORAGE_ROOT` (`./storage` or `/app/storage`) and `DEFAULT_STORAGE_QUOTA_BYTES` (`10737418240`, 10GB default) to `docker-compose.yml` and `.env.example`.
+2. **Storage Security, Isolation & Traversal Quarantine Test Suite (`tests/integration/test_document_storage_security.py`)**:
+   - `test_01_multi_tenant_path_isolation_and_cross_tenant_access_denial`: Proves complete filesystem and database isolation between organizations. Cross-tenant access triggers 403 `AUTH_ORGANIZATION_MISMATCH` or 404 `DOCUMENT_NOT_FOUND`.
+   - `test_02_path_traversal_attack_quarantine`: Tests attack vectors (`../../../../etc/passwd.txt`, `..\\..\\windows\\system32\\calc.txt`, null bytes). Confirms filenames are sanitized and stored exclusively within the tenant root directory.
+   - `test_03_storage_quota_enforcement`: Tests tenant byte quota limits. Enforces 400 `STORAGE_QUOTA_EXCEEDED` on uploads exceeding quota and rolls back DB state cleanly.
+   - `test_04_magic_byte_sniffing_and_mime_spoofing_quarantine`: Tests disguised malicious binaries (ELF, Windows PE/MZ, shell scripts). Rejects spoofed files with 422 `UNSUPPORTED_FILE_TYPE`.
+   - `test_05_rbac_role_permissions_and_ownership_boundaries`: Enforces granular RBAC matrix (`Viewer` blocked with 403 Forbidden; `Member` can upload and manage own files but blocked from deleting other members' files; `OrgAdmin` possesses administrative override delete rights).
+   - `test_06_sha256_duplicate_detection_scoped_to_organization`: Tests SHA-256 deduplication per organization (409 `DUPLICATE_FILE_DETECTED`) while allowing cross-tenant multi-tenancy.
+3. **Storage Performance, Latency & Concurrency Stress Test Suite (`tests/integration/test_document_storage_performance.py`)**:
+   - `test_01_upload_initiation_micro_latency_benchmark`: Upload initiation latency measured at **7.70 ms** mean / **24.11 ms** peak (SLA < 1000 ms, > 40x speedup).
+   - `test_02_metadata_retrieval_latency_benchmark`: Document metadata and version lineage latency measured at **2.56 ms** mean / **5.65 ms** peak (SLA < 500 ms, > 85x speedup).
+   - `test_03_preview_streaming_latency_benchmark`: Preview byte streaming latency measured at **2.67 ms** mean / **3.49 ms** peak (SLA < 5000 ms, > 1400x speedup).
+   - `test_04_document_catalog_filtering_benchmark`: Multi-filter paginated listing latency measured at **3.10 ms** mean / **3.88 ms** peak (SLA < 500 ms, > 120x speedup).
+   - `test_05_concurrent_multi_upload_stress_test`: 8 concurrent worker threads uploading simultaneously with **100% success rate (202 Accepted)**, zero deadlocks, zero file collisions, and 32.90 ms avg worker completion.
+   - `test_06_large_binary_handling_and_integrity_benchmark`: Multi-megabyte binary streaming upload (235.77 MB/s) and download (309.93 MB/s) with 100% byte integrity and verified SHA-256 digest match.
+4. **Playwright E2E Browser Test Suite (`tests/e2e/document_management.spec.ts`)**:
+   - Test 1: Page load, Knowledge Repository header elements, upload CTA button, and feature pills hydration.
+   - Test 2: Layout mode toggling between Grid View cards and Table View rows with state preservation.
+   - Test 3: Real-time search query input with clear trigger and category dropdown filter selection.
+   - Test 4: Document upload modal workflow with drag-and-drop zone, metadata inputs, and keyboard `Escape` dismissal.
+   - Test 5: Inline preview modal rendering, header metadata display, and keyboard dismissal.
+   - Test 6: Responsive viewport adaptations across Desktop (1440x900), Tablet (768x1024), and Mobile (375x667).
+5. **Storage Disaster Recovery & Test Orchestration Scripts**:
+   - `scripts/storage-backup.sh`: Compressed, timestamped tar archive creation with SHA-256 verification manifest and automated retention pruning (`--retention-days`). Supports docker and native execution.
+   - `scripts/storage-restore.sh`: Archive integrity verification and snapshot unpacking into active storage directory.
+   - `scripts/test-document-management.sh`: Unified test orchestrator supporting targeted execution (`all`, `security`, `perf`, `backend`, `unit`, `frontend`, `e2e`) with colored ANSI reporting.
+6. **Deployment & Operational Architecture Guide (`docs/Deployment/storage-infrastructure-and-benchmarks.md`)**:
+   - Comprehensive documentation of storage architecture, Docker volume mounting, directory hierarchy, security boundary matrix, backup/restore runbook, and measured benchmark metrics.
+
+#### Files Modified / Created
+- `docker-compose.yml` (Modified — Added storage_data volume mount and env vars)
+- `docker/Dockerfile.backend` (Modified — Added /app/storage directory creation and chown)
+- `.env.example` (Modified — Added STORAGE_ROOT and DEFAULT_STORAGE_QUOTA_BYTES)
+- `tests/integration/test_document_storage_security.py` (Created — 6 security and tenant isolation tests)
+- `tests/integration/test_document_storage_performance.py` (Created — 6 performance, latency & stress tests)
+- `tests/e2e/document_management.spec.ts` (Created — 6 Playwright E2E browser tests)
+- `scripts/storage-backup.sh` (Created — Storage backup and snapshot automation script)
+- `scripts/storage-restore.sh` (Created — Storage snapshot restore script)
+- `scripts/test-document-management.sh` (Created — Unified Phase 1.8 test runner)
+- `docs/Deployment/storage-infrastructure-and-benchmarks.md` (Created — Infrastructure and benchmark documentation)
+- `PROJECT_STATE.md` (Modified — Updated progress matrix, completed status, and subsystem details)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #029)
+
+#### Verification & Tests Executed
+- [x] Security Integration Suite passed (`./backend/.venv/bin/pytest tests/integration/test_document_storage_security.py` -> **6/6 PASSED, 100%**)
+- [x] Performance Benchmark Suite passed (`./backend/.venv/bin/pytest tests/integration/test_document_storage_performance.py` -> **6/6 PASSED, 100%**)
+- [x] API Integration Suite passed (`./backend/.venv/bin/pytest tests/integration/test_document_management_endpoints.py` -> **10/10 PASSED, 100%**)
+- [x] Full Backend Suite passed (`./backend/.venv/bin/pytest tests/` -> **367/367 PASSED, 100%**)
+- [x] Frontend Vitest Suite passed (`npm --prefix frontend test` -> **161/161 PASSED, 100%**)
+- [x] Total Monorepo Tests passed -> **528/528 PASSED (100%)**
+- [x] Python Linting passed (`ruff check backend/ tests/` -> **0 errors**)
+- [x] Frontend Linting passed (`npm --prefix frontend run lint` -> **0 warnings, 0 errors**)
+- [x] TypeScript Strict Build passed (`npm --prefix frontend run build` -> **1,737 modules, 0 errors**)
+- [x] Alembic Migrations Verified (`./scripts/verify-migrations.sh` -> **All 4 migration heads consistent**)
+- [x] Backup & Restore Tested (`./scripts/storage-backup.sh` & `./scripts/storage-restore.sh` -> **0 exit code, verified**)
+- [x] Git branch isolation verified (`agent/devops/feature/phase-1.8-storage-infra-e2e-performance`)
+- [x] Zero hardcoded secrets, zero debug logs, zero residual test artifacts
+
+#### Target Receiving Agent
+- **All Team Members / Member 1 (AI Lead)**: Phase 1 (Foundation & Architecture) is now 100% complete across all 8 sub-phases (1.1 - 1.8). Ready to proceed to **Phase 2.1 — Document Ingestion Pipeline & Async Worker Infrastructure**.
+
+#### Required Action for Receiving Agent
+1. **Member 1 (AI Lead)**:
+   - Provide architectural specifications for Phase 2.1: Asynchronous Celery/Redis worker pipeline, document chunking algorithms, metadata extraction, and embedding model integration.
+2. **Member 2 (Backend Lead)**:
+   - Implement document parsing workers (PDF/DOCX/TXT/Images), chunking pipelines, and vector embedding generation using the `BaseRAGDocumentIngestionSeam` established in Phase 1.8.
+3. **Member 3 (Frontend Lead)**:
+   - Implement real-time ingestion status indicators, chunk inspection views, and processing event listeners.
+4. **Member 4 (DevOps Lead)**:
+   - Provision Celery worker containers, Redis task broker, and pgvector HNSW indexing performance benchmarks.
 
