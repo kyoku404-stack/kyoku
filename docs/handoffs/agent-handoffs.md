@@ -2945,5 +2945,119 @@ Member 2 has implemented all backend logging, monitoring, correlation tracing, m
    - Configure Docker healthcheck or Kubernetes liveness/readiness probes to query `GET /health` and `GET /health/database`.
    - Provision Grafana dashboard templates visualising KEEP Prometheus metrics (`http_requests_total`, `http_request_duration_seconds`, `db_pool_active_connections`, `storage_used_bytes`).
 
+---
+
+### Handoff Entry #032: Phase 1.9 — System Observability & Monitoring Command Center, Health Probes, Telemetry Metrics & Log Explorer
+
+#### Date
+2026-10-22
+
+#### Author Agent
+Member 3 — Frontend Engineering Lead
+
+#### Status
+COMPLETED / READY FOR INTEGRATION & DEVOPS VALIDATION (MEMBER 4)
+
+#### Executive Summary
+Member 3 has implemented the complete frontend observability, system health diagnostics, telemetry visualization, alert management, and canonical structured log viewer for Phase 1.9 (Logging, Monitoring & System Observability). The implementation strictly adheres to `devdocs/p1/p1.9.txt` Chapters 3, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18, `docs/Architecture/observability-architecture.md`, and `docs/api/api-contract.md` Section 6.
+
+#### Completed Deliverables
+1. **Strongly-Typed TypeScript Domain Contracts (`frontend/src/types/observability.ts`, `frontend/src/types/health.ts`, `frontend/src/types/index.ts`)**:
+   - `SubsystemStatus` ('healthy' | 'degraded' | 'unhealthy')
+   - `DatabaseHealth`, `StorageHealth`, `ApiHealth`, `AuthHealth`
+   - `CompositeHealthResponse` matching `GET /health`
+   - `SystemTelemetryKPIs` and `SystemTelemetrySummary` matching `GET /api/v1/metrics/summary`
+   - `SystemAlert` and `AlertSeverity` ('CRITICAL' | 'WARNING' | 'SECURITY' | 'INFO')
+   - `StructuredLogEntry` matching the canonical 13-field schema (`timestamp`, `level`, `module`, `action`, `status`, `user_id`, `organization_id`, `request_id`, `trace_id`, `execution_time_ms`, `ip_address`, `message`, `metadata`)
+   - `LogFilterParams` and `LatencySample`
+2. **Observability Client API Service (`frontend/src/services/observabilityService.ts`, `frontend/src/services/healthService.ts`, `frontend/src/services/index.ts`)**:
+   - `getCompositeHealth()`: Queries `/health` (with automatic fallback to `/api/v1/health`)
+   - `getDatabaseHealth()`, `getStorageHealth()`, `getApiHealth()`, `getAuthHealth()`: Queries isolated probes
+   - `getTelemetrySummary()`: Consumes `/api/v1/metrics/summary` with structured fallbacks
+   - `getRawPrometheusMetrics()`: Fetches raw exposition string from `/metrics` for admin download
+   - In-memory structured log query, filtering, buffer capping, and `recordStructuredLog()`
+3. **Reactive Observability Hook (`frontend/src/hooks/useObservability.ts`)**:
+   - Automated 10s background telemetry polling with toggle pause/resume
+   - Parallel multi-probe querying using `Promise.allSettled`
+   - Rolling 25-point latency history sampling for trend analysis
+   - Alert acknowledgement tracking
+   - `runDiagnostics()` parallel test suite runner with execution timing profiling
+4. **Enterprise Observability UI Components (`frontend/src/features/observability/`)**:
+   - `SubsystemStatusCard.tsx`: Dedicated subsystem status cards (Database, Storage, API Gateway, Auth) with status pills, latency numbers, pool gauges, and pgvector badge
+   - `TelemetryMetricsGrid.tsx`: 8 high-impact KPI telemetry cards (RPS, P95 latency vs SLA, error rate %, active users, total documents, storage %, DB pool %, continuous uptime) and SVG sparkline trend graph
+   - `AlertPanel.tsx`: Real-time system alert center with severity filter pills (`CRITICAL`, `WARNING`, `SECURITY`, `INFO`), active badge count, and one-click alert acknowledgement
+   - `LogViewer.tsx`: Canonical 13-field structured JSON log stream with search, log level filter, module filter, request ID filter, and inspection modal with W3C TraceContext copy button
+   - `DiagnosticsModal.tsx`: On-demand diagnostic test runner executing all 5 subsystem health probes in parallel with real-time progress indicators
+5. **Master Navigation & Pages (`frontend/src/pages/ObservabilityPage.tsx`, `frontend/src/pages/HealthPage.tsx`, `frontend/src/routes/paths.ts`, `frontend/src/routes/index.tsx`, `frontend/src/components/common/Sidebar.tsx`)**:
+   - Responsive multi-tab Command Center (`Overview`, `Subsystems`, `Telemetry & Trends`, `Alerts`, `Structured Logs`)
+   - Upgraded `HealthPage.tsx` and registered `/observability` and `/health` routes
+   - Updated `Sidebar.tsx` navigation link to `Observability & Health` with `Live` badge and footer milestone to Phase 1.9
+6. **Comprehensive Unit & Component Test Suites (`frontend/src/tests/observabilityService.test.ts`, `frontend/src/tests/observabilityComponents.test.tsx`)**:
+   - 8 service unit tests and 11 component tests passing 100%
+   - Full frontend test suite: 180/180 tests passing across 21 test files (100% pass rate)
+   - Monorepo test suite: 587/587 tests passing (407 backend + 180 frontend, 100% pass rate)
+   - TypeScript `tsc --noEmit`: 0 errors
+   - ESLint: 0 warnings, 0 errors
+   - Production Vite build: 1,744 modules transformed cleanly in 14.08s
+
+#### Files Modified / Created
+- `frontend/src/types/observability.ts` (Created — Canonical observability, telemetry, and structured logging types)
+- `frontend/src/types/health.ts` (Modified — Re-exported observability types and expanded probe responses)
+- `frontend/src/types/index.ts` (Modified — Exported observability types)
+- `frontend/src/services/observabilityService.ts` (Created — Client API service for probes, metrics, and structured logs)
+- `frontend/src/services/healthService.ts` (Modified — Integrated composite health probe)
+- `frontend/src/services/index.ts` (Modified — Exported observabilityService)
+- `frontend/src/hooks/useObservability.ts` (Created — Multi-tier health polling and diagnostic runner hook)
+- `frontend/src/features/observability/SubsystemStatusCard.tsx` (Created — Visual status cards for DB, storage, API, auth)
+- `frontend/src/features/observability/TelemetryMetricsGrid.tsx` (Created — 8 primary KPI cards and SVG sparkline chart)
+- `frontend/src/features/observability/AlertPanel.tsx` (Created — Threshold triggers and alert manager)
+- `frontend/src/features/observability/LogViewer.tsx` (Created — Canonical 13-field structured JSON log explorer)
+- `frontend/src/features/observability/DiagnosticsModal.tsx` (Created — Interactive parallel probe diagnostic runner)
+- `frontend/src/features/observability/index.ts` (Created — Barrel exports for observability feature)
+- `frontend/src/pages/ObservabilityPage.tsx` (Created — Master System Observability Command Center page)
+- `frontend/src/pages/HealthPage.tsx` (Modified — Upgraded to render ObservabilityPage)
+- `frontend/src/routes/paths.ts` (Modified — Added ROUTES.OBSERVABILITY)
+- `frontend/src/routes/index.tsx` (Modified — Registered /observability and ObservabilityPage)
+- `frontend/src/components/common/Sidebar.tsx` (Modified — Updated navigation to Observability & Health and Phase 1.9 footer)
+- `frontend/src/tests/observabilityService.test.ts` (Created — 8 unit tests for service endpoints and log filters)
+- `frontend/src/tests/observabilityComponents.test.tsx` (Created — 11 component tests for all observability widgets)
+- `PROJECT_STATE.md` (Modified — Updated Phase 1.9 Member 3 status, progress matrix, and test metrics)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #032)
+
+#### API Contracts Updated
+- Fully aligned and tested with `docs/api/api-contract.md` Section 6:
+  - `GET /health`
+  - `GET /health/database`
+  - `GET /health/storage`
+  - `GET /health/api`
+  - `GET /health/auth`
+  - `GET /metrics`
+  - `GET /api/v1/metrics/summary`
+
+#### Database Changes / Migrations
+- None. Member 3 domain is strictly `/frontend/`.
+
+#### Verification & Tests Executed
+- [x] Dedicated Observability Tests: `npm test -- src/tests/observabilityService.test.ts src/tests/observabilityComponents.test.tsx` (19/19 PASSED, 100%)
+- [x] Full Frontend Test Suite: `npm test -- --run` (180/180 PASSED across 21 test files, 100%)
+- [x] Full Backend Test Suite: `pytest tests/` (407/407 PASSED, 100%)
+- [x] Monorepo Combined Test Suite: 587/587 PASSED (100%)
+- [x] TypeScript Strict Verification: `npx tsc --noEmit` (0 errors)
+- [x] ESLint Quality Gate: `npm run lint` (0 warnings, 0 errors)
+- [x] Production Build Verification: `npm run build` (1,744 modules transformed, 0 errors, 14.08s)
+- [x] Git branch isolation verified (`agent/frontend/feature/phase-1.9-observability-system-monitoring`)
+- [x] Zero hardcoded secrets, zero debug console logs
+
+#### Target Receiving Agent
+- **Member 4 (DevOps & Integration Lead)**: Proceed to Phase 1.9 DevOps deliverables: Docker Compose provisioning for Prometheus and Grafana, alert rules configuration, Playwright E2E browser tests for `/observability` and `/health`, and CI test runner validation.
+
+#### Required Action for Receiving Agent
+1. **Member 4 (DevOps Lead)**:
+   - Configure Prometheus container scraping backend `/metrics` on port 8000 in `docker-compose.yml`.
+   - Configure Grafana dashboard templates visualising KEEP Prometheus metrics (`http_requests_total`, `http_request_duration_seconds`, `db_pool_active_connections`, `storage_used_bytes`).
+   - Add Playwright E2E tests validating the Observability Command Center tabs, subsystem cards, and diagnostics runner at `/observability` and `/health`.
+   - Execute full-stack Docker Compose verification and automated test runner `scripts/test-observability.sh`.
+
+
 
 
