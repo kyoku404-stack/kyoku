@@ -28,7 +28,9 @@ export const ROUTES = {
   AUDIT_LOGS: '/audit/logs',
   ACCESS_DENIED: '/access-denied',
   HEALTH: '/health',
+  OBSERVABILITY: '/observability',
   NOT_FOUND: '*',
 } as const;
+
 
 export type RouteKey = keyof typeof ROUTES;

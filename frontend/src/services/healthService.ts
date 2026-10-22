@@ -4,19 +4,32 @@ import type {
   DetailedHealthResponse,
   HealthCheckResponse,
   RootDiscoveryResponse,
+  CompositeHealthResponse,
 } from '@/types/health';
 import axios from 'axios';
+import { observabilityService } from './observabilityService';
 
 /**
  * Service to monitor backend health and platform readiness.
  */
 export const healthService = {
   /**
-   * Fetches backend health check (/api/v1/health)
+   * Fetches backend health check (/api/v1/health or root /health)
    */
   async checkHealth(): Promise<HealthCheckResponse> {
-    const response = await apiClient.get<HealthCheckResponse>('/health');
-    return response.data;
+    try {
+      const response = await apiClient.get<HealthCheckResponse>('/health');
+      return response.data;
+    } catch {
+      return observabilityService.getCompositeHealth();
+    }
+  },
+
+  /**
+   * Fetches composite multi-tier health probe
+   */
+  async getCompositeHealth(): Promise<CompositeHealthResponse> {
+    return observabilityService.getCompositeHealth();
   },
 
   /**
@@ -38,4 +51,6 @@ export const healthService = {
   },
 };
 
+export { observabilityService };
 export default healthService;
+

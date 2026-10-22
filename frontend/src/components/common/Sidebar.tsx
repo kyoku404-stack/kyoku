@@ -58,8 +58,14 @@ const navItems: NavItem[] = [
     requiredPermission: Permission.AUDIT_READ,
     badge: 'RBAC',
   },
-  { label: 'System Health', path: ROUTES.HEALTH, icon: Activity, badge: 'Live' },
+  {
+    label: 'Observability & Health',
+    path: ROUTES.OBSERVABILITY,
+    icon: Activity,
+    badge: 'Live',
+  },
 ];
+
 
 export const Sidebar: React.FC = () => {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
@@ -173,10 +179,11 @@ export const Sidebar: React.FC = () => {
                 </span>
               )}
             </div>
-            <span className="text-[10px] text-muted-foreground">Phase 1.8</span>
+            <span className="text-[10px] text-muted-foreground">Phase 1.9</span>
           </div>
         </div>
       </aside>
+
 
       <RoleSwitcherModal
         isOpen={switcherOpen}
