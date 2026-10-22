@@ -244,6 +244,31 @@ Phase 1.9 Member 3 (Frontend Lead) deliverables are COMPLETED:
 - Built master `ObservabilityPage` (`frontend/src/pages/ObservabilityPage.tsx`) and upgraded `HealthPage` (`frontend/src/pages/HealthPage.tsx`), registered routes `/observability` and `/health`, and updated `Sidebar.tsx` navigation to `Observability & Health` with `Live` badge.
 - Authored comprehensive unit and component test suites: `frontend/src/tests/observabilityService.test.ts` (8 tests) and `frontend/src/tests/observabilityComponents.test.tsx` (11 tests). 100% test pass rate across 180 frontend tests (21 test files) and 407 backend tests (587 total monorepo tests OK, 0 failures, 0 lint warnings/errors, and clean production build).
 
+Phase 1.9 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
+- Configured enterprise observability monitoring stack in `docker-compose.yml`:
+  - Prometheus container (`keep-prometheus`, port 9090) configured to scrape backend `/metrics` every 5s with 10s rule evaluation.
+  - Grafana container (`keep-grafana`, port 3001) with auto-provisioned Prometheus & Loki datasources (`infrastructure/grafana/provisioning/datasources/datasources.yml`), dashboard provider (`infrastructure/grafana/provisioning/dashboards/dashboards.yml`), and comprehensive multi-panel overview dashboard (`infrastructure/grafana/dashboards/keep-overview-dashboard.json`).
+  - Loki container (`keep-loki`, port 3100) configured with TSDB index and 30-day retention (`infrastructure/loki/loki-config.yml`).
+  - Promtail log collection agent (`keep-promtail`, port 9080) scraping Docker container stdout and application logs, parsing canonical 13-field JSON log entries (`infrastructure/promtail/promtail-config.yml`).
+  - Mounted persistent named volumes `prometheus_data`, `grafana_data`, and `loki_data` in root `docker-compose.yml`.
+  - Added monitoring configuration parameters to `.env.example` (`PROMETHEUS_PORT`, `GRAFANA_PORT`, `LOKI_PORT`, `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`).
+- Configured Prometheus alerting rules (`infrastructure/prometheus/alert_rules.yml`):
+  - Rules for `DatabaseOffline`, `CriticalApiErrorRate`, `HighApiErrorRate`, `HighLatencyP95`, `StorageNearCapacity`, `StorageCriticalCapacity`, `DatabasePoolNearExhaustion`, `BruteForceAttempt`, and `AIRateLimitExceeded`.
+- Authored Observability Infrastructure & Health Integration Test Suite (`tests/integration/test_observability_infrastructure.py`):
+  - 10 tests verifying Prometheus text exposition format, HELP/TYPE headers, composite health probe SLAs (<50ms), PostgreSQL pool and pgvector probe, Storage probe write capability and quota, API probe memory RSS and event loop, Auth probe JWT configuration, telemetry summary RBAC protection, W3C TraceContext and Request ID propagation, and sensitive data redaction.
+- Authored Observability Performance, Concurrency & Metric Registry Stress Test Suite (`tests/integration/test_observability_performance.py`):
+  - 5 tests verifying high-concurrency probe execution (50 concurrent queries across 10 threads), Prometheus scraping latency under load (<30ms mean), thread-safe concurrent metric observation recording without locks or drift, telemetry summary benchmark, and high-volume structured log serialization (1000 logs).
+- Authored Playwright E2E Browser Test Suite (`tests/e2e/observability.spec.ts`):
+  - Tests page reachability for `/observability` and `/health`, header title, Phase 1.9 badge, and live polling toggle.
+  - Tests multi-tab inspection: Command Center Overview, Subsystem Health Probes, KPIs & Latency Trends, Alerts & Triggers, and Structured Log Viewer.
+  - Tests on-demand Diagnostics Modal runner with parallel health probe checks.
+  - Tests responsive viewports across Desktop (1440x900), Tablet (768x1024), and Mobile (375x667).
+- Implemented Observability Test Runner & Automation Scripts:
+  - `scripts/test-observability.sh`: master test runner supporting targeted suites (`all`, `infra`, `perf`, `health`, `backend`, `frontend`, `e2e`) with colored ANSI status reporting.
+- Authored Operational & Deployment Documentation:
+  - `docs/Deployment/observability-monitoring-runbook.md`: comprehensive runbook detailing stack topology, Docker Compose services, Prometheus metrics catalog, alert runbooks, Grafana dashboard architecture, LogQL query guide, and incident response procedures.
+- Verified 100% test pass rate across 602 monorepo tests (422 backend + 180 frontend OK), 0 ruff errors, 0 ESLint warnings, clean TypeScript compilation, and clean YAML/JSON configs.
+
 ---
 
 ## Progress Matrix
@@ -251,7 +276,7 @@ Phase 1.9 Member 3 (Frontend Lead) deliverables are COMPLETED:
 | Module / Component | Status | Owner | Current Milestone | Notes |
 | :--- | :--- | :--- | :--- | :--- |
 | **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.9 Architecture | `ARCHITECTURE.md`, `docs/Architecture/observability-architecture.md`, ADR-001 - ADR-028 |
-| **Observability & Monitoring Framework** | IN PROGRESS (Phase 1.9) | Member 1 (Lead) & All | Phase 1.9 Frontend & Telemetry | Master spec, health checks, Prometheus metrics, structured logs, telemetry summary, UI command center |
+| **Observability & Monitoring Framework** | COMPLETED (Phase 1.9) | All Members | Phase 1.9 Full-Stack Verified | Prometheus, Grafana, Loki, alert rules, health probes, structured logging, UI command center |
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
 | **Authorization Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 Architecture | `docs/Architecture/authorization-architecture.md`, ADR-017 - ADR-019 |
 | **Dashboard Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.7 Architecture | `docs/Architecture/dashboard-architecture.md`, ADR-020 - ADR-022 |
@@ -263,8 +288,8 @@ Phase 1.9 Member 3 (Frontend Lead) deliverables are COMPLETED:
 | **Database & Persistence Layer** | COMPLETED (Phase 1.8) | Member 2 & 4 | Phase 1.8 Versions Schema | Alembic migration `b2c3d4e5f6a7`, `document_versions` table, `documents` enhancements |
 | **AI Ingestion & RAG Engine** | SCAFFOLDED | Member 1 & Member 2 | Phase 2.1 / 2.2 | Ingestion state machine & BaseRAGDocumentIngestionSeam established |
 | **Knowledge Graph & Intelligence**| ARCHITECTED | Member 1 (AI Lead) | Phase 2.4 / 2.5 | Architecture and data schemas specified |
-| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.8) | Member 4 (DevOps Lead) | Phase 1.8 Storage Infrastructure | Docker storage volume mounting, security suite, latency benchmarks, Playwright E2E, backup/restore scripts |
-| **QA & Verification Suite** | PASSING | All Members | Phase 1.9 Member 3 Verified | 407 backend + 180 frontend = 587 tests OK (100%), 0 failures, clean lint & build |
+| **DevOps, CI/CD & Infrastructure** | COMPLETED (Phase 1.9) | Member 4 (DevOps Lead) | Phase 1.9 Monitoring Stack | Prometheus, Grafana, Loki, Promtail, alert rules, E2E & performance test suites, runbooks |
+| **QA & Verification Suite** | PASSING | All Members | Phase 1.9 Member 4 Verified | 422 backend + 180 frontend = 602 tests OK (100%), 0 failures, clean lint & build |
 | **Enterprise Integrations & Security**| PLANNED | Member 1 & Member 4 | Phase 3.1 / 3.3 | Enterprise connectors & security framework |
 
 
