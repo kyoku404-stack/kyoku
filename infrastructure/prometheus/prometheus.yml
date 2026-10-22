@@ -1,0 +1,44 @@
+# ==============================================================================
+# KEEP — Prometheus Monitoring Configuration (Phase 1.9)
+# Specification: devdocs/p1/p1.9.txt (Chapter 15, 17)
+# Architecture: docs/Architecture/observability-architecture.md (Section 5)
+# ==============================================================================
+
+global:
+  scrape_interval: 10s
+  scrape_timeout: 5s
+  evaluation_interval: 10s
+  external_labels:
+    environment: 'development'
+    platform: 'keep-enterprise'
+
+rule_files:
+  - '/etc/prometheus/alert_rules.yml'
+
+scrape_configs:
+  # ----------------------------------------------------------------------------
+  # KEEP FastAPI Backend Application Metrics
+  # ----------------------------------------------------------------------------
+  - job_name: 'keep-backend'
+    metrics_path: '/metrics'
+    scheme: 'http'
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    static_configs:
+      - targets: ['backend:8000', 'localhost:8000']
+        labels:
+          app: 'keep-backend'
+          tier: 'application'
+          service: 'api-engine'
+
+  # ----------------------------------------------------------------------------
+  # Prometheus Self-Monitoring
+  # ----------------------------------------------------------------------------
+  - job_name: 'prometheus'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          app: 'prometheus'
+          tier: 'infrastructure'

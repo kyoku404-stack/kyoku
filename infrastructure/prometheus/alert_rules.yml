@@ -1,0 +1,119 @@
+# ==============================================================================
+# KEEP — Prometheus Alerting Rules Specification (Phase 1.9)
+# Specification: devdocs/p1/p1.9.txt (Chapter 10, 17)
+# Architecture: docs/Architecture/observability-architecture.md (Section 6)
+# ==============================================================================
+
+groups:
+  - name: keep_platform_alerts
+    rules:
+      # ------------------------------------------------------------------------
+      # Database Connectivity & Health Alerts
+      # ------------------------------------------------------------------------
+      - alert: DatabaseOffline
+        expr: db_pool_active_connections < 0 or up{job="keep-backend"} == 0
+        for: 15s
+        labels:
+          severity: CRITICAL
+          tier: database
+        annotations:
+          summary: "PostgreSQL Database or Backend API is offline"
+          description: "Database connectivity probe failed or backend instance is unreachable for >15s."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#databaseoffline"
+
+      - alert: DatabasePoolNearExhaustion
+        expr: (db_pool_active_connections / db_pool_size) * 100 > 85
+        for: 1m
+        labels:
+          severity: WARNING
+          tier: database
+        annotations:
+          summary: "Database connection pool utilization exceeds 85%"
+          description: "Active connections are at {{ $value | printf \"%.1f\" }}% of maximum pool size (threshold: 85%)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#databasepoolnearexhaustion"
+
+      # ------------------------------------------------------------------------
+      # API Latency & Error Rate Alerts
+      # ------------------------------------------------------------------------
+      - alert: HighApiErrorRate
+        expr: (sum(rate(http_requests_total{status=~"5.."}[2m])) / sum(rate(http_requests_total[2m]))) * 100 > 2.0
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: application
+        annotations:
+          summary: "API 5xx error rate exceeds 2%"
+          description: "Current error rate is {{ $value | printf \"%.2f\" }}% over a 2-minute rolling window."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#highapierrorrate"
+
+      - alert: CriticalApiErrorRate
+        expr: (sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m]))) * 100 > 5.0
+        for: 1m
+        labels:
+          severity: CRITICAL
+          tier: application
+        annotations:
+          summary: "CRITICAL: API 5xx error rate exceeds 5%"
+          description: "Current error rate is {{ $value | printf \"%.2f\" }}% over a 1-minute window."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#criticalapierrorrate"
+
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.25
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: application
+        annotations:
+          summary: "API p95 latency exceeds 250ms SLA"
+          description: "Current p95 request duration is {{ $value | printf \"%.3f\" }}s (SLA: 0.250s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#highlatencyp95"
+
+      # ------------------------------------------------------------------------
+      # Storage Capacity & Quota Alerts
+      # ------------------------------------------------------------------------
+      - alert: StorageNearCapacity
+        expr: (storage_used_bytes / storage_capacity_bytes) * 100 > 85
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: storage
+        annotations:
+          summary: "Storage volume utilization exceeds 85%"
+          description: "Multi-tenant storage volume is at {{ $value | printf \"%.1f\" }}% of total provisioned capacity."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#storagenearcapacity"
+
+      - alert: StorageCriticalCapacity
+        expr: (storage_used_bytes / storage_capacity_bytes) * 100 > 95
+        for: 2m
+        labels:
+          severity: CRITICAL
+          tier: storage
+        annotations:
+          summary: "CRITICAL: Storage volume utilization exceeds 95%"
+          description: "Multi-tenant storage volume is near full exhaustion ({{ $value | printf \"%.1f\" }}%). Risk of write lockouts."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#storagecriticalcapacity"
+
+      # ------------------------------------------------------------------------
+      # Security & Rate Limiting Alerts
+      # ------------------------------------------------------------------------
+      - alert: BruteForceAttempt
+        expr: sum(rate(http_requests_total{handler=~".*login.*", status="401"}[3m])) * 60 > 10
+        for: 1m
+        labels:
+          severity: SECURITY
+          tier: security
+        annotations:
+          summary: "Potential authentication brute-force attack detected"
+          description: "High rate of failed authentication attempts detected (>10 failed logins/min)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#bruteforceattempt"
+
+      - alert: AIRateLimitExceeded
+        expr: sum(rate(http_requests_total{status="429"}[5m])) * 60 > 20
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: ai-engine
+        annotations:
+          summary: "High frequency of rate-limited requests (HTTP 429)"
+          description: "Over 20 requests per minute are hitting API or AI rate limits."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#airatelimitexceeded"

@@ -1,0 +1,18 @@
+# ==============================================================================
+# KEEP — Grafana Dashboard Provider Auto-Provisioning (Phase 1.9)
+# Specification: devdocs/p1/p1.9.txt (Chapter 15)
+# ==============================================================================
+
+apiVersion: 1
+
+providers:
+  - name: 'KEEP Observability Dashboards'
+    orgId: 1
+    folder: 'KEEP Enterprise'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
