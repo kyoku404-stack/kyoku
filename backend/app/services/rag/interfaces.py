@@ -1060,4 +1060,38 @@ class BaseRAGDocumentIngestionSeam(ABC):
         """Deactivates semantic chunks belonging to prior versions when new revision reaches READY_FOR_AI."""
 
 
+@dataclass
+class AIRuntimeDeploymentProfile:
+    """Runtime limits and configuration for Phase 2 RAG inference pipelines."""
+
+    max_context_tokens: int = 8192
+    max_retrieval_chunks: int = 20
+    retrieval_timeout_sec: float = 5.0
+    hybrid_dense_weight: float = 0.7
+    hybrid_sparse_weight: float = 0.3
+    reranker_batch_size: int = 16
+    reranker_device: str = "cpu"
+    enable_streaming_tokens: bool = True
+    embedding_cache_dir: str = "/app/models/cache"
+
+
+class BaseRAGDeploymentCoordinator(ABC):
+    """Abstract coordinator interface ensuring RAG pipeline readiness in production."""
+
+    @abstractmethod
+    async def verify_vector_storage_readiness(
+        self, profile: AIRuntimeDeploymentProfile
+    ) -> bool:
+        """Verifies vector storage connectivity, index health, and query readiness."""
+
+    @abstractmethod
+    def verify_embedding_model_cache(self, cache_dir: str) -> bool:
+        """Verifies local volume presence and write permissions for model weights."""
+
+    @abstractmethod
+    def get_active_runtime_profile(self) -> AIRuntimeDeploymentProfile:
+        """Returns the active deployment runtime profile for RAG query execution."""
+
+
+
 

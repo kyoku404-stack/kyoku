@@ -4,15 +4,27 @@
 Phase 1 — Core Platform Foundation
 
 ## Current Sub-Phase
-Phase 1.9 — Logging, Monitoring & System Observability
+Phase 1.10 — Deployment, Infrastructure & Production Readiness
 
 ## Repository Health
 GREEN
 
 ## Overall Status
-Phase 1.1 through Phase 1.8 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+Phase 1.1 through Phase 1.9 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
 
-Phase 1.9 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+Phase 1.10 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Deployment, Infrastructure & AI Readiness Architecture Specification (`docs/Architecture/deployment-ai-infrastructure.md`) establishing the production system topology, reverse proxy routing matrix, TLS/HTTPS termination, zero-trust network segmentation, future AI compute/worker scaling architecture (Phase 2 bridge), backup/disaster recovery SLOs, and CI/CD automated deployment blueprint.
+- Authored Architecture Decision Records ADR-029, ADR-030, and ADR-031 in `docs/decisions/decisions.md`.
+- Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 7 defining production reverse proxy routing rules, TLS 1.3/1.2 standards, ingress headers, and mandatory response security headers.
+- Implemented typed AI Deployment & Production Readiness domain contracts in `backend/app/services/ai/deployment.py` and `backend/app/services/rag/interfaces.py`:
+  - `AIHardwareProfile`: 4 compute sizing profiles (`MINIMUM_DEV`, `RECOMMENDED_PROD_CPU`, `HIGH_PERF_GPU`, `ENTERPRISE_DISTRIBUTED`).
+  - `AIModelExecutionMode`: 4 runtime modes (`LOCAL_GPU`, `LOCAL_CPU`, `REMOTE_API`, `HYBRID`).
+  - `AIVectorDBTopology`: 4 vector storage deployment modes (`EMBEDDED_PGVECTOR`, `DEDICATED_PGVECTOR`, `STANDALONE_QDRANT`, `MANAGED_CLOUD`).
+  - `AIWorkerQueueType`: 4 dedicated asynchronous AI queues (`ai_ingestion_queue`, `ai_embedding_queue`, `ai_graph_queue`, `ai_batch_queue`).
+  - `AIResourceAllocation`, `AIModelArtifactConfig`, `AIVectorDBDeploymentConfig`, `AIWorkerNodeConfig`, `AIReadinessCheckItem`, `AIProductionReadinessReport`, `AIClusterTopologySpec`.
+  - `BaseAIInfrastructureValidator` & `DefaultAIInfrastructureValidator`: Automated infrastructure readiness diagnostic validator.
+  - `AIRuntimeDeploymentProfile` & `BaseRAGDeploymentCoordinator`: Runtime limits and readiness coordinator for Phase 2 RAG inference pipelines.
+- Authored dedicated unit test suite (`tests/unit/test_deployment_ai_readiness.py`) with 17 tests. Ready for Member 2 (Backend Lead) to implement production backend configurations and Member 3 (Frontend Lead) to build production frontend assets.
 - Authored master Observability, Monitoring & Logging Architecture Specification (`docs/Architecture/observability-architecture.md`) establishing centralized structured JSON logging, distributed trace context propagation (W3C TraceContext & Request ID), 5-tier health check topology (`/health`, `/health/database`, `/health/storage`, `/health/api`, `/health/auth`), Prometheus metric exposition (`/metrics`), KPI thresholds, alerting matrix, and specialized AI/RAG observability telemetry for Phase 2.
 - Authored Architecture Decision Records ADR-026, ADR-027, and ADR-028 in `docs/decisions/decisions.md`.
 - Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 6 defining all 7 observability and health check endpoints (`GET /health`, `GET /health/database`, `GET /health/storage`, `GET /health/api`, `GET /health/auth`, `GET /metrics`, `GET /api/v1/metrics/summary`).
@@ -275,14 +287,15 @@ Phase 1.9 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
 
 | Module / Component | Status | Owner | Current Milestone | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.9 Architecture | `ARCHITECTURE.md`, `docs/Architecture/observability-architecture.md`, ADR-001 - ADR-028 |
+| **System Architecture & Standards** | COMPLETED | Member 1 (AI Lead) | Phase 1.10 Architecture | `ARCHITECTURE.md`, `docs/Architecture/deployment-ai-infrastructure.md`, ADR-001 - ADR-031 |
+| **Deployment & Production Readiness** | IN PROGRESS (Phase 1.10) | All Members | Phase 1.10 Member 1 Done | Production reverse proxy, TLS, security headers, future AI worker scaling, CI/CD pipeline |
 | **Observability & Monitoring Framework** | COMPLETED (Phase 1.9) | All Members | Phase 1.9 Full-Stack Verified | Prometheus, Grafana, Loki, alert rules, health probes, structured logging, UI command center |
 | **Auth & Identity Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.4 Architecture | `docs/Architecture/auth-identity-architecture.md`, ADR-011 - ADR-013 |
 | **Authorization Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.6 Architecture | `docs/Architecture/authorization-architecture.md`, ADR-017 - ADR-019 |
 | **Dashboard Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.7 Architecture | `docs/Architecture/dashboard-architecture.md`, ADR-020 - ADR-022 |
 | **Document Storage & Lifecycle Architecture** | COMPLETED | Member 1 (AI Lead) | Phase 1.8 Architecture | `docs/Architecture/document-management-architecture.md`, ADR-023 - ADR-025 |
-| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.9 AI Observability | Typed observability contracts, token/cost estimation, retrieval metrics in `services/ai/` & `services/rag/` |
-| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.9 Health & Observability | `docs/api/api-contract.md` Section 6 (7 health & metrics endpoints) |
+| **AI / RAG Interfaces & Contracts** | COMPLETED | Member 1 (AI Lead) | Phase 1.10 AI Readiness | Typed deployment contracts, hardware profiles, vector topology, runtime profile in `services/ai/` & `services/rag/` |
+| **API Contracts & Envelopes** | APPROVED | Member 1 (AI Lead) | Phase 1.10 Deployment & Routing | `docs/api/api-contract.md` Section 7 (Reverse proxy routing & security headers) |
 | **Backend Architecture & APIs** | COMPLETED (Phase 1.9) | Member 2 (Backend Lead) | Phase 1.9 Health & Logging | JSON logging, W3C tracing, Prometheus /metrics, 5 health probes, telemetry summary |
 | **Frontend Application** | COMPLETED (Phase 1.9) | Member 3 (Frontend Lead) | Phase 1.9 Observability UI | Subsystem status cards, KPI metrics grid, alert panel, log viewer (admin), diagnostics runner |
 | **Database & Persistence Layer** | COMPLETED (Phase 1.8) | Member 2 & 4 | Phase 1.8 Versions Schema | Alembic migration `b2c3d4e5f6a7`, `document_versions` table, `documents` enhancements |

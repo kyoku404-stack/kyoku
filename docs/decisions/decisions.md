@@ -847,3 +847,104 @@ Member 1 implements typed contracts and unit test verification. Member 2 integra
 #### Status
 ACCEPTED
 
+---
+
+### ADR-029 — Production Reverse Proxy, TLS Termination & Container Network Topology
+
+#### Date
+2026-10-23
+
+#### Context
+`devdocs/p1/p1.10.txt` (Chapters 3, 4, 5, 8, 11) mandates containerizing the application, configuring a production reverse proxy with HTTPS, and hardening system security. Direct exposure of application ports (FastAPI on 8000, Next.js on 3000, PostgreSQL on 5432, Redis on 6379) to public internet interfaces creates severe security vulnerabilities, lacks unified SSL/TLS lifecycle termination, and prevents standardized HTTP security header injection.
+
+#### Decision
+1. Standardize on **Nginx** (`nginx:1.27-alpine`) as the single public-facing reverse proxy and ingress gateway.
+2. Route incoming traffic based on path rules:
+   - `/*` routed to Frontend production container (Next.js/React).
+   - `/api/v1/*` routed to Backend FastAPI container.
+   - `/health` and `/health/*` routed to Backend health check probes.
+   - `/metrics` restricted strictly to internal Docker network / Prometheus scraping.
+3. Enforce strict TLS 1.3 / 1.2 termination with HTTP-to-HTTPS automatic 301 redirection.
+4. Enforce enterprise security headers across all responses (`HSTS`, `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`).
+5. Isolate all internal services (`backend`, `postgres`, `redis`, `loki`, `promtail`) on an internal Docker bridge network (`keep-network`) with zero direct host port publishing for database or cache services in production.
+
+#### Alternatives Considered
+- Direct host binding without reverse proxy: Rejected — exposes backend directly, complicates SSL certificate management, and lacks unified static caching and gzip compression.
+- Envoy / Traefik: Rejected for MVP baseline — Nginx provides proven enterprise stability, minimal resource footprint (< 256MB), and direct support across all standard enterprise environments.
+
+#### Reason
+Nginx provides high throughput, battle-tested SSL/TLS termination, and flexible path routing while strictly isolating sensitive backend services inside Docker's virtual network.
+
+#### Impact
+Member 4 configures Nginx configuration and Docker Compose networking. Member 3 configures frontend production assets and API routing. Member 2 validates backend behind reverse proxy headers.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-030 — Future AI Workload Infrastructure Isolation & Resource Scaling Architecture (Phase 2 Readiness)
+
+#### Date
+2026-10-23
+
+#### Context
+`devdocs/p1/p1.10.txt` (Chapters 5, 10, 15, 18) mandates that Phase 1.10 infrastructure configuration must prepare the platform for the heavy AI implementation phases beginning in Phase 2. AI operations (PDF OCR, multimodal extraction, SentenceTransformer embedding generation, dense vector similarity search in `pgvector`, and LLM answer synthesis) require significantly more memory, CPU, and worker concurrency than typical CRUD transactions. Executing AI tasks synchronously inside the FastAPI request-response event loop would cause thread starvation, slow API response times, and system-wide timeouts.
+
+#### Decision
+1. Establish dedicated asynchronous worker queues in Redis/Celery (`ai_ingestion_queue`, `ai_embedding_queue`, `ai_graph_queue`, `ai_batch_queue`) separate from primary web API workers.
+2. Define standard hardware and sizing tiers (`MINIMUM_DEV`, `RECOMMENDED_PROD_CPU`, `HIGH_PERF_GPU`, `ENTERPRISE_DISTRIBUTED`) with typed validation contracts in `backend/app/services/ai/deployment.py`.
+3. Provision a dedicated persistent volume `ai_model_cache` (`/app/models/cache`) to store local embedding weights and reranker models, preventing repetitive downloads and reducing container startup latency.
+4. Optimize `pgvector` indexing parameters for production: HNSW index with `m = 16`, `ef_construction = 64`, and runtime query `ef_search = 40`, backed by `maintenance_work_mem = 512MB`.
+5. Adopt a `HYBRID` execution model as the enterprise production baseline: local CPU/GPU for embedding and reranking, coupled with managed cloud API connectors for frontier LLM reasoning.
+
+#### Alternatives Considered
+- Synchronous in-process AI execution: Rejected — blocks HTTP event loops and causes request timeouts on multi-page PDF processing.
+- Standalone external Vector DB SaaS only (Pinecone): Rejected — introduces external cloud vendor lock-in and cross-network latency; `pgvector` co-locates relational metadata and vectors inside the existing PostgreSQL 16 ACID boundary.
+
+#### Reason
+Queue-based workload isolation guarantees predictable API latency (< 300ms) for end users while enabling asynchronous AI workers to scale independently based on document ingestion volume.
+
+#### Impact
+Member 1 establishes typed contracts in `services/ai/` and `services/rag/`. Member 4 provisions Docker volumes and worker services. Member 2 integrates queue dispatching seams.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-031 — Automated Continuous Deployment Pipeline, Health Gating & Disaster Recovery Strategy
+
+#### Date
+2026-10-23
+
+#### Context
+`devdocs/p1/p1.10.txt` (Chapters 7, 12, 13, 14) mandates automated CI/CD pipelines, daily backup policies, disaster recovery planning, and production deployment validation. Manual deployments risk configuration drift, missing database migrations, and unhandled production outages.
+
+#### Decision
+1. Implement a 6-stage GitHub Actions CI/CD deployment pipeline:
+   - Stage 1: Static analysis (Ruff, ESLint, TypeScript `tsc --noEmit`).
+   - Stage 2: Automated test execution (Pytest unit & integration suites, Vitest frontend suite).
+   - Stage 3: Multi-stage Docker container build and image linting.
+   - Stage 4: Staging deployment with container health probing.
+   - Stage 5: Production deployment promotion with zero-downtime rolling update.
+   - Stage 6: Health-gated rollback triggering if `GET /health` fails to report healthy status within 60 seconds.
+2. Codify automated daily backups for:
+   - PostgreSQL database (compressed `pg_dump` with 30-day retention).
+   - Document storage volume (compressed tarball with SHA-256 integrity manifest).
+3. Establish recovery objectives: RPO < 1 hour, RTO < 15 minutes.
+
+#### Alternatives Considered
+- Manual SSH deployment: Rejected — error-prone, non-auditable, and violates four-agent governance.
+- Continuous deployment without health-check gating: Rejected — risks deploying broken configurations directly to live users without automated rollback safety.
+
+#### Reason
+Automated health-gated pipelines ensure that every production release is empirically verified before receiving production traffic, guaranteeing 99.9% platform availability.
+
+#### Impact
+Member 4 implements CI/CD workflow steps and backup/recovery shell scripts. Member 2 verifies database migration idempotency. Member 3 ensures zero-warning build artifacts.
+
+#### Status
+ACCEPTED
+
+
