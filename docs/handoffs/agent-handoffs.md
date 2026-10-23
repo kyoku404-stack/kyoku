@@ -3217,6 +3217,85 @@ Member 1 has completed the Phase 1.10 (Deployment, Infrastructure & Production R
    - Standardize Nginx reverse proxy configuration matching `docs/api/api-contract.md` Section 7 and `docs/Architecture/deployment-ai-infrastructure.md`.
    - Implement automated backup scripts and CI/CD deployment pipelines with automated health gating.
 
+---
+
+### Handoff Entry #035: Phase 1.10 — Production Backend Hardening, Connection Pooling & Security Readiness
+
+#### Date
+2026-10-23
+
+#### Author Agent
+Member 2 — Backend Lead
+
+#### Status
+COMPLETED / READY FOR DOWNSTREAM INTEGRATION (MEMBER 3 & MEMBER 4)
+
+#### Executive Summary
+Member 2 has completed the Phase 1.10 backend deployment and production readiness deliverables conforming to `devdocs/p1/p1.10.txt` (Chapters 6, 8, 9, 11, 15, 18), `docs/api/api-contract.md` Section 7, and ADR-029/ADR-030. Key implementations include:
+1. Enterprise `SecurityHeadersMiddleware` adding defense-in-depth headers (`X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`, `Permissions-Policy`, and conditional `Strict-Transport-Security` in staging/production).
+2. Dynamic SQLAlchemy async connection pooling configuration (`DB_POOL_SIZE=20`, `DB_MAX_OVERFLOW=10`, `DB_POOL_TIMEOUT=30`, `DB_POOL_RECYCLE=1800`, `DB_POOL_PRE_PING=True`).
+3. Database engine lifecycle management (`close_async_engine()`, `check_database_readiness()`) integrated with FastAPI lifespan.
+4. Production configuration security validator (`validate_production_configuration()`) flagging weak or development secret keys and localhost database URLs in production.
+5. Response payload optimization with `GZipMiddleware` (minimum 1000 bytes) and conditional OpenAPI/Swagger exposition controlled via `ENABLE_OPENAPI_DOCS`.
+6. 15 new tests (10 unit tests + 5 integration tests) verifying production configuration, security headers, database pooling, compression, and preflight CORS.
+
+#### Completed Deliverables
+1. **Security Headers Middleware (`backend/app/api/middleware/security_headers.py`, `backend/app/api/middleware/__init__.py`)**:
+   - Injects enterprise security headers on all outbound HTTP responses:
+     - `X-Content-Type-Options: nosniff`
+     - `X-Frame-Options: DENY`
+     - `X-XSS-Protection: 1; mode=block`
+     - `Referrer-Policy: strict-origin-when-cross-origin`
+     - `Permissions-Policy: geolocation=(), camera=(), microphone=()`
+     - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (enforced when `is_production` or `is_staging` is True).
+2. **Production Settings & Validation Engine (`backend/app/core/config.py`)**:
+   - Added environment tier properties: `is_production`, `is_staging`, `is_development`, `is_testing`.
+   - Added database pool settings: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT`, `DB_POOL_RECYCLE`, `DB_POOL_PRE_PING`, `DB_STATEMENT_TIMEOUT_MS`.
+   - Added production runtime parameters: `ENABLE_OPENAPI_DOCS`, `GZIP_MINIMUM_SIZE`, `ENFORCE_SSL_REDIRECT`, `UVICORN_WORKERS`, `GRACEFUL_SHUTDOWN_TIMEOUT_SEC`.
+   - Implemented `validate_production_configuration()` executing pre-flight security audits on startup.
+3. **Database Connection Pooling & Engine Lifecycle (`backend/app/db/session.py`)**:
+   - Dynamically injects pooling parameters into `create_async_engine`.
+   - Implemented `close_async_engine()` for clean connection draining during graceful shutdown.
+   - Implemented `check_database_readiness()` returning boolean connectivity status for container health checks.
+4. **FastAPI Application Hardening & Lifespan (`backend/app/main.py`)**:
+   - Integrated `SecurityHeadersMiddleware` and `GZipMiddleware(minimum_size=settings.GZIP_MINIMUM_SIZE)`.
+   - Added pre-flight production configuration checks in `lifespan` startup hook.
+   - Wired `close_async_engine()` into `lifespan` shutdown hook.
+   - Conditionally exposes `/docs`, `/redoc`, and `openapi.json` based on `ENABLE_OPENAPI_DOCS`.
+5. **Unit & Integration Test Suites**:
+   - `tests/unit/test_production_backend_config.py` (10 tests).
+   - `tests/integration/test_production_backend_readiness.py` (5 tests).
+
+#### Files Modified / Created
+- `backend/app/api/middleware/security_headers.py` (Created — Enterprise security headers middleware)
+- `backend/app/api/middleware/__init__.py` (Modified — Exported SecurityHeadersMiddleware)
+- `backend/app/core/config.py` (Modified — Production settings, pool configs, and validator)
+- `backend/app/db/session.py` (Modified — Dynamic connection pooling & lifecycle helpers)
+- `backend/app/main.py` (Modified — Middleware registration, lifespan hooks, conditional docs)
+- `tests/unit/test_production_backend_config.py` (Created — 10 unit tests for production config & security)
+- `tests/integration/test_production_backend_readiness.py` (Created — 5 integration tests for readiness)
+- `PROJECT_STATE.md` (Modified — Updated Phase 1.10 Member 2 deliverables and progress matrix)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Handoff Entry #035)
+
+#### Verification & Tests Executed
+- [x] Unit tests passed: `tests/unit/test_production_backend_config.py` (10/10 tests OK)
+- [x] Integration tests passed: `tests/integration/test_production_backend_readiness.py` (5/5 tests OK)
+- [x] Total monorepo tests passing: 617/617 (437 backend + 180 frontend, 100% pass rate)
+- [x] Ruff lint & import order verified clean (0 errors)
+
+#### Target Receiving Agents
+- **Member 3 (Frontend Lead)**: Build and optimize frontend production bundles, configure static asset caching, and wire production API endpoints.
+- **Member 4 (DevOps Lead)**: Provision production Docker Compose, Nginx reverse proxy configuration, CI/CD automated deployment, and backup runbooks.
+
+#### Required Action for Receiving Agents
+1. **Member 3 (Frontend Lead)**:
+   - Ensure frontend production build (`npm run build`) runs cleanly and generates hashed asset chunks.
+   - Verify CORS requests from frontend origins succeed with production security headers.
+2. **Member 4 (DevOps Lead)**:
+   - Configure Nginx reverse proxy matching Section 7 of `docs/api/api-contract.md` and pass standard proxy headers (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Request-ID`).
+   - Validate graceful shutdown of backend containers using `SIGTERM` with 15s timeout.
+
+
 
 
 

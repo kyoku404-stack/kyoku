@@ -113,6 +113,59 @@ class Settings(BaseSettings):
         10 * 1024 * 1024 * 1024
     )  # 10 GB default quota per org
 
+    # Production Database Connection Pooling & Sizing (Phase 1.10)
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
+    DB_POOL_PRE_PING: bool = True
+    DB_STATEMENT_TIMEOUT_MS: int = 30000
+
+    # Production Server Performance & Security (Phase 1.10)
+    ENABLE_OPENAPI_DOCS: bool = True
+    GZIP_MINIMUM_SIZE: int = 1000
+    ENFORCE_SSL_REDIRECT: bool = False
+    UVICORN_WORKERS: int = 4
+    GRACEFUL_SHUTDOWN_TIMEOUT_SEC: int = 15
+
+    @property
+    def is_production(self) -> bool:
+        """Determines if the application is running in production mode."""
+        return self.ENVIRONMENT.lower() == "production"
+
+    @property
+    def is_staging(self) -> bool:
+        """Determines if the application is running in staging mode."""
+        return self.ENVIRONMENT.lower() == "staging"
+
+    @property
+    def is_development(self) -> bool:
+        """Determines if the application is running in local development mode."""
+        return self.ENVIRONMENT.lower() in ("development", "dev", "local")
+
+    @property
+    def is_testing(self) -> bool:
+        """Determines if the application is running under test execution."""
+        return self.ENVIRONMENT.lower() in ("testing", "test")
+
+    def validate_production_configuration(self) -> list[str]:
+        """Validates production readiness and emits security alerts or warnings."""
+        warnings: list[str] = []
+        if self.is_production:
+            if self.SECRET_KEY == "super_secret_keep_key_replace_in_production_2026":
+                warnings.append(
+                    "CRITICAL: Default development SECRET_KEY detected in production environment."
+                )
+            if len(self.SECRET_KEY) < 32:
+                warnings.append(
+                    "CRITICAL: SECRET_KEY is too short for production (must be >= 32 characters)."
+                )
+            if not self.DATABASE_URL or "localhost" in self.DATABASE_URL or "127.0.0.1" in self.DATABASE_URL:
+                warnings.append(
+                    "WARNING: Production DATABASE_URL appears to reference local loopback interface."
+                )
+        return warnings
+
     model_config = SettingsConfigDict(
         env_file=(".env", "backend/.env", ".env.development"),
         env_file_encoding="utf-8",
@@ -122,3 +175,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
