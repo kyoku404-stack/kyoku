@@ -3147,6 +3147,77 @@ Member 4 has completed the DevOps, infrastructure monitoring, automated alerting
 #### Target Receiving Agent
 - **Human Team Lead / Member 1 (Project Lead & AI Architect)**: Ready for human gating review and authorization for Phase 2.
 
+---
+
+### Handoff Entry #034: Phase 1.10 — Deployment, Infrastructure & AI Readiness Architecture Baseline
+
+#### Date
+2026-10-23
+
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED / READY FOR DOWNSTREAM ROLES (MEMBER 2, MEMBER 3, MEMBER 4)
+
+#### Executive Summary
+Member 1 has completed the Phase 1.10 (Deployment, Infrastructure & Production Readiness) architectural specifications, decision records, API gateway routing contracts, future AI workload infrastructure blueprints (Phase 2 bridge), and typed domain contracts with comprehensive unit test coverage. This establishes the structural blueprint for Member 2 (Backend Lead), Member 3 (Frontend Lead), and Member 4 (DevOps Lead) to implement production configurations, container deployments, and CI/CD pipelines.
+
+#### Completed Deliverables
+1. **Master Architecture Specification (`docs/Architecture/deployment-ai-infrastructure.md`)**:
+   - Master production architecture blueprint and container topology matrix.
+   - Reverse proxy routing rules (`/`, `/api/v1/*`, `/health`, `/metrics`, `/_next/static/*`).
+   - Zero-trust network segmentation and security headers (`HSTS`, `CSP`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`).
+   - Future AI workload readiness blueprint: compute sizing tiers, asynchronous worker queue isolation (`ai_ingestion_queue`, `ai_embedding_queue`, `ai_graph_queue`, `ai_batch_queue`), model artifact volume caching (`/app/models/cache`), and `pgvector` HNSW indexing optimization.
+   - Backup cadence, retention windows, and disaster recovery SLOs (RPO < 1 hour, RTO < 15 minutes).
+   - CI/CD automated deployment and health-gated rollback protocol.
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - `ADR-029`: Production Reverse Proxy, TLS Termination & Container Network Topology.
+   - `ADR-030`: Future AI Workload Infrastructure Isolation & Resource Scaling Architecture (Phase 2 Readiness).
+   - `ADR-031`: Automated Continuous Deployment Pipeline, Health Gating & Disaster Recovery Strategy.
+3. **API Contracts Specification (`docs/api/api-contract.md`)**:
+   - Added Section 7: Production Gateway, Deployment Routing & Security Specifications (Reverse proxy matrix, standard ingress proxy headers, mandatory response security headers, and health check rollback SLAs).
+4. **Typed AI Deployment Domain Contracts & Interfaces (`backend/app/services/ai/deployment.py`, `backend/app/services/ai/__init__.py`)**:
+   - `AIHardwareProfile`: 4 sizing profiles (`MINIMUM_DEV`, `RECOMMENDED_PROD_CPU`, `HIGH_PERF_GPU`, `ENTERPRISE_DISTRIBUTED`).
+   - `AIModelExecutionMode`: 4 runtime execution modes (`LOCAL_GPU`, `LOCAL_CPU`, `REMOTE_API`, `HYBRID`).
+   - `AIVectorDBTopology`: 4 vector deployment options (`EMBEDDED_PGVECTOR`, `DEDICATED_PGVECTOR`, `STANDALONE_QDRANT`, `MANAGED_CLOUD`).
+   - `AIWorkerQueueType`: 4 queue identifiers (`INGESTION_QUEUE`, `EMBEDDING_QUEUE`, `GRAPH_EXTRACTION_QUEUE`, `LLM_BATCH_QUEUE`).
+   - `AIResourceAllocation`, `AIModelArtifactConfig`, `AIVectorDBDeploymentConfig`, `AIWorkerNodeConfig`, `AIReadinessCheckItem`, `AIProductionReadinessReport`, `AIClusterTopologySpec`.
+   - `BaseAIInfrastructureValidator` & `DefaultAIInfrastructureValidator`: Automated infrastructure readiness diagnostic validator.
+5. **RAG Deployment Contracts (`backend/app/services/rag/interfaces.py`, `backend/app/services/rag/__init__.py`)**:
+   - `AIRuntimeDeploymentProfile`: Encapsulates context token bounds, retrieval timeouts, hybrid weights, and reranker batch sizes.
+   - `BaseRAGDeploymentCoordinator`: Interface ensuring vector storage and embedding cache readiness in production.
+6. **Dedicated Unit Test Suite (`tests/unit/test_deployment_ai_readiness.py`)**:
+   - 17 unit tests covering enums, resource allocations, GPU capabilities, compute validation, model cache checks, vector DB parameters, worker queue allocations, full cluster readiness audits, and RAG runtime profile defaults.
+
+#### Files Modified / Created
+- `docs/Architecture/deployment-ai-infrastructure.md` (Created — Master Deployment & AI Readiness Architecture Specification)
+- `docs/decisions/decisions.md` (Modified — Appended ADR-029, ADR-030, and ADR-031)
+- `docs/api/api-contract.md` (Modified — Added Section 7 Production Gateway & Routing Specs)
+- `backend/app/services/ai/deployment.py` (Created — Typed deployment domain contracts and infrastructure validator)
+- `backend/app/services/ai/__init__.py` (Modified — Exported deployment types and validators)
+- `backend/app/services/rag/interfaces.py` (Modified — Added AIRuntimeDeploymentProfile and BaseRAGDeploymentCoordinator)
+- `backend/app/services/rag/__init__.py` (Modified — Exported deployment runtime profile and coordinator)
+- `tests/unit/test_deployment_ai_readiness.py` (Created — 17 unit tests for deployment and AI readiness contracts)
+- `PROJECT_STATE.md` (Modified — Updated Phase 1.10 status and progress matrix)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Handoff Entry #034)
+
+#### Target Receiving Agents
+- **Member 2 (Backend Lead)**: Configure production backend settings, secure environment variables, tune connection pools, and prepare database deployment in `backend/`.
+- **Member 3 (Frontend Lead)**: Build optimized production frontend, configure static asset caching, and wire production API base paths in `frontend/`.
+- **Member 4 (DevOps Lead)**: Configure production Docker Compose, Nginx reverse proxy with HTTPS, GitHub Actions CI/CD deployment automation, and backup runbooks.
+
+#### Required Action for Receiving Agents
+1. **Member 2 (Backend Lead)**:
+   - Ensure backend reads environment variables matching `.env.example` templates without hardcoded values.
+   - Verify database migrations and connection pool bounds under production configuration.
+2. **Member 3 (Frontend Lead)**:
+   - Configure frontend production build output, verify clean lint, and validate responsive layouts.
+3. **Member 4 (DevOps Lead)**:
+   - Standardize Nginx reverse proxy configuration matching `docs/api/api-contract.md` Section 7 and `docs/Architecture/deployment-ai-infrastructure.md`.
+   - Implement automated backup scripts and CI/CD deployment pipelines with automated health gating.
+
+
 
 
 
