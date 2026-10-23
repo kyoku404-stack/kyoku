@@ -12,8 +12,6 @@ from backend.app.services.ai.deployment import (
     AIHardwareProfile,
     AIModelArtifactConfig,
     AIModelExecutionMode,
-    AIProductionReadinessReport,
-    AIReadinessCheckItem,
     AIReadinessCheckStatus,
     AIResourceAllocation,
     AIVectorDBDeploymentConfig,
@@ -21,7 +19,6 @@ from backend.app.services.ai.deployment import (
     AIWorkerNodeConfig,
     AIWorkerQueueType,
     DefaultAIInfrastructureValidator,
-    default_ai_infrastructure_validator,
 )
 from backend.app.services.rag.interfaces import AIRuntimeDeploymentProfile
 

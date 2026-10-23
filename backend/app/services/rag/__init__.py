@@ -10,6 +10,7 @@ from backend.app.services.rag.interfaces import (
     MAGIC_BYTE_SIGNATURES,
     MAX_FILE_SIZES,
     AIQueryLogRecord,
+    AIRuntimeDeploymentProfile,
     BaseAIAuthorizationFilter,
     BaseAIQueryLogRepository,
     BaseChatHistoryRepository,
@@ -22,6 +23,7 @@ from backend.app.services.rag.interfaces import (
     BaseKnowledgeGraphQueryService,
     BaseKnowledgeGraphStore,
     BaseRAGAccessController,
+    BaseRAGDeploymentCoordinator,
     BaseRAGDocumentIngestionSeam,
     BaseRAGEngine,
     BaseRAGService,
@@ -53,16 +55,14 @@ from backend.app.services.rag.interfaces import (
     VectorFilter,
     VectorRecord,
     WorkspaceMemoryScope,
-    AIRuntimeDeploymentProfile,
-    BaseRAGDeploymentCoordinator,
 )
 
 __all__ = [
     "FILE_TYPE_MIME_MAP",
     "MAGIC_BYTE_SIGNATURES",
     "MAX_FILE_SIZES",
-    "AIRuntimeDeploymentProfile",
     "AIQueryLogRecord",
+    "AIRuntimeDeploymentProfile",
     "BaseAIAuthorizationFilter",
     "BaseAIQueryLogRepository",
     "BaseChatHistoryRepository",

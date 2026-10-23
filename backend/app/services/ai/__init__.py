@@ -8,6 +8,23 @@ from backend.app.services.ai.authorization import (
     AIAuthorizationFilter,
     default_ai_authorization_filter,
 )
+from backend.app.services.ai.deployment import (
+    AIClusterTopologySpec,
+    AIHardwareProfile,
+    AIModelArtifactConfig,
+    AIModelExecutionMode,
+    AIProductionReadinessReport,
+    AIReadinessCheckItem,
+    AIReadinessCheckStatus,
+    AIResourceAllocation,
+    AIVectorDBDeploymentConfig,
+    AIVectorDBTopology,
+    AIWorkerNodeConfig,
+    AIWorkerQueueType,
+    BaseAIInfrastructureValidator,
+    DefaultAIInfrastructureValidator,
+    default_ai_infrastructure_validator,
+)
 from backend.app.services.ai.interfaces import (
     EMPLOYEE_PERMISSIONS,
     ORG_ADMIN_PERMISSIONS,
@@ -43,23 +60,6 @@ from backend.app.services.ai.interfaces import (
     UserRole,
     WorkspaceScopeContext,
     WorkspaceScopeLevel,
-)
-from backend.app.services.ai.deployment import (
-    AIClusterTopologySpec,
-    AIHardwareProfile,
-    AIModelArtifactConfig,
-    AIModelExecutionMode,
-    AIProductionReadinessReport,
-    AIReadinessCheckItem,
-    AIReadinessCheckStatus,
-    AIResourceAllocation,
-    AIVectorDBDeploymentConfig,
-    AIVectorDBTopology,
-    AIWorkerNodeConfig,
-    AIWorkerQueueType,
-    BaseAIInfrastructureValidator,
-    DefaultAIInfrastructureValidator,
-    default_ai_infrastructure_validator,
 )
 from backend.app.services.ai.observability import (
     DEFAULT_MODEL_PRICING,
