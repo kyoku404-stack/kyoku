@@ -65,7 +65,7 @@ class DefaultOCRProcessor(BaseOCRProcessor):
 
             reader = PdfReader(str(path))
             total_pages = len(reader.pages) or 1
-        except (ImportError, OSError, ValueError) as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.debug("PDF page count estimation fallback: %s", exc)
             total_pages = 1
 

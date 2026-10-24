@@ -117,7 +117,7 @@ class MultiFormatDocumentParser(BaseDocumentExtractor):
 
             if not has_text_found:
                 requires_ocr = True
-        except (ImportError, OSError, ValueError):
+        except Exception:  # noqa: BLE001
             requires_ocr = True
 
         full_text = "\n\n".join(raw_text_parts)
