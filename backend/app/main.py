@@ -9,10 +9,6 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Response, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-
 from backend.app.api.middleware import (
     LoggingMiddleware,
     RequestIDMiddleware,
@@ -25,6 +21,9 @@ from backend.app.core.config import settings
 from backend.app.core.logging import get_logger, setup_logging
 from backend.app.core.metrics import metrics_registry
 from backend.app.db.session import close_async_engine
+from fastapi import FastAPI, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 logger = get_logger("main")
 

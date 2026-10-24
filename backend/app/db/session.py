@@ -5,14 +5,13 @@ Manages SQLAlchemy 2.0 asynchronous engine and session creation.
 
 from collections.abc import AsyncGenerator
 
+from backend.app.core.config import settings
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-
-from backend.app.core.config import settings
 
 db_url = settings.DATABASE_URL or "postgresql+asyncpg://keep_user:keep_password@localhost:5432/keep_db"
 is_sqlite = db_url.startswith("sqlite")
@@ -68,6 +67,6 @@ async def check_database_readiness() -> bool:
         async with async_session_factory() as session:
             result = await session.execute(text("SELECT 1"))
             return result.scalar() == 1
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
