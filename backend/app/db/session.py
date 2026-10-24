@@ -21,7 +21,9 @@ engine_kwargs: dict[str, object] = {
     "future": True,
 }
 
-if not is_sqlite:
+if is_sqlite:
+    engine_kwargs["connect_args"] = {"timeout": 30.0}
+else:
     engine_kwargs.update({
         "pool_pre_ping": settings.DB_POOL_PRE_PING,
         "pool_size": settings.DB_POOL_SIZE,

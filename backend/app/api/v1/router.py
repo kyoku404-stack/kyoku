@@ -13,6 +13,7 @@ from backend.app.api.v1.dashboard import router as dashboard_router
 from backend.app.api.v1.departments import router as departments_router
 from backend.app.api.v1.documents import router as documents_router
 from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.ingestion import router as ingestion_router
 from backend.app.api.v1.invitations import router as invitations_router
 from backend.app.api.v1.members import router as members_router
 from backend.app.api.v1.metrics import router as metrics_router
@@ -36,6 +37,7 @@ api_v1_router.include_router(projects_router)
 api_v1_router.include_router(invitations_router)
 api_v1_router.include_router(members_router)
 api_v1_router.include_router(documents_router)
+api_v1_router.include_router(ingestion_router)
 api_v1_router.include_router(dashboard_router)
 api_v1_router.include_router(activity_router)
 api_v1_router.include_router(notifications_router)

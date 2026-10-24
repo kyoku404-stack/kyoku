@@ -52,7 +52,10 @@ def compile_vector_sqlite(type_, compiler, **kw):
 
 
 # Ensure tables are created for integration tests using the app's global engine
-sync_test_engine = create_engine("sqlite:///./test.db")
+sync_test_engine = create_engine("sqlite:///./test.db", connect_args={"timeout": 30.0})
+with sync_test_engine.connect() as conn:
+    conn.exec_driver_sql("PRAGMA journal_mode=WAL;")
+    conn.exec_driver_sql("PRAGMA busy_timeout=30000;")
 Base.metadata.drop_all(bind=sync_test_engine)
 Base.metadata.create_all(bind=sync_test_engine)
 
