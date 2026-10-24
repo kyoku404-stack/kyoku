@@ -118,13 +118,33 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Validate Docker Compose Configuration
+        env:
+          SECRET_KEY: ci_test_production_secret_key_32_characters
+          POSTGRES_PASSWORD: ci_test_postgres_password
+          GRAFANA_ADMIN_PASSWORD: ci_test_grafana_password
         run: |
           docker compose config
+          docker compose -f docker-compose.prod.yml config
 
       - name: Build Backend Container
         run: |
           docker build -t keep-backend:test -f docker/Dockerfile.backend .
 
-      - name: Build Frontend Container
+      - name: Build Frontend Container (Development & Production Targets)
         run: |
-          docker build -t keep-frontend:test -f docker/Dockerfile.frontend --target builder .
+          docker build -t keep-frontend:builder -f docker/Dockerfile.frontend --target builder .
+          docker build -t keep-frontend:prod -f docker/Dockerfile.frontend --target production .
+
+      - name: Verify Nginx Gateway Configuration Syntax
+        run: |
+          mkdir -p ${{ runner.temp }}/certs
+          openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+            -keyout ${{ runner.temp }}/certs/privkey.pem \
+            -out ${{ runner.temp }}/certs/fullchain.pem \
+            -subj "/CN=localhost"
+          docker run --rm \
+            --add-host backend:127.0.0.1 \
+            --add-host frontend:127.0.0.1 \
+            -v ${{ github.workspace }}/infrastructure/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro \
+            -v ${{ runner.temp }}/certs:/etc/nginx/certs:ro \
+            nginx:1.27-alpine nginx -t
