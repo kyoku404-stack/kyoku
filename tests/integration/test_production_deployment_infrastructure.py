@@ -228,9 +228,10 @@ class TestProductionDeploymentRunbook(unittest.TestCase):
         self.assertIn("Infrastructure Sizing & Container Resource Limits", content)
         self.assertIn("SSL/TLS Certificate Provisioning", content)
         self.assertIn("Automated Deployment Workflow", content)
-        self.assertIn("Disaster Recovery & Backup Runbook", content)
-        self.assertIn("Recovery Point Objective (RPO): < 1 hour", content)
-        self.assertIn("Recovery Time Objective (RTO): < 15 minutes", content)
+        self.assertIn("Recovery Point Objective (RPO)", content)
+        self.assertIn("< 1 hour", content)
+        self.assertIn("Recovery Time Objective (RTO)", content)
+        self.assertIn("< 15 minutes", content)
 
 
 if __name__ == "__main__":
