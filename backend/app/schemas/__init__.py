@@ -64,6 +64,14 @@ from backend.app.schemas.health import (
     DetailedHealthResponse,
     HealthCheckResponse,
 )
+from backend.app.schemas.ingestion import (
+    IngestionJobListItem,
+    IngestionJobStatusResponseData,
+    IngestionRetryResponseData,
+    IngestionStatisticsResponseData,
+    StartIngestionRequest,
+    StartIngestionResponseData,
+)
 from backend.app.schemas.invitation import (
     InvitationAccept,
     InvitationCreate,
@@ -139,6 +147,10 @@ __all__ = [
     "GlobalSearchResultItem",
     "HealthCheckResponse",
     "HybridSearchRequest",
+    "IngestionJobListItem",
+    "IngestionJobStatusResponseData",
+    "IngestionRetryResponseData",
+    "IngestionStatisticsResponseData",
     "InvitationAccept",
     "InvitationCreate",
     "InvitationResponse",
@@ -163,6 +175,8 @@ __all__ = [
     "SearchFilter",
     "SearchResponse",
     "SearchResultItem",
+    "StartIngestionRequest",
+    "StartIngestionResponseData",
     "TeamCreate",
     "TeamResponse",
     "TeamUpdate",

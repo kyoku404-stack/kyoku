@@ -14,6 +14,7 @@ from backend.app.services.department_service import DepartmentService
 from backend.app.services.document_service import DocumentService
 from backend.app.services.document_validator import DocumentValidator
 from backend.app.services.health_service import HealthService
+from backend.app.services.ingestion.service import IngestionService
 from backend.app.services.invitation_service import InvitationService
 from backend.app.services.member_service import MemberService
 from backend.app.services.notification_service import NotificationService
@@ -36,6 +37,7 @@ __all__ = [
     "DocumentService",
     "DocumentValidator",
     "HealthService",
+    "IngestionService",
     "InvitationService",
     "LocalStorageService",
     "MemberService",

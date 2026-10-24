@@ -3496,6 +3496,97 @@ Member 1 has completed all Phase 2.1 AI Lead & Architect deliverables conforming
    - Implement document parsers in `backend/app/services/ingestion/` implementing `BaseDocumentExtractor`.
    - Implement OCR worker seam implementing `BaseOCRProcessor`.
    - Mount FastAPI router for `/api/v1/ingestion` matching `docs/api/api-contract.md` Section 8.
+2. **Member 3 (Frontend Lead)**: Build Ingestion Dashboard UI, real-time stage progress indicators, job list table, retry modal, and chunk inspection views.
+3. **Member 4 (DevOps Lead)**: Containerize Celery workers, configure Redis broker queues, provision OCR model caches, and author integration/load test suites.
+
+---
+
+## Entry #039: Phase 2.1 — AI Ingestion Pipeline Backend: Parsers, Ingestion Service, Alembic Migration & REST APIs
+
+### Date
+2026-10-25
+
+### Author Agent
+Member 2 (Backend Lead)
+
+### Status
+COMPLETED ✓ — MANDATORY HUMAN GATING STOP
+
+### Implemented Features
+1. **Relational Model & Alembic Migration**:
+   - Implemented `IngestionJob` SQLAlchemy ORM model (`backend/app/models/ingestion_job.py`) adhering to `docs/database/database-schema.md` Section 3.13, with composite indexes on `(organization_id, status)`, `(document_id, document_version_id)`, and `created_at`. Added dynamic `@property def duration_seconds(self) -> float` for precise elapsed time calculation.
+   - Authored and verified clean Alembic migration `backend/migrations/versions/c3d4e5f6a7b8_phase_2_1_ingestion_jobs.py` (revision `c3d4e5f6a7b8`, revises `b2c3d4e5f6a7`).
+   - Updated `tests/integration/test_db_migrations.py` validating head revision `c3d4e5f6a7b8` and table presence.
+2. **Multi-Format Document Parser**:
+   - Implemented `MultiFormatDocumentParser` (`backend/app/services/ingestion/parser.py`) implementing `BaseDocumentExtractor`.
+   - Native support for:
+     - PDF: page-by-page extraction using `pypdf`, layout heading detection, and OCR requirement classification.
+     - DOCX: OpenXML XML parser (`word/document.xml`) extracting paragraphs, text runs, and heading hierarchies (`Heading 1-3`).
+     - PPTX: OpenXML slide parser (`ppt/slides/slide*.xml`) extracting text boxes slide-by-slide.
+     - XLSX: OpenXML spreadsheet parser (`xl/worksheets/sheet*.xml` & `xl/sharedStrings.xml`) extracting tabular data.
+     - CSV: comma-delimited row parsing and pipe-formatted table extraction.
+     - Markdown: `#`, `##`, `###` hierarchical heading detection and section segmentation.
+     - Plain text: single-section extraction.
+     - Images: PNG, JPG, JPEG, WEBP, TIFF image asset detection and automatic `requires_ocr = True` flagging.
+3. **OCR Processor**:
+   - Implemented `DefaultOCRProcessor` (`backend/app/services/ingestion/ocr.py`) implementing `BaseOCRProcessor` for scanned images and rasterized PDF extraction with mock/Tesseract fallbacks.
+4. **Ingestion Pipeline Service Orchestrator**:
+   - Implemented `IngestionService` (`backend/app/services/ingestion/service.py`) orchestrating the 10-stage asynchronous workflow (`PENDING` -> `EXTRACTING` -> `OCR_PROCESSING` -> `NORMALIZING` -> `CHUNKING` -> `EMBEDDING` -> `INDEXING` -> `COMPLETED`).
+   - Persists semantic chunks into `document_chunks` table with embedding vectors, token counts, checksums, and metadata.
+   - Updates `Document.status` to `PROCESSED` and synchronizes `chunk_count`.
+   - Supports non-blocking execution via FastAPI `BackgroundTasks` avoiding database lock contention.
+   - Implements `start_ingestion`, `get_status`, `list_jobs`, `retry_job`, and `get_statistics`.
+5. **Ingestion Pydantic Schemas & REST APIs**:
+   - Defined schemas in `backend/app/schemas/ingestion.py` (`StartIngestionRequest`, `StartIngestionResponseData`, `IngestionJobStatusResponseData`, `IngestionJobListItem`, `IngestionRetryResponseData`, `IngestionStatisticsResponseData`).
+   - Implemented FastAPI router in `backend/app/api/v1/ingestion.py`:
+     - `POST /api/v1/ingestion/start` (202 Accepted)
+     - `GET /api/v1/ingestion/status/{id}` (200 OK)
+     - `GET /api/v1/ingestion/jobs` (200 OK, paginated)
+     - `POST /api/v1/ingestion/retry/{id}` (200 OK)
+     - `GET /api/v1/ingestion/statistics` (200 OK)
+   - Mounted router in `backend/app/api/v1/router.py`.
+
+### Files Modified / Created
+- `backend/app/models/ingestion_job.py` (Created — IngestionJob ORM Model)
+- `backend/app/models/__init__.py` (Modified — Exported IngestionJob)
+- `backend/migrations/versions/c3d4e5f6a7b8_phase_2_1_ingestion_jobs.py` (Created — Migration Revision)
+- `backend/app/services/ingestion/__init__.py` (Created — Service Exports)
+- `backend/app/services/ingestion/parser.py` (Created — Multi-Format Document Parser)
+- `backend/app/services/ingestion/ocr.py` (Created — OCR Processor)
+- `backend/app/services/ingestion/service.py` (Created — Ingestion Service Orchestrator)
+- `backend/app/services/__init__.py` (Modified — Exported IngestionService)
+- `backend/app/schemas/ingestion.py` (Created — Ingestion Pydantic Schemas)
+- `backend/app/schemas/__init__.py` (Modified — Exported Ingestion Schemas)
+- `backend/app/api/v1/ingestion.py` (Created — FastAPI Router for Ingestion)
+- `backend/app/api/v1/router.py` (Modified — Mounted ingestion_router)
+- `backend/app/db/session.py` (Modified — Added SQLite connect_args timeout)
+- `backend/requirements.txt` (Modified — Added pypdf dependency)
+- `tests/unit/test_ingestion_parsers.py` (Created — 6 unit tests for parsers & OCR)
+- `tests/integration/test_ingestion_endpoints.py` (Created — 8 integration tests for REST APIs)
+- `tests/integration/test_db_migrations.py` (Modified — Updated head revision to c3d4e5f6a7b8)
+- `tests/conftest.py` (Modified — Added SQLite connect_args timeout & WAL mode)
+- `.gitignore` (Modified — Added *.db-shm and *.db-wal)
+- `PROJECT_STATE.md` (Modified — Recorded Phase 2.1 Member 2 completion)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #039)
+
+### Verification & Tests Executed
+- [x] Database migrations verification: `tests/integration/test_db_migrations.py` → **4/4 PASSED**
+- [x] Parser and OCR unit tests: `tests/unit/test_ingestion_parsers.py` → **6/6 PASSED**
+- [x] Ingestion REST endpoints integration tests: `tests/integration/test_ingestion_endpoints.py` → **8/8 PASSED**
+- [x] Phase 2.1 test suites combined: **28/28 PASSED (100%)**
+- [x] Full repository test suite: **501/501 backend tests PASSED (100%)**
+- [x] Linter check: `.\.venv\Scripts\ruff.exe check backend/ tests/` → **All checks passed! (0 errors)**
+- [x] Feature branch: `agent/backend/feature/phase-2.1-ai-ingestion-backend`
+
+### Target Receiving Agent
+- **Member 3 (Frontend Lead)**: Build the AI Processing Dashboard and Ingestion monitoring pages (`/dashboard/ingestion`, `/documents/processing`), real-time stage progress indicators, job table, and retry action controls.
+- **Member 4 (DevOps Lead)**: Configure worker container topology, queue infrastructure, and automated E2E testing for the ingestion pipeline.
+
+### Required Action for Receiving Agent
+1. **Member 3 (Frontend Lead)**:
+   - Create feature branch: `agent/frontend/feature/phase-2.1-ingestion-dashboard`.
+   - Implement TypeScript API client for Ingestion endpoints (`frontend/src/services/ingestionService.ts`) matching Section 8 of `docs/api/api-contract.md`.
+   - Build Ingestion Dashboard components in `frontend/src/features/ingestion/`.
 
 
 

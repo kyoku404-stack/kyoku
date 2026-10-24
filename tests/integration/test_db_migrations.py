@@ -34,10 +34,10 @@ class TestDatabaseMigrations:
         assert len(revisions) >= 1, "At least one migration revision must be present"
 
         head_revision = script.get_current_head()
-        assert head_revision == "b2c3d4e5f6a7"
+        assert head_revision == "c3d4e5f6a7b8"
 
     def test_schema_metadata_tables_completeness(self):
-        """Validates that Base.metadata contains all 14 core entity and association tables."""
+        """Validates that Base.metadata contains all core entity and association tables."""
         table_names = set(Base.metadata.tables.keys())
         expected_tables = {
             "organizations",
@@ -54,6 +54,7 @@ class TestDatabaseMigrations:
             "activity_logs",
             "kg_entities",
             "kg_relationships",
+            "ingestion_jobs",
         }
 
         missing_tables = expected_tables - table_names

@@ -27,7 +27,17 @@ Phase 2.1 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
   - Abstract Interfaces: `BaseDocumentExtractor`, `BaseOCRProcessor`, `BaseTextCleaner`, `BaseSemanticChunker`, `BaseEmbeddingGenerator`, `BaseVectorIndexer`, `BaseIngestionCoordinator`.
   - Concrete Reference Implementations: `DefaultTextCleaner` (NFKC, whitespace, control chars), `DefaultSemanticChunker` (heading-aware boundary splitting with 10% overlap), `DefaultEmbeddingGenerator` (deterministic L2-normalized vector synthesis), `InMemoryIngestionCoordinator` (state transitions and tenant statistics).
 - Authored comprehensive unit test suite `tests/unit/test_ai_ingestion_contracts.py` (10 tests, 100% pass rate).
-- Total monorepo tests: 680 tests passing (487 backend + 193 frontend, 100% pass rate, 0 lint errors). Ready for Member 2 (Backend Lead) to implement parser engines, workers, and ingestion APIs.
+
+Phase 2.1 Member 2 (Backend Lead) deliverables are COMPLETED:
+- Implemented `IngestionJob` SQLAlchemy ORM model (`backend/app/models/ingestion_job.py`) conforming to `docs/database/database-schema.md` Section 3.13, complete with stage tracking, progress percent, composite indexes, retry counters, error details, and dynamic `duration_seconds` property.
+- Authored and verified clean Alembic schema migration revision `c3d4e5f6a7b8_phase_2_1_ingestion_jobs.py` chained from `b2c3d4e5f6a7` to `c3d4e5f6a7b8 (head)`.
+- Implemented `MultiFormatDocumentParser` (`backend/app/services/ingestion/parser.py`) implementing `BaseDocumentExtractor` with layout and text extraction for PDF (pypdf), DOCX (OpenXML), PPTX (OpenXML slides), XLSX (OpenXML sheets), CSV, Markdown, plain text, and image OCR flagging.
+- Implemented `DefaultOCRProcessor` (`backend/app/services/ingestion/ocr.py`) implementing `BaseOCRProcessor` for scanned image classification and multi-page PDF processing with graceful test fallbacks.
+- Implemented `IngestionService` (`backend/app/services/ingestion/service.py`) orchestrating the full 10-stage asynchronous pipeline, persisting `DocumentChunk` records into database, updating `Document` processing status and counts, and managing background task execution without DB lock contention.
+- Implemented Pydantic v2 schemas in `backend/app/schemas/ingestion.py` matching `docs/api/api-contract.md` Section 8.
+- Implemented all 5 Ingestion REST endpoints in FastAPI router `backend/app/api/v1/ingestion.py` (`POST /api/v1/ingestion/start`, `GET /api/v1/ingestion/status/{id}`, `GET /api/v1/ingestion/jobs`, `POST /api/v1/ingestion/retry/{id}`, `GET /api/v1/ingestion/statistics`) mounted in `backend/app/api/v1/router.py`.
+- Authored dedicated unit test suite `tests/unit/test_ingestion_parsers.py` (6 tests) and integration test suite `tests/integration/test_ingestion_endpoints.py` (8 tests).
+- Total backend tests: 501/501 tests passing (100% pass rate). 0 ruff lint errors. Ready for Member 3 (Frontend Lead) to build the Ingestion Dashboard and status UI.
 - Authored master Deployment, Infrastructure & AI Readiness Architecture Specification (`docs/Architecture/deployment-ai-infrastructure.md`) establishing the production system topology, reverse proxy routing matrix, TLS/HTTPS termination, zero-trust network segmentation, future AI compute/worker scaling architecture (Phase 2 bridge), backup/disaster recovery SLOs, and CI/CD automated deployment blueprint.
 - Authored Architecture Decision Records ADR-029, ADR-030, and ADR-031 in `docs/decisions/decisions.md`.
 - Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 7 defining production reverse proxy routing rules, TLS 1.3/1.2 standards, ingress headers, and mandatory response security headers.
