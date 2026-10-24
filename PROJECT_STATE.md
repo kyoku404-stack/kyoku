@@ -1,18 +1,33 @@
 # KEEP — Project State
 
 ## Current Phase
-Phase 1 — Core Platform Foundation
+Phase 2 — AI Knowledge Architecture & RAG Pipeline
 
 ## Current Sub-Phase
-Phase 1.10 — Deployment, Infrastructure & Production Readiness
+Phase 2.1 — AI Knowledge Ingestion Pipeline
 
 ## Repository Health
 GREEN
 
 ## Overall Status
-Phase 1.1 through Phase 1.9 are fully COMPLETED across all four roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead).
+Phase 1 (Phase 1.1 through Phase 1.10) is 100% COMPLETE across all four member roles.
+Phase 2 (AI Knowledge Architecture & RAG Pipeline) is now active.
 
-Phase 1.10 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+Phase 2.1 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master AI Knowledge Ingestion Pipeline Architecture Specification (`docs/Architecture/ai-ingestion-pipeline.md`) establishing the 10-stage asynchronous state machine (`PENDING` -> `EXTRACTING` -> `OCR_PROCESSING` -> `NORMALIZING` -> `CHUNKING` -> `EMBEDDING` -> `INDEXING` -> `COMPLETED`), multi-format parser matrix (PDF, DOCX, TXT, MD, PPTX, XLSX, CSV, PNG/JPG), PaddleOCR layout parsing, text normalization heuristics, hierarchical heading-aware semantic chunking algorithms, chunk metadata enrichment, dual-tier embedding model standards, pgvector HNSW indexing, and queue topology.
+- Authored Architecture Decision Records ADR-032, ADR-033, and ADR-034 in `docs/decisions/decisions.md`:
+  - `ADR-032`: Hierarchical & Heading-Aware Semantic Chunking Strategy with Dynamic Sliding Overlap.
+  - `ADR-033`: Dual-Tier Embedding Model Architecture (OpenAI & Local BGE) with Normalized L2 Cosine Distance.
+  - `ADR-034`: Asynchronous Ingestion Task Pipeline, State Machine, and Exponential Backoff Retry Policy.
+- Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 8 defining all 5 Phase 2.1 endpoints: `POST /api/v1/ingestion/start`, `GET /api/v1/ingestion/status/{id}`, `GET /api/v1/ingestion/jobs`, `POST /api/v1/ingestion/retry/{id}`, and `GET /api/v1/ingestion/statistics`.
+- Updated Database Schema Specification (`docs/database/database-schema.md`) with Section 3.13 defining the `ingestion_jobs` schema, state constraints, composite indexes, and chunk metadata mappings.
+- Implemented typed AI Ingestion domain contracts in `backend/app/services/ai/ingestion.py` and re-exported in `backend/app/services/ai/__init__.py` and `backend/app/services/rag/interfaces.py`:
+  - Enums: `IngestionJobStatus`, `DocumentParserType`, `ChunkingStrategy`, `EmbeddingModelProvider`, `OCRProcessingEngine`.
+  - Dataclasses: `ExtractedSection`, `ExtractedDocumentContent`, `SemanticChunkSpec`, `EmbeddingVectorSpec`, `IngestionJobConfig`, `IngestionPipelineProgress`, `IngestionStatistics`.
+  - Abstract Interfaces: `BaseDocumentExtractor`, `BaseOCRProcessor`, `BaseTextCleaner`, `BaseSemanticChunker`, `BaseEmbeddingGenerator`, `BaseVectorIndexer`, `BaseIngestionCoordinator`.
+  - Concrete Reference Implementations: `DefaultTextCleaner` (NFKC, whitespace, control chars), `DefaultSemanticChunker` (heading-aware boundary splitting with 10% overlap), `DefaultEmbeddingGenerator` (deterministic L2-normalized vector synthesis), `InMemoryIngestionCoordinator` (state transitions and tenant statistics).
+- Authored comprehensive unit test suite `tests/unit/test_ai_ingestion_contracts.py` (10 tests, 100% pass rate).
+- Total monorepo tests: 680 tests passing (487 backend + 193 frontend, 100% pass rate, 0 lint errors). Ready for Member 2 (Backend Lead) to implement parser engines, workers, and ingestion APIs.
 - Authored master Deployment, Infrastructure & AI Readiness Architecture Specification (`docs/Architecture/deployment-ai-infrastructure.md`) establishing the production system topology, reverse proxy routing matrix, TLS/HTTPS termination, zero-trust network segmentation, future AI compute/worker scaling architecture (Phase 2 bridge), backup/disaster recovery SLOs, and CI/CD automated deployment blueprint.
 - Authored Architecture Decision Records ADR-029, ADR-030, and ADR-031 in `docs/decisions/decisions.md`.
 - Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 7 defining production reverse proxy routing rules, TLS 1.3/1.2 standards, ingress headers, and mandatory response security headers.

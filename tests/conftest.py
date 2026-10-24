@@ -24,6 +24,7 @@ os.environ["REDIS_PORT"] = "6379"
 
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 os.environ["SYNC_DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["ENABLE_OPENAPI_DOCS"] = "true"
 
 # Register SQLite dialect fallbacks for PostgreSQL types (JSONB, Vector)
 from pgvector.sqlalchemy import Vector  # noqa: E402

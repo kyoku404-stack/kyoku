@@ -1547,4 +1547,164 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; 
 - **Health Gate Response SLA**: Composite probe `GET /health` must return `HTTP 200 OK` with `"system_status": "healthy"` in `< 500ms`.
 - **Automatic Rollback Trigger**: In CI/CD rolling deployments, if `GET /health` fails 3 consecutive attempts (or exceeds 60s timeout post-startup), traffic remains bound to the previous healthy container version and an automated rollback is executed.
 
+---
+
+## 8. Ingestion Pipeline & AI Processing Endpoints (Phase 2.1)
+
+### 8.1 Ingestion Endpoints Summary Table
+
+| Method | Path | Required Permission | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/ingestion/start` | `document.ingest` | Initiates asynchronous ingestion pipeline for an uploaded document |
+| `GET` | `/api/v1/ingestion/status/{id}` | `document.read` | Retrieves real-time pipeline status, active stage, and chunk progress |
+| `GET` | `/api/v1/ingestion/jobs` | `document.read` | Returns a paginated list of ingestion jobs for the tenant |
+| `POST` | `/api/v1/ingestion/retry/{id}` | `document.ingest` | Retries a previously failed or dead-lettered ingestion job |
+| `GET` | `/api/v1/ingestion/statistics` | `analytics.read` | Returns tenant-wide ingestion throughput, chunk counts, and error rates |
+
+---
+
+### 8.2 Ingestion Endpoint Specifications
+
+#### 8.2.1 Start Document Ingestion
+- **Method**: `POST`
+- **Path**: `/api/v1/ingestion/start`
+- **Auth**: Bearer JWT (`document.ingest` permission)
+- **Request Body**:
+```json
+{
+  "document_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "document_version_id": "4fa85f64-5717-4562-b3fc-2c963f66afa7",
+  "force_ocr": false,
+  "chunking_strategy": "SEMANTIC_HEADING_AWARE",
+  "target_chunk_size": 512,
+  "chunk_overlap": 50,
+  "embedding_provider": "OPENAI",
+  "embedding_model": "text-embedding-3-small"
+}
+```
+- **Response (202 Accepted)**:
+```json
+{
+  "success": true,
+  "message": "Document ingestion job enqueued successfully.",
+  "data": {
+    "job_id": "7fa85f64-5717-4562-b3fc-2c963f66afb1",
+    "document_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "status": "PENDING",
+    "queue_name": "ai_ingestion_queue",
+    "enqueued_at": "2026-10-25T01:30:00Z"
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404), `DOCUMENT_ALREADY_PROCESSING` (409), `UNSUPPORTED_MEDIA_TYPE` (415)
+
+#### 8.2.2 Get Ingestion Job Status
+- **Method**: `GET`
+- **Path**: `/api/v1/ingestion/status/{id}`
+- **Auth**: Bearer JWT (`document.read` permission)
+- **Path Parameters**:
+  - `id`: UUID (Ingestion job ID or Document ID)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "job_id": "7fa85f64-5717-4562-b3fc-2c963f66afb1",
+    "document_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "status": "CHUNKING",
+    "progress_percent": 65.0,
+    "current_stage": "semantic_chunking",
+    "total_pages": 14,
+    "processed_pages": 14,
+    "chunks_generated": 48,
+    "embeddings_generated": 0,
+    "ocr_applied": false,
+    "retry_count": 0,
+    "error_message": null,
+    "started_at": "2026-10-25T01:30:02Z",
+    "completed_at": null,
+    "duration_seconds": 3.8
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404), `AUTH_FORBIDDEN` (403)
+
+#### 8.2.3 List Ingestion Jobs
+- **Method**: `GET`
+- **Path**: `/api/v1/ingestion/jobs`
+- **Auth**: Bearer JWT (`document.read` permission)
+- **Query Parameters**:
+  - `page`: integer (default 1)
+  - `page_size`: integer (default 20, max 100)
+  - `status`: string (optional filter: `PENDING`, `EXTRACTING`, `NORMALIZING`, `CHUNKING`, `EMBEDDING`, `INDEXING`, `COMPLETED`, `FAILED`, `RETRYING`)
+  - `document_id`: UUID (optional filter)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "job_id": "7fa85f64-5717-4562-b3fc-2c963f66afb1",
+        "document_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "document_title": "Quarterly_Security_Report.pdf",
+        "status": "COMPLETED",
+        "chunks_generated": 48,
+        "duration_seconds": 12.4,
+        "created_at": "2026-10-25T01:30:00Z",
+        "completed_at": "2026-10-25T01:30:12Z"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+#### 8.2.4 Retry Failed Ingestion Job
+- **Method**: `POST`
+- **Path**: `/api/v1/ingestion/retry/{id}`
+- **Auth**: Bearer JWT (`document.ingest` permission)
+- **Path Parameters**:
+  - `id`: UUID (Ingestion job ID)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Ingestion job re-enqueued for retry.",
+  "data": {
+    "job_id": "7fa85f64-5717-4562-b3fc-2c963f66afb1",
+    "status": "RETRYING",
+    "retry_count": 1,
+    "enqueued_at": "2026-10-25T01:35:00Z"
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404), `INVALID_JOB_STATE` (400 - only FAILED jobs can be retried)
+
+#### 8.2.5 Get Ingestion Pipeline Statistics
+- **Method**: `GET`
+- **Path**: `/api/v1/ingestion/statistics`
+- **Auth**: Bearer JWT (`analytics.read` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "total_jobs": 150,
+    "completed_jobs": 142,
+    "failed_jobs": 3,
+    "pending_jobs": 5,
+    "total_chunks_indexed": 4820,
+    "average_duration_seconds": 8.6,
+    "average_throughput_pages_per_minute": 95.4,
+    "ocr_utilization_percent": 12.0,
+    "retry_success_rate_percent": 88.5
+  }
+}
+```
+
 

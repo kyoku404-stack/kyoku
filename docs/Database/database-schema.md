@@ -550,3 +550,54 @@ erDiagram
 - **Primary Code Owner & Implementation**: Member 2 (Backend & Database Lead)
 - **Frontend Alignment**: Member 3 (Frontend Lead)
 - **Containerization & CI Validation**: Member 4 (DevOps & Integration Lead)
+
+---
+
+### 3.13 Ingestion Jobs & Background Pipeline Schema (`ingestion_jobs`) — Phase 2.1 Specification
+
+To track the ten-stage asynchronous document ingestion pipeline, Phase 2.1 establishes the `ingestion_jobs` relational model, tracking progress, chunking statistics, OCR invocation, and failure diagnostics:
+
+```sql
+CREATE TABLE ingestion_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    document_version_id UUID NOT NULL REFERENCES document_versions(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    current_stage VARCHAR(50) NOT NULL DEFAULT 'pending',
+    progress_percent FLOAT NOT NULL DEFAULT 0.0,
+    total_pages INTEGER NOT NULL DEFAULT 0,
+    processed_pages INTEGER NOT NULL DEFAULT 0,
+    chunks_generated INTEGER NOT NULL DEFAULT 0,
+    embeddings_generated INTEGER NOT NULL DEFAULT 0,
+    ocr_applied BOOLEAN NOT NULL DEFAULT FALSE,
+    chunking_strategy VARCHAR(50) NOT NULL DEFAULT 'SEMANTIC_HEADING_AWARE',
+    embedding_provider VARCHAR(50) NOT NULL DEFAULT 'OPENAI',
+    embedding_model VARCHAR(100) NOT NULL DEFAULT 'text-embedding-3-small',
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    max_retries INTEGER NOT NULL DEFAULT 3,
+    error_message TEXT,
+    error_details_json JSONB,
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_ingestion_job_status CHECK (
+        status IN ('PENDING', 'EXTRACTING', 'OCR_PROCESSING', 'NORMALIZING', 
+                   'CHUNKING', 'EMBEDDING', 'INDEXING', 'COMPLETED', 'FAILED', 'RETRYING')
+    )
+);
+
+-- Composite & Performance Indexes
+CREATE INDEX idx_ingestion_jobs_tenant_status ON ingestion_jobs(organization_id, status);
+CREATE INDEX idx_ingestion_jobs_document ON ingestion_jobs(document_id, document_version_id);
+CREATE INDEX idx_ingestion_jobs_created_at ON ingestion_jobs(created_at DESC);
+```
+
+#### Enhanced Metadata Mapping in `document_chunks`
+During Phase 2.1 ingestion, generated chunks are persisted into `document_chunks` with enhanced metadata in `metadata_json`:
+- `section_title`: Heading title extracted from the document hierarchy.
+- `page_number`: 1-indexed document page where chunk originates.
+- `token_count`: Accurate BPE token length.
+- `character_count`: String character count.
+- `checksum_sha256`: Cryptographic hash of the chunk text for deduplication.
