@@ -3295,6 +3295,73 @@ Member 2 has completed the Phase 1.10 backend deployment and production readines
    - Configure Nginx reverse proxy matching Section 7 of `docs/api/api-contract.md` and pass standard proxy headers (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Request-ID`).
    - Validate graceful shutdown of backend containers using `SIGTERM` with 15s timeout.
 
+---
+
+### Handoff Entry #036: Phase 1.10 — Production Frontend Build Optimizations, Ingress API Routing & Deployment Readiness
+
+#### Date
+2026-10-24
+
+#### Author Agent
+Member 3 — Frontend Lead
+
+#### Status
+COMPLETED / READY FOR DOWNSTREAM INTEGRATION (MEMBER 4)
+
+#### Executive Summary
+Member 3 has completed the Phase 1.10 frontend deployment and production readiness deliverables conforming to `devdocs/p1/p1.10.txt` (Chapters 7, 8, 11, 15, 18), `docs/Architecture/deployment-ai-infrastructure.md` Section 8.3, and ADR-029. Key implementations include:
+1. **Production Vite Build & Asset Optimizations (`frontend/vite.config.ts`)**: Configured Rollup vendor code-splitting via `manualChunks` into granular cacheable bundles (`vendor-react`, `vendor-ui`, `vendor-core`, `vendor-misc`), cache-busting content-hashed asset naming schemes (`assets/[name]-[hash].js`, `assets/[name]-[hash].[ext]`), CSS code splitting, suppressed production sourcemaps, and configured chunk size thresholds.
+2. **Dynamic Ingress API Base URL Resolution (`frontend/src/constants/config.ts`, `frontend/.env.production`)**: Added production reverse proxy routing support with dynamic environment resolution (`IS_PRODUCTION`, `IS_STAGING`, `IS_DEVELOPMENT`), automatic relative `/api/v1` path fallback behind Nginx reverse proxy, and deployment SLO targets (RPO < 1h, RTO < 15m, initial page load < 2.0s).
+3. **Deployment Topology & Ingress Card (`frontend/src/features/observability/DeploymentReadinessCard.tsx`)**: Created a dedicated diagnostic card displaying reverse proxy gateway routing, bundle code-splitting, defense-in-depth security headers, and responsive viewport contracts. Integrated into `ObservabilityPage.tsx` with updated phase status badge (`Phase 1.10 Ready`).
+4. **Comprehensive Unit & Component Test Suite (`frontend/src/tests/productionFrontendReadiness.test.tsx`)**: 12 new tests covering configuration resolution, environment flags, deployment metadata, component rendering, API client defaults, and Vite asset optimization standards.
+
+#### Completed Deliverables
+1. **Vite Build Configuration (`frontend/vite.config.ts`)**:
+   - `manualChunks` partition:
+     - `vendor-react`: `react`, `react-dom`, `react-router-dom`
+     - `vendor-ui`: `lucide-react`, `clsx`, `tailwind-merge`
+     - `vendor-core`: `axios`, `zustand`
+     - `vendor-misc`: other node_modules dependencies
+   - Output asset naming: `assets/[name]-[hash].js`, `assets/[name]-[hash].[ext]`
+   - `chunkSizeWarningLimit: 800`
+   - `sourcemap: false`
+2. **Environment & Deployment Config (`frontend/src/constants/config.ts`, `frontend/.env.production`)**:
+   - Dynamic relative `/api/v1` fallback when running in production or behind reverse proxy.
+   - `DEPLOYMENT` metadata with reverse proxy and SLO targets.
+   - Environment boolean properties (`IS_PRODUCTION`, `IS_STAGING`, `IS_DEVELOPMENT`).
+3. **Deployment Readiness Card & Page Integration (`frontend/src/features/observability/`)**:
+   - `DeploymentReadinessCard.tsx`: Displays Nginx ingress, bundle chunking, security headers, and responsive breakpoints.
+   - Mounted in `ObservabilityPage.tsx` overview tab.
+4. **Unit & Component Tests (`frontend/src/tests/productionFrontendReadiness.test.tsx`)**:
+   - 12 Vitest tests passing 100%.
+
+#### Files Modified / Created
+- `frontend/vite.config.ts` (Modified — Rollup chunk splitting, content hashing, production build options)
+- `frontend/src/constants/config.ts` (Modified — Production environment resolution, relative ingress fallback, SLO metadata)
+- `frontend/.env.production` (Created — Production reverse proxy environment template)
+- `frontend/src/features/observability/DeploymentReadinessCard.tsx` (Created — Deployment topology & ingress status component)
+- `frontend/src/features/observability/index.ts` (Modified — Exported DeploymentReadinessCard)
+- `frontend/src/pages/ObservabilityPage.tsx` (Modified — Rendered DeploymentReadinessCard and updated phase badge)
+- `frontend/src/tests/productionFrontendReadiness.test.tsx` (Created — 12 unit and component tests)
+- `PROJECT_STATE.md` (Modified — Updated Phase 1.10 Member 3 deliverables and progress matrix)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Handoff Entry #036)
+
+#### Verification & Tests Executed
+- [x] Unit tests passed: `frontend/src/tests/productionFrontendReadiness.test.tsx` (12/12 tests OK)
+- [x] Total frontend tests: 192/192 OK across 23 test files (100% pass rate)
+- [x] Total monorepo tests: 629/629 OK (437 backend + 192 frontend)
+- [x] Clean TypeScript types and lint checks
+
+#### Target Receiving Agents
+- **Member 4 (DevOps Lead)**: Configure production Docker Compose, Nginx reverse proxy with HTTPS, GitHub Actions CI/CD deployment automation, and production smoke tests.
+
+#### Required Action for Receiving Agents
+1. **Member 4 (DevOps Lead)**:
+   - Configure Nginx reverse proxy matching Section 7 of `docs/api/api-contract.md` to route `/*` to frontend static files / container and `/api/v1/*` to backend.
+   - Ensure Nginx serves static assets under `/assets/*` with `Cache-Control: public, max-age=31536000, immutable`.
+   - Execute production container build and verification test suite.
+
+
 
 
 

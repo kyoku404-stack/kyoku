@@ -6,6 +6,7 @@ import {
   AlertPanel,
   LogViewer,
   DiagnosticsModal,
+  DeploymentReadinessCard,
 } from '@/features/observability';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -97,7 +98,7 @@ export const ObservabilityPage: React.FC = () => {
                   System Observability & Monitoring
                 </h1>
                 <Badge variant="success" className="font-mono text-[10px] py-0.5 px-2">
-                  Phase 1.9
+                  Phase 1.10 Ready
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
@@ -358,6 +359,9 @@ export const ObservabilityPage: React.FC = () => {
               loading={loading}
             />
           </div>
+
+          {/* Production Deployment & Ingress Topology Card */}
+          <DeploymentReadinessCard />
 
           {/* Active Alerts Section */}
           <AlertPanel
