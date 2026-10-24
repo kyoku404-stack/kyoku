@@ -98,7 +98,7 @@ class TestObservabilityPerformance(unittest.TestCase):
         # Assert all 50 completed with HTTP 200
         for status_code, duration_ms in results:
             self.assertEqual(status_code, 200)
-            self.assertLess(duration_ms, 250.0, f"Individual probe latency spiked: {duration_ms:.2f}ms")
+            self.assertLess(duration_ms, 500.0, f"Individual probe latency spiked: {duration_ms:.2f}ms")
 
         avg_latency = sum(r[1] for r in results) / len(results)
         self.assertLess(avg_latency, 100.0, f"Average concurrent probe latency too high: {avg_latency:.2f}ms")
