@@ -947,4 +947,113 @@ Member 4 implements CI/CD workflow steps and backup/recovery shell scripts. Memb
 #### Status
 ACCEPTED
 
+---
+
+### ADR-032 — Hierarchical & Heading-Aware Semantic Chunking Strategy with Dynamic Sliding Overlap
+
+#### Date
+2026-10-25
+
+#### Context
+`devdocs/p2/p2.1.txt` (Chapter 9 & 10) mandates dividing uploaded documents into semantically meaningful chunks rather than arbitrary character boundaries or fixed page splits. Standard fixed-size chunking frequently splits sentences in half, severs paragraphs from their section titles, and breaks the logical context required by downstream LLMs during Retrieval-Augmented Generation (RAG).
+
+#### Decision
+1. Implement a **Heading-Aware Hierarchical Chunking Engine**:
+   - Parse and respect markdown headings (`#`, `##`, `###`), document section headers, and slide titles.
+   - Group text under the nearest parent heading, injecting the section title into chunk metadata.
+2. Parameter Standards:
+   - Primary target chunk size: 512 tokens ($\approx 2,000$ characters).
+   - Minimum chunk threshold: 100 tokens (suppresses fragmented noise).
+   - Maximum chunk threshold: 1,024 tokens (hard safety ceiling).
+3. Sliding Window Overlap:
+   - Enforce a 10% to 15% token overlap (50 to 75 tokens) across consecutive chunks within the same section.
+   - Clear overlap across major chapter breaks to prevent contextual contamination.
+4. Boundary Hierarchy:
+   - Priority 1: Markdown Headings
+   - Priority 2: Paragraph Breaks (`\n\n`)
+   - Priority 3: Sentence Delimiters (`. `, `! `, `? `)
+   - Priority 4: Word Boundaries
+
+#### Alternatives Considered
+- Fixed 1000-character chunking: Rejected — splits coherent ideas across boundaries and produces poor retrieval precision.
+- Whole-document embedding: Rejected — exceeds LLM context windows and dilutes specific answer retrieval.
+
+#### Reason
+Semantic chunking preserves complete organizational concepts, significantly boosting BM25 keyword matching and dense vector similarity scores during hybrid search.
+
+#### Impact
+Member 1 authors typed interfaces (`BaseSemanticChunker`, `SemanticChunkSpec`). Member 2 implements the production chunking service.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-033 — Dual-Tier Embedding Model Architecture (OpenAI & Local BGE) with Normalized L2 Cosine Distance
+
+#### Date
+2026-10-25
+
+#### Context
+`devdocs/p2/p2.1.txt` (Chapter 11 & 12) requires transforming semantic chunks into numerical vector embeddings stored in a vector database (`pgvector`). Enterprise deployments require flexibility between high-performance cloud embeddings and zero-cost, privacy-preserving, air-gapped local execution.
+
+#### Decision
+1. Establish a **Dual-Tier Embedding Model Strategy**:
+   - **Tier 1 (Cloud Production Default)**: OpenAI `text-embedding-3-small` (1,536 dimensions, 8,191 max context, ~$0.02 per 1M tokens).
+   - **Tier 2 (Local / Air-Gapped / Zero-Cost)**: BAAI `bge-small-en-v1.5` (384 dimensions, 512 max context, local CPU/GPU execution via HuggingFace SentenceTransformers).
+2. Normalization:
+   - All embedding vectors must be $L_2$-normalized ($||\mathbf{v}||_2 = 1.0$) upon generation.
+3. Indexing & Metric:
+   - Use `vector_cosine_ops` (Cosine Distance) with HNSW indexes in `pgvector` (`m=16`, `ef_construction=64`).
+4. Tenant Isolation:
+   - All vector queries must include multi-tenant filter constraints (`organization_id = :org_id`).
+
+#### Alternatives Considered
+- Cloud-only (OpenAI exclusively): Rejected — prevents on-premises enterprise deployments with strict data residency mandates.
+- High-dimensional large models (3,072 dims): Rejected as default due to increased RAM footprint in PostgreSQL and slower vector query latency.
+
+#### Reason
+The dual-tier approach guarantees enterprise privacy compliance while maintaining state-of-the-art semantic retrieval quality.
+
+#### Impact
+Member 1 provides typed contracts (`BaseEmbeddingGenerator`, `EmbeddingVectorSpec`). Member 4 configures local model artifact caching. Member 2 integrates the generation pipeline.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-034 — Asynchronous Ingestion Task Pipeline, State Machine, and Exponential Backoff Retry Policy
+
+#### Date
+2026-10-25
+
+#### Context
+`devdocs/p2/p2.1.txt` (Chapters 13 & 14) mandates asynchronous processing of uploaded documents to avoid blocking the user-facing web interface. Heavy PDF parsing, OCR image processing, and embedding generation can take anywhere from 2 seconds to several minutes depending on document volume. Transient failures (OCR timeout, LLM rate limit) must be handled gracefully without human intervention.
+
+#### Decision
+1. Adopt a **10-State Asynchronous Ingestion State Machine**:
+   - `PENDING` -> `EXTRACTING` -> (`OCR_PROCESSING` optional) -> `NORMALIZING` -> `CHUNKING` -> `EMBEDDING` -> `INDEXING` -> `COMPLETED`.
+   - On error: Transition to `FAILED`.
+   - Automatic retry: Transition to `RETRYING` if `retry_count < 3`.
+2. Asynchronous Queue Architecture:
+   - Dedicated Redis queues: `ai_ingestion_queue` (extraction/OCR) and `ai_embedding_queue` (vector calculation).
+3. Exponential Backoff Retry Formula:
+   $$\text{Delay} = 2^{\text{attempt}} \times 5\text{ seconds} \quad (\text{Attempt 1: } 10\text{s}, \text{Attempt 2: } 20\text{s}, \text{Attempt 3: } 40\text{s})$$
+4. Dead-Letter Quarantine:
+   - Jobs exceeding 3 failed attempts remain in terminal `FAILED` state with complete stack traces, enabling manual admin review and retry via `POST /api/v1/ingestion/retry/{id}`.
+
+#### Alternatives Considered
+- In-process BackgroundTasks: Rejected — crashes if the web server restarts and lacks queue visibility/retries.
+- Immediate retries without backoff: Rejected — exacerbates rate limits on external LLM APIs.
+
+#### Reason
+Asynchronous worker isolation with exponential backoff ensures robust, fault-tolerant ingestion that scales horizontally under enterprise load.
+
+#### Impact
+Member 1 establishes domain interfaces (`BaseIngestionCoordinator`, `IngestionPipelineProgress`). Member 2 implements Celery worker tasks. Member 3 builds the Ingestion Dashboard.
+
+#### Status
+ACCEPTED
+
 

@@ -3418,6 +3418,85 @@ Member 4 has completed all Phase 1.10 DevOps Lead deliverables conforming to `de
 2. Merge `agent/devops/feature/phase-1.10-production-infrastructure-deployment` into `main`.
 3. Proceed to Phase 2.1 — AI Ingestion Pipeline & Chunks Schema.
 
+---
+
+### Handoff Entry #038: Phase 2.1 — AI Knowledge Ingestion Pipeline Architecture & Contracts
+
+#### Date
+2026-10-25
+
+#### Author Agent
+Member 1 — AI Lead & Architect
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION (MEMBER 2)
+
+#### Executive Summary
+Member 1 has completed all Phase 2.1 AI Lead & Architect deliverables conforming to `devdocs/p2/p2.1.txt` (Chapter 18 — Team Member Responsibilities) and ADR-032/ADR-033/ADR-034. Key deliverables include:
+1. **Master Architecture Specification (`docs/Architecture/ai-ingestion-pipeline.md`)**:
+   - Comprehensive blueprint of the ten-stage asynchronous ingestion pipeline (`PENDING` -> `EXTRACTING` -> `OCR_PROCESSING` -> `NORMALIZING` -> `CHUNKING` -> `EMBEDDING` -> `INDEXING` -> `COMPLETED`).
+   - Multi-format ingestion matrix covering PDF, DOCX, TXT, Markdown, PPTX, XLSX, CSV, and PNG/JPG OCR.
+   - PaddleOCR layout analysis, table recovery (Markdown tabular structure), and text sanitization rules (NFKC, control char removal, running header/footer stripping).
+   - Hierarchical heading-aware semantic chunking algorithms with dynamic sliding overlap (512 token target, 10-15% overlap).
+   - Dual-tier vector embedding model architecture (OpenAI `text-embedding-3-small` and Local `bge-small-en-v1.5`) with $L_2$-normalized vector constraints.
+   - Vector database indexing strategy in `pgvector` using HNSW cosine distance indexes.
+   - Background worker queue topology (`ai_ingestion_queue`, `ai_embedding_queue`) and exponential backoff retry state machine.
+   - Ingestion monitoring dashboard metrics and REST API contract specifications.
+2. **Architecture Decision Records (ADRs in `docs/decisions/decisions.md`)**:
+   - `ADR-032`: Hierarchical & Heading-Aware Semantic Chunking Strategy with Dynamic Sliding Overlap.
+   - `ADR-033`: Dual-Tier Embedding Model Architecture (OpenAI & Local BGE) with Normalized L2 Cosine Distance.
+   - `ADR-034`: Asynchronous Ingestion Task Pipeline, State Machine, and Exponential Backoff Retry Policy.
+3. **REST API Contract Updates (`docs/api/api-contract.md`)**:
+   - Section 8: Ingestion Pipeline & AI Processing Endpoints defining:
+     - `POST /api/v1/ingestion/start`
+     - `GET /api/v1/ingestion/status/{id}`
+     - `GET /api/v1/ingestion/jobs`
+     - `POST /api/v1/ingestion/retry/{id}`
+     - `GET /api/v1/ingestion/statistics`
+4. **Database Schema Specifications (`docs/database/database-schema.md`)**:
+   - Section 3.13: `ingestion_jobs` table specification with state constraints, foreign keys, retry tracking, and performance indexes.
+   - Enhanced metadata mappings in `document_chunks` for section titles, token counts, and cryptographic checksums.
+5. **Typed Domain Contracts & Reference Implementations (`backend/app/services/ai/ingestion.py`)**:
+   - Enums: `IngestionJobStatus`, `DocumentParserType`, `ChunkingStrategy`, `EmbeddingModelProvider`, `OCRProcessingEngine`.
+   - Dataclasses: `ExtractedSection`, `ExtractedDocumentContent`, `SemanticChunkSpec`, `EmbeddingVectorSpec`, `IngestionJobConfig`, `IngestionPipelineProgress`, `IngestionStatistics`.
+   - Abstract Interfaces: `BaseDocumentExtractor`, `BaseOCRProcessor`, `BaseTextCleaner`, `BaseSemanticChunker`, `BaseEmbeddingGenerator`, `BaseVectorIndexer`, `BaseIngestionCoordinator`.
+   - Concrete Reference Implementations: `DefaultTextCleaner`, `DefaultSemanticChunker`, `DefaultEmbeddingGenerator`, `InMemoryIngestionCoordinator`.
+   - Re-exported in `backend/app/services/ai/__init__.py` and `backend/app/services/rag/interfaces.py`.
+6. **Dedicated Unit Test Suite (`tests/unit/test_ai_ingestion_contracts.py`)**:
+   - 10 comprehensive unit tests validating enum properties, dataclass auto-calculations, text normalization, heading-aware chunking, L2 vector normalization, state transitions, and retry logic. 100% pass rate.
+
+#### Files Modified / Created
+- `docs/Architecture/ai-ingestion-pipeline.md` (Created — Master Ingestion Architecture Specification)
+- `docs/decisions/decisions.md` (Modified — Appended ADR-032, ADR-033, ADR-034)
+- `docs/api/api-contract.md` (Modified — Appended Section 8: Ingestion Endpoints)
+- `docs/database/database-schema.md` (Modified — Appended Section 3.13: Ingestion Jobs Schema)
+- `backend/app/services/ai/ingestion.py` (Created — Typed Domain Contracts & Reference Coordinator)
+- `backend/app/services/ai/__init__.py` (Modified — Re-exported Phase 2.1 Ingestion Contracts)
+- `backend/app/services/rag/interfaces.py` (Modified — Re-exported Ingestion Contracts for RAG Integration)
+- `tests/unit/test_ai_ingestion_contracts.py` (Created — 10 dedicated unit tests)
+- `PROJECT_STATE.md` (Modified — Advanced project state to Phase 2.1, recorded Member 1 completion)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Handoff Entry #038)
+
+#### Verification & Tests Executed
+- [x] Ruff Lint check: 0 errors across entire repository (`.\.venv\Scripts\ruff.exe check backend/ tests/`)
+- [x] Unit test suite authored & passed: `tests/unit/test_ai_ingestion_contracts.py` (10/10 tests, 100% OK)
+- [x] Observability performance test verified: `tests/integration/test_observability_performance.py` (5/5 tests, 100% OK)
+- [x] Total monorepo tests: 680 tests passing (487 backend + 193 frontend, 100% pass rate)
+- [x] Clean Git branch: `agent/ai-lead/feature/phase-2.1-ai-ingestion-architecture`
+
+#### Target Receiving Agents
+- **Member 2 (Backend Lead)**: Implement `backend/app/services/ingestion/` (document parsers, PaddleOCR engine, Celery task workers, and `/api/v1/ingestion` routers conforming to Section 8 of `api-contract.md` and `ingestion_jobs` migration).
+- **Member 3 (Frontend Lead)**: Build Ingestion Dashboard UI, real-time stage progress indicators, job list table, retry modal, and chunk inspection views.
+- **Member 4 (DevOps Lead)**: Containerize Celery workers, configure Redis broker queues, provision OCR model caches, and author integration/load test suites.
+
+#### Required Action for Receiving Agents
+1. **Member 2 (Backend Lead)**:
+   - Create feature branch: `agent/backend/feature/phase-2.1-ai-ingestion-backend`.
+   - Implement Alembic migration for `ingestion_jobs` table matching `docs/database/database-schema.md` Section 3.13.
+   - Implement document parsers in `backend/app/services/ingestion/` implementing `BaseDocumentExtractor`.
+   - Implement OCR worker seam implementing `BaseOCRProcessor`.
+   - Mount FastAPI router for `/api/v1/ingestion` matching `docs/api/api-contract.md` Section 8.
+
 
 
 

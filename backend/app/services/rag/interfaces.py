@@ -1093,5 +1093,10 @@ class BaseRAGDeploymentCoordinator(ABC):
         """Returns the active deployment runtime profile for RAG query execution."""
 
 
+# ------------------------------------------------------------------------------
+# Phase 2.1 Ingestion Pipeline Contracts Re-export (ADR-032 / ADR-033 / ADR-034)
+# ------------------------------------------------------------------------------
+
+
 
 

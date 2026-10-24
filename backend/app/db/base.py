@@ -14,6 +14,23 @@ class Base(DeclarativeBase):
     """Base class for all SQLAlchemy ORM models in KEEP."""
 
 
+# Register SQLite dialect fallbacks for PostgreSQL-specific types (JSONB, Vector)
+try:
+    from pgvector.sqlalchemy import Vector
+    from sqlalchemy.dialects.postgresql import JSONB
+    from sqlalchemy.ext.compiler import compiles
+
+    @compiles(JSONB, "sqlite")
+    def _compile_jsonb_sqlite(type_, compiler, **kw):
+        return "JSON"
+
+    @compiles(Vector, "sqlite")
+    def _compile_vector_sqlite(type_, compiler, **kw):
+        return "TEXT"
+except ImportError:
+    pass
+
+
 class TimestampMixin:
     """Reusable mixin providing created_at and updated_at UTC timestamps."""
 
