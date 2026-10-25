@@ -336,6 +336,59 @@ services:
     networks:
       - keep-network
 
+  # ----------------------------------------------------------------------------
+  # 10. AI Knowledge Ingestion & Vector Background Worker (Phase 2.1)
+  # ----------------------------------------------------------------------------
+  ai-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    container_name: keep-ai-worker-prod
+    restart: always
+    volumes:
+      - storage_data:/app/storage
+      - ai_model_cache:/app/models/cache
+    environment:
+      ENVIRONMENT: production
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PROJECT_NAME: ${PROJECT_NAME:-KEEP — Knowledge Extraction & Enterprise Platform}
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-keep_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be provided}
+      POSTGRES_DB: ${POSTGRES_DB:-keep_db}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-keep_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-keep_db}
+      SYNC_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-keep_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-keep_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379/0
+      AI_WORKER_QUEUES: "ai_ingestion_queue,ai_embedding_queue"
+      AI_MODEL_CACHE_DIR: /app/models/cache
+      STORAGE_ROOT: /app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+          memory: 4096M
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'exit(0)' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    networks:
+      - keep-network
+
 # ------------------------------------------------------------------------------
 # Persistent Volume Declarations
 # ------------------------------------------------------------------------------

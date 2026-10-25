@@ -3674,6 +3674,110 @@ COMPLETED ✓ — MANDATORY HUMAN GATING STOP
    - Update `docker-compose.yml` and `docker-compose.prod.yml` with AI worker definitions and Redis queue topology.
    - Author Playwright E2E automated test suite exercising document upload -> automated ingestion -> real-time progress update on Ingestion Dashboard.
 
+---
+
+## Entry #041: Phase 2.1 — AI Ingestion Pipeline: Containerized Workers, Redis Queue Infrastructure, Prometheus/Grafana Observability & Automated Test Suites
+
+### Date
+2026-10-25
+
+### Author Agent
+Member 4 (DevOps & Integration Lead)
+
+### Status
+COMPLETED ✓ — MANDATORY HUMAN GATING STOP
+
+### Implemented Features
+1. **Dedicated AI Worker Containerization (`docker/Dockerfile.worker`)**:
+   - Built production-ready worker container on `python:3.12-slim` base image.
+   - Provisioned OCR character recognition tools: `tesseract-ocr`, `tesseract-ocr-eng`, `poppler-utils`, and computer vision rendering libraries (`libgl1`, `libglib2.0-0`).
+   - Configured dedicated volume mount `/app/models/cache` (`ai_model_cache`) for local HuggingFace/BGE embedding weights and PaddleOCR models.
+   - Enforced non-root user security execution via `appuser:appgroup`.
+
+2. **AI Worker Runtime Entrypoint (`docker/worker_entrypoint.py`)**:
+   - Implemented asynchronous worker runtime coordinator `AIWorkerRuntime`.
+   - Integrated environment configuration validation (database, redis, model cache directory).
+   - Configured POSIX/Windows signal handlers (`SIGINT`, `SIGTERM`) for graceful task drainage and teardown.
+   - Mapped asynchronous queues: `ai_ingestion_queue`, `ai_embedding_queue`.
+
+3. **Multi-Container Orchestration (`docker-compose.yml` & `docker-compose.prod.yml`)**:
+   - Added `ai-worker` service to development `docker-compose.yml` linked to `postgres` and `redis`.
+   - Added `ai-worker` service to production `docker-compose.prod.yml` with strict resource quotas (2.00 CPUs, 4096M RAM).
+   - Configured persistent named volume `ai_model_cache` across all compose definitions.
+
+4. **Prometheus Alerting Rules (`infrastructure/prometheus/alert_rules.yml`)**:
+   - Added 4 enterprise alert rules:
+     - `AIIngestionQueueBacklogHigh`: Pending queue backlog > 50 jobs for 5m (WARNING).
+     - `AIIngestionFailureRateHigh`: Ingestion failure rate > 5% over 5m (CRITICAL).
+     - `AIOCRProcessingTimeout`: OCR extraction duration p95 > 60s (WARNING).
+     - `AIEmbeddingLatencyHigh`: Vector embedding generation p95 > 500ms (WARNING).
+
+5. **Grafana Ingestion Dashboard (`infrastructure/grafana/dashboards/ai-ingestion-dashboard.json`)**:
+   - Provisioned dashboard (`keep-ai-ingestion-phase-2-1`) auto-loaded by Grafana.
+   - Configured KPI stat panels for queue backlog, document throughput (docs/min), pipeline failure %, and mean duration.
+   - Configured time-series panels for 10-stage lifecycle distribution and pgvector chunk indexing velocity.
+
+6. **Continuous Integration Workflow (`.github/workflows/ci.yml`)**:
+   - Added `keep-ai-worker:test` container build and syntax validation in `docker-validation` job.
+
+7. **Backend Integration & Performance Test Suite (`tests/integration/test_ai_ingestion_pipeline.py`)**:
+   - 18 comprehensive tests covering:
+     - Multi-format extraction (PDF, DOCX, TXT, MD, PPTX, XLSX, CSV, images).
+     - OCR accuracy and fallback mechanisms.
+     - Text cleaning (Unicode NFKC, control char stripping, whitespace compaction).
+     - Semantic chunking (ADR-032 heading boundaries, sliding window overlap).
+     - Dense vector embedding generation & L2 normalization (ADR-033: ||v||_2 == 1.0).
+     - Ingestion state machine lifecycle & exponential backoff retry (ADR-034).
+     - Concurrent chunking and embedding stress benchmarks (< 500ms).
+     - Docker, Compose, Prometheus, and Grafana infrastructure topology verification.
+   - 100% pass rate (18/18 tests passed).
+
+8. **Playwright E2E Automated Test Suite (`tests/e2e/ingestion_pipeline.spec.ts`)**:
+   - 8 end-to-end user workflows:
+     - Command Center loading (`/ingestion`), header, Phase 2.1 badge, live polling toggle, and refresh buttons.
+     - 4 executive KPI metrics cards.
+     - Ingestion jobs table rendering, search query filtering, and status tab switching.
+     - Start Ingestion modal opening, form configuration (chunking, embedding, force OCR), and job dispatch.
+     - Real-time Stage Inspector modal with 8-stage stepper, progress bar, vector counts, and diagnostic error viewer.
+     - Dead-letter retry action execution on failed jobs.
+     - Responsive viewport adaptations across Desktop (1440x900), Tablet (768x1024), and Mobile (375x667).
+
+### Files Modified / Created
+- `docker/Dockerfile.worker` (Created — AI background worker container)
+- `docker/worker_entrypoint.py` (Created — Asynchronous worker runtime coordinator)
+- `docker-compose.yml` (Modified — Added ai-worker service and ai_model_cache volume)
+- `docker-compose.prod.yml` (Modified — Added production ai-worker service with resource limits)
+- `infrastructure/prometheus/alert_rules.yml` (Modified — Added 4 AI Ingestion alert rules)
+- `infrastructure/grafana/dashboards/ai-ingestion-dashboard.json` (Created — Provisioned Grafana dashboard)
+- `.github/workflows/ci.yml` (Modified — Added AI worker container build validation)
+- `tests/integration/test_ai_ingestion_pipeline.py` (Created — 18 integration & performance tests)
+- `tests/integration/test_production_deployment_infrastructure.py` (Modified — Added ai-worker service assertion)
+- `tests/e2e/ingestion_pipeline.spec.ts` (Created — 8 Playwright E2E scenarios)
+- `.gitignore` (Modified — Added playwright-report and test-results)
+- `PROJECT_STATE.md` (Modified — Recorded Phase 2.1 Member 4 completion)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #041)
+
+### Verification & Tests Executed
+- [x] Ruff lint check: `.\.venv\Scripts\ruff.exe check backend/ tests/ docker/` → **All checks passed! (0 errors)**
+- [x] Backend unit tests: `.\.venv\Scripts\pytest.exe tests/unit/` → **261/261 tests PASSED (100%)**
+- [x] Backend integration tests: `.\.venv\Scripts\pytest.exe tests/integration/` → **258/258 tests PASSED (100%)**
+- [x] Phase 2.1 integration test suite: `tests/integration/test_ai_ingestion_pipeline.py` → **18/18 tests PASSED (100%)**
+- [x] Total backend tests: **519/519 tests PASSED (100%)**
+- [x] Frontend unit & component tests: `npm.cmd test` → **212/212 tests PASSED (100% across 24 test files)**
+- [x] Frontend production build: `npm.cmd run build` → **Built cleanly in 4.09s**
+- [x] Playwright E2E test discovery: `playwright test --list` → **147 tests in 7 test files discovered cleanly**
+- [x] Feature branch: `agent/devops/feature/phase-2.1-ingestion-worker-infra`
+
+### Target Receiving Agent
+- **Member 1 (AI Lead / Project Lead)**: Review Phase 2.1 full four-agent completion and initiate Phase 2.2 (Vector Database & Semantic Search Architecture).
+
+### Required Action for Receiving Agent
+1. **Member 1 (AI Lead)**:
+   - Verify all Phase 2.1 deliverables across AI contracts, Backend APIs, Frontend Ingestion Command Center, and DevOps worker containers.
+   - Formally close Phase 2.1.
+   - Author architecture specifications and ADRs for Phase 2.2 (Vector Database & Semantic Search Architecture).
+
+
 
 
 

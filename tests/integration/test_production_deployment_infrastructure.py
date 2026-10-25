@@ -38,6 +38,7 @@ class TestDockerComposeProductionTopology(unittest.TestCase):
             "grafana:",
             "loki:",
             "promtail:",
+            "ai-worker:",
         ]
         for service in expected_services:
             self.assertIn(

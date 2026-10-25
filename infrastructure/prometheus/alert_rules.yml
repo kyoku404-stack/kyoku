@@ -117,3 +117,51 @@ groups:
           summary: "High frequency of rate-limited requests (HTTP 429)"
           description: "Over 20 requests per minute are hitting API or AI rate limits."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#airatelimitexceeded"
+
+      # ------------------------------------------------------------------------
+      # AI Ingestion Pipeline Alerts (Phase 2.1)
+      # ------------------------------------------------------------------------
+      - alert: AIIngestionQueueBacklogHigh
+        expr: ai_ingestion_queue_pending_jobs > 50
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: ai-ingestion
+        annotations:
+          summary: "AI Ingestion queue backlog exceeds 50 pending documents"
+          description: "Ingestion queue depth has remained elevated for >5m, indicating background worker starvation."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#aiingestionqueuebackloghigh"
+
+      - alert: AIIngestionFailureRateHigh
+        expr: (sum(rate(ai_ingestion_jobs_total{status="FAILED"}[5m])) / sum(rate(ai_ingestion_jobs_total[5m]))) * 100 > 5.0
+        for: 2m
+        labels:
+          severity: CRITICAL
+          tier: ai-ingestion
+        annotations:
+          summary: "CRITICAL: AI Ingestion pipeline failure rate exceeds 5%"
+          description: "Document ingestion failure rate is {{ $value | printf \"%.2f\" }}% over a 5-minute window."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#aiingestionfailureratehigh"
+
+      - alert: AIOCRProcessingTimeout
+        expr: histogram_quantile(0.95, sum(rate(ai_ocr_duration_seconds_bucket[5m])) by (le)) > 60.0
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: ai-ocr
+        annotations:
+          summary: "OCR extraction duration p95 exceeds 60 seconds"
+          description: "Optical character recognition p95 latency is {{ $value | printf \"%.1f\" }}s."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#aiocrprocessingtimeout"
+
+      - alert: AIEmbeddingLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(ai_embedding_duration_seconds_bucket[5m])) by (le)) > 0.50
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: ai-embeddings
+        annotations:
+          summary: "Vector embedding generation p95 exceeds 500ms"
+          description: "Vector embedding latency is {{ $value | printf \"%.3f\" }}s (SLA: 0.500s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#aiembeddinglatencyhigh"
+

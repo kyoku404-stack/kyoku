@@ -1,0 +1,55 @@
+# ==============================================================================
+# KEEP Enterprise Platform — AI Worker Container (Phase 2.1)
+# ==============================================================================
+# Dedicated background worker container for AI knowledge ingestion, OCR extraction,
+# semantic chunking, embedding generation, and vector indexing.
+# Specification: devdocs/p2/p2.1.txt Chapter 18 & docs/Architecture/ai-ingestion-pipeline.md
+# Role: Member 4 (Integration & DevOps Lead)
+# ==============================================================================
+
+FROM python:3.12-slim AS base
+
+# Prevent Python from writing .pyc files and enable unbuffered output
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    AI_MODEL_CACHE_DIR=/app/models/cache \
+    AI_WORKER_QUEUES=ai_ingestion_queue,ai_embedding_queue
+
+WORKDIR /app
+
+# Install system dependencies including Tesseract OCR, Poppler (PDF processing),
+# libgl1/glib for image processing, and build essentials
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    libgl1 \
+    libglib2.0-0 \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /app/backend/requirements.txt && \
+    pip install --no-cache-dir "email-validator>=2.0.0" "bcrypt>=4.0.0" "greenlet>=3.0.0"
+
+# Create non-root user for security
+RUN addgroup --system appgroup && adduser --system --group appuser
+
+# Copy application source code and worker runner
+COPY backend/ /app/backend/
+COPY docker/worker_entrypoint.py /app/docker/worker_entrypoint.py
+
+# Create required cache, uploads, and storage directories and assign ownership
+RUN mkdir -p /app/uploads /app/storage /app/models/cache && \
+    chown -R appuser:appgroup /app
+
+USER appuser
+
+VOLUME ["/app/models/cache", "/app/storage"]
+
+CMD ["python", "/app/docker/worker_entrypoint.py"]
