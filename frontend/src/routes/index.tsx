@@ -14,6 +14,9 @@ const HealthPage = lazy(() =>
 const ObservabilityPage = lazy(() =>
   import('@/pages/ObservabilityPage').then((m) => ({ default: m.ObservabilityPage }))
 );
+const IngestionPage = lazy(() =>
+  import('@/pages/IngestionPage').then((m) => ({ default: m.IngestionPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -111,6 +114,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <ObservabilityPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'ingestion',
+        element: (
+          <SuspenseWrapper>
+            <IngestionPage />
           </SuspenseWrapper>
         ),
       },

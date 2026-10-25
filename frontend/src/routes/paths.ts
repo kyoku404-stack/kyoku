@@ -29,6 +29,7 @@ export const ROUTES = {
   ACCESS_DENIED: '/access-denied',
   HEALTH: '/health',
   OBSERVABILITY: '/observability',
+  INGESTION: '/ingestion',
   NOT_FOUND: '*',
 } as const;
 
