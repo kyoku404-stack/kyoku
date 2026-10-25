@@ -130,6 +130,10 @@ jobs:
         run: |
           docker build -t keep-backend:test -f docker/Dockerfile.backend .
 
+      - name: Build AI Ingestion Worker Container
+        run: |
+          docker build -t keep-ai-worker:test -f docker/Dockerfile.worker .
+
       - name: Build Frontend Container (Development & Production Targets)
         run: |
           docker build -t keep-frontend:builder -f docker/Dockerfile.frontend --target builder .

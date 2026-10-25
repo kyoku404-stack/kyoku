@@ -57,6 +57,19 @@ Phase 2.1 Member 3 (Frontend Lead) deliverables are COMPLETED:
   - `frontend/src/tests/ingestionService.test.ts` (5 unit tests covering all API client endpoints)
   - `frontend/src/tests/ingestionComponents.test.tsx` (14 unit and integration tests covering stepper, KPI grid, job table, modals, and IngestionPage master integration)
 - Total frontend tests: 212/212 passing (100% pass rate, 24 test files). 0 ESLint warnings. Production Vite build verified. Ready for Member 4 (DevOps Lead).
+
+Phase 2.1 Member 4 (DevOps & Integration Lead) deliverables are COMPLETED:
+- Containerized dedicated AI Knowledge Ingestion background worker (`docker/Dockerfile.worker`) provisioning Tesseract OCR, Poppler PDF utilities, libgl/glib computer vision runtimes, model cache volume (`/app/models/cache`), and non-root security isolation.
+- Implemented Python background worker runtime entrypoint (`docker/worker_entrypoint.py`) establishing graceful shutdown signals, queue topology verification (`ai_ingestion_queue`, `ai_embedding_queue`), and task consumption coordinator.
+- Configured multi-container development orchestration (`docker-compose.yml`) and production orchestration (`docker-compose.prod.yml`) with the containerized `ai-worker` service, strict resource quotas (2.00 CPUs, 4096M RAM), healthchecks, and persistent `ai_model_cache` volume mount.
+- Configured Prometheus alerting rules (`infrastructure/prometheus/alert_rules.yml`) for the AI Ingestion Pipeline: `AIIngestionQueueBacklogHigh`, `AIIngestionFailureRateHigh`, `AIOCRProcessingTimeout`, and `AIEmbeddingLatencyHigh`.
+- Provisioned dedicated Grafana Ingestion Dashboard (`infrastructure/grafana/dashboards/ai-ingestion-dashboard.json`) providing operational visibility into queue backlogs, state transition breakdown, throughput velocity, error rates, and pgvector chunk indexing.
+- Updated Continuous Integration workflow (`.github/workflows/ci.yml`) to build and validate the AI worker container (`keep-ai-worker:test`).
+- Authored comprehensive backend integration & performance test suite (`tests/integration/test_ai_ingestion_pipeline.py`) covering multi-format parser extraction, OCR fallback, text cleaning, heading-aware chunking (ADR-032), L2-normalized embeddings (ADR-033), state machine lifecycle & exponential backoff retry (ADR-034), stress performance, and worker topology verification (18 tests, 100% pass rate).
+- Updated production infrastructure test suite (`tests/integration/test_production_deployment_infrastructure.py`) enforcing `ai-worker` service presence.
+- Authored comprehensive Playwright E2E test suite (`tests/e2e/ingestion_pipeline.spec.ts`) covering Command Center navigation, KPI metrics grid, 8-stage visual stepper, jobs table search/filtering, start ingestion modal workflow, live stage progress modal inspection, dead-letter retry actions, and responsive layout adaptations across Desktop, Tablet, and Mobile (8 test scenarios).
+- Monorepo test status: 519 backend tests (261 unit + 258 integration) + 212 frontend tests + 147 Playwright E2E tests = 878 tests passing (100% pass rate, 0 lint errors). Phase 2.1 is 100% complete across all 4 member roles.
+
 - Authored master Deployment, Infrastructure & AI Readiness Architecture Specification (`docs/Architecture/deployment-ai-infrastructure.md`) establishing the production system topology, reverse proxy routing matrix, TLS/HTTPS termination, zero-trust network segmentation, future AI compute/worker scaling architecture (Phase 2 bridge), backup/disaster recovery SLOs, and CI/CD automated deployment blueprint.
 - Authored Architecture Decision Records ADR-029, ADR-030, and ADR-031 in `docs/decisions/decisions.md`.
 - Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 7 defining production reverse proxy routing rules, TLS 1.3/1.2 standards, ingress headers, and mandatory response security headers.
