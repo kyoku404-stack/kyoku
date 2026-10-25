@@ -601,3 +601,68 @@ During Phase 2.1 ingestion, generated chunks are persisted into `document_chunks
 - `token_count`: Accurate BPE token length.
 - `character_count`: String character count.
 - `checksum_sha256`: Cryptographic hash of the chunk text for deduplication.
+
+---
+
+### 3.14 Phase 2.2 — RAG Queries, Citations & Feedback Schema
+
+#### 3.14.1 Full-Text Search Vector on `document_chunks`
+To support Hybrid Sparse Retrieval alongside dense vector embeddings, `document_chunks` incorporates full-text search capabilities:
+```sql
+-- Generated tsvector column for English lexical indexing
+ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS search_vector tsvector
+    GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;
+
+-- GIN index for high-speed keyword matching
+CREATE INDEX IF NOT EXISTS idx_document_chunks_search_vector ON document_chunks USING gin(search_vector);
+```
+
+#### 3.14.2 `rag_queries` Table
+Logs all enterprise RAG interactions, tokens, latency, and grounded responses:
+```sql
+CREATE TABLE rag_queries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_id UUID REFERENCES chat_sessions(id) ON DELETE SET NULL,
+    query_text TEXT NOT NULL,
+    normalized_query TEXT,
+    response_text TEXT NOT NULL,
+    confidence_score FLOAT NOT NULL DEFAULT 0.0,
+    is_grounded BOOLEAN NOT NULL DEFAULT TRUE,
+    dense_candidates_count INTEGER NOT NULL DEFAULT 0,
+    sparse_candidates_count INTEGER NOT NULL DEFAULT 0,
+    reranked_chunks_count INTEGER NOT NULL DEFAULT 0,
+    retrieval_latency_ms FLOAT NOT NULL DEFAULT 0.0,
+    generation_latency_ms FLOAT NOT NULL DEFAULT 0.0,
+    total_latency_ms FLOAT NOT NULL DEFAULT 0.0,
+    prompt_tokens INTEGER NOT NULL DEFAULT 0,
+    completion_tokens INTEGER NOT NULL DEFAULT 0,
+    citations_json JSONB DEFAULT '[]'::jsonb,
+    metadata_json JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_rag_queries_org_created ON rag_queries(organization_id, created_at DESC);
+CREATE INDEX idx_rag_queries_user ON rag_queries(user_id, created_at DESC);
+CREATE INDEX idx_rag_queries_session ON rag_queries(session_id);
+```
+
+#### 3.14.3 `rag_feedbacks` Table
+Captures human user evaluation and satisfaction signals:
+```sql
+CREATE TABLE rag_feedbacks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    query_id UUID NOT NULL REFERENCES rag_queries(id) ON DELETE CASCADE,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    is_helpful BOOLEAN NOT NULL DEFAULT TRUE,
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_rag_feedbacks_query ON rag_feedbacks(query_id);
+CREATE INDEX idx_rag_feedbacks_org ON rag_feedbacks(organization_id, created_at DESC);
+```
+

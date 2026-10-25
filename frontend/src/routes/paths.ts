@@ -15,6 +15,7 @@ export const ROUTES = {
   DOCUMENTS: '/documents',
   UPLOAD: '/upload',
   CHAT: '/chat',
+  RAG: '/rag',
   ORGANIZATION: '/organization',
   ORGANIZATION_SETUP: '/organization/setup',
   DEPARTMENTS: '/departments',

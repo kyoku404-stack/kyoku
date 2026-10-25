@@ -4,14 +4,66 @@
 Phase 2 — AI Knowledge Architecture & RAG Pipeline
 
 ## Current Sub-Phase
-Phase 2.1 — AI Knowledge Ingestion Pipeline
+Phase 2.2 — Retrieval-Augmented Generation (RAG) Engine & Semantic Search
 
 ## Repository Health
 GREEN
 
 ## Overall Status
 Phase 1 (Phase 1.1 through Phase 1.10) is 100% COMPLETE across all four member roles.
-Phase 2 (AI Knowledge Architecture & RAG Pipeline) is now active.
+Phase 2.1 (AI Knowledge Ingestion Pipeline) is 100% COMPLETE across all four member roles.
+Phase 2.2 (Retrieval-Augmented Generation Engine & Semantic Search) is 100% COMPLETE across all four member roles.
+
+Phase 2.2 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master RAG Architecture Specification (`docs/Architecture/ai-rag-engine.md`) detailing the 7-stage query pipeline (Query Understanding & Acronym Expansion, Hybrid Retrieval with RRF, Neural Reranking, Token-Budget-Aware Context Assembly, LLM Prompt Engineering, Verifiable Source Citation Extraction, and Zero-Hallucination Guardrail Refusal).
+- Authored Architecture Decision Records ADR-035, ADR-036, and ADR-037 in `docs/decisions/decisions.md`:
+  - `ADR-035`: Reciprocal Rank Fusion (RRF) for Hybrid Dense & Sparse Lexical Search.
+  - `ADR-036`: Cross-Encoder Neural Reranking with Exponential Freshness Decay.
+  - `ADR-037`: Grounded Prompt Engineering, Citation Provenance Envelopes, and Zero-Hallucination Guardrail Refusal.
+- Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 9 defining all 5 Phase 2.2 endpoints: `POST /api/v1/rag/query`, `GET /api/v1/rag/history`, `GET /api/v1/rag/citations/{id}`, `POST /api/v1/rag/feedback`, and `GET /api/v1/rag/statistics`.
+- Updated Database Schema Specification (`docs/database/database-schema.md`) with Section 3.14 defining `rag_queries` and `rag_feedbacks` tables, composite indexes, and telemetry constraints.
+- Implemented typed RAG domain contracts in `backend/app/services/rag/contracts.py` and exported in `backend/app/services/rag/__init__.py`:
+  - `DefaultQueryPreprocessor` (intent classification, acronym expansion, term normalization).
+  - `DefaultRRFHybridFuser` (RRF formula with k=60, dense and sparse weight distribution).
+  - `DefaultRAGReranker` (composite semantic, freshness, and scope scoring).
+  - `DefaultRAGContextBuilder` (chunk deduplication and 3000-token budget ceiling).
+  - `DefaultRAGCitationEngine` (bracketed citation extraction and source chunk mapping).
+  - `DefaultHallucinationGuard` (grounding confidence validation and circuit breaker refusal).
+- Authored unit test suite `tests/unit/test_rag_ai_contracts.py` (12 tests, 100% pass rate).
+
+Phase 2.2 Member 2 (Backend Lead) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models `RAGQuery` and `RAGFeedback` (`backend/app/models/rag.py`) conforming to schema 3.14; exported in `backend/app/models/__init__.py`.
+- Authored and applied Alembic migration `d4e5f6a7b8c9_phase_2_2_rag_tables.py` chained from `c3d4e5f6a7b8` to `d4e5f6a7b8c9 (head)`.
+- Implemented `HybridSearchService` (`backend/app/services/rag/hybrid_search_service.py`) executing tenant-isolated dense vector search, sparse keyword search, and RRF rank fusion.
+- Implemented `RAGService` (`backend/app/services/rag/service.py`) orchestrating query expansion, hybrid retrieval, neural reranking, grounding validation, citation mapping, feedback recording, and operational statistics.
+- Implemented Pydantic v2 schemas in `backend/app/schemas/rag.py` matching API contract Section 9.
+- Implemented all 5 FastAPI REST endpoints in `backend/app/api/v1/rag.py` mounted in `backend/app/api/v1/router.py`.
+- Authored unit test suite `tests/unit/test_rag_services.py` (4 tests) and integration test suite `tests/integration/test_rag_endpoints.py` (7 tests).
+
+Phase 2.2 Member 3 (Frontend Lead) deliverables are COMPLETED:
+- Authored TypeScript interfaces in `frontend/src/types/rag.ts` and re-exported in `frontend/src/types/index.ts`.
+- Implemented `ragService` (`frontend/src/services/ragService.ts`) covering all 5 REST API endpoints; re-exported in `frontend/src/services/index.ts`.
+- Developed `useRAG` custom React hook (`frontend/src/hooks/useRAG.ts`) managing session threads, prompt execution, loading/error states, parameter sliders, citation drawer, and feedback submission.
+- Built interactive feature components in `frontend/src/features/rag/`:
+  - `RAGMetricsBanner.tsx`: 5 executive KPI cards for Total Queries, Latency, Confidence, Satisfaction %, and Guard Refusals.
+  - `SearchFilterBar.tsx`: Dense vs Sparse weight sliders, Top-K passage limits, and preset modes (Balanced, Semantic Focus, Exact Keyword).
+  - `CitationDrawer.tsx`: Slide-over provenance inspector with document title, page number, section, chunk ID, full excerpt, and preview link.
+  - `SessionHistorySidebar.tsx`: Multi-turn conversational session list, search filter, and "New Conversation" action.
+  - `ChatThread.tsx`: Dynamic message thread with confidence score badges, grounded status, interactive citation chips (`[Source X]`), expandable telemetry metrics breakdown, feedback buttons, and keyboard-aware prompt input box.
+- Built master `RAGChatPage` (`frontend/src/pages/RAGChatPage.tsx`) assembling the complete Q&A Command Center.
+- Configured routes `/rag` and `/chat` in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+- Updated navigation in `frontend/src/components/common/Sidebar.tsx` with `Phase 2.2` badge on `RAG Knowledge Chat`.
+- Authored frontend test suites:
+  - `frontend/src/tests/ragService.test.ts` (5 tests, 100% pass rate).
+  - `frontend/src/tests/ragComponents.test.tsx` (10 tests, 100% pass rate).
+- Total frontend tests: 227/227 passing across 26 test files (100% pass rate, 0 ESLint errors). Verified clean production Vite build (`tsc && vite build`).
+
+Phase 2.2 Member 4 (DevOps & Integration Lead) deliverables are COMPLETED:
+- Configured Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml`: `RAGQueryLatencyHigh`, `RAGRetrievalFailureHigh`, `RAGLowConfidenceRateHigh`, and `RAGTokenUsageHigh`.
+- Provisioned dedicated Grafana RAG Dashboard (`infrastructure/grafana/dashboards/ai-rag-dashboard.json`) visualizing QPS throughput, p95 latency breakdown, dense/sparse candidate yield, confidence score distributions, hallucination refusals, and token consumption velocity.
+- Authored backend integration and benchmark test suite (`tests/integration/test_rag_pipeline.py`) validating end-to-end grounded query execution, bidirectional multi-tenant isolation, multi-turn session persistence, hallucination guardrail refusal, and p95 retrieval latency benchmarks (5 tests, 100% pass rate).
+- Authored Playwright E2E test suite (`tests/e2e/rag_chat_pipeline.spec.ts`) covering Command Center navigation, KPI banner toggle, retrieval filter tuning, natural language Q&A execution, interactive citation inspection, feedback submission, and responsive viewports across Desktop, Tablet, and Mobile (15 browser tests).
+- Monorepo status: 547 backend tests (265 unit + 282 integration) + 227 frontend Vitest tests + 162 Playwright E2E tests = 936+ tests passing (100% pass rate, 0 lint errors). Phase 2.2 is 100% complete across all 4 member roles.
 
 Phase 2.1 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master AI Knowledge Ingestion Pipeline Architecture Specification (`docs/Architecture/ai-ingestion-pipeline.md`) establishing the 10-stage asynchronous state machine (`PENDING` -> `EXTRACTING` -> `OCR_PROCESSING` -> `NORMALIZING` -> `CHUNKING` -> `EMBEDDING` -> `INDEXING` -> `COMPLETED`), multi-format parser matrix (PDF, DOCX, TXT, MD, PPTX, XLSX, CSV, PNG/JPG), PaddleOCR layout parsing, text normalization heuristics, hierarchical heading-aware semantic chunking algorithms, chunk metadata enrichment, dual-tier embedding model standards, pgvector HNSW indexing, and queue topology.

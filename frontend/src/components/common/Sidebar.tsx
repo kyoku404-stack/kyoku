@@ -56,7 +56,7 @@ const navItems: NavItem[] = [
     badge: 'Phase 2.1',
   },
   { label: 'Document Upload', path: ROUTES.UPLOAD, icon: UploadCloud, requiredPermission: Permission.DOCUMENT_CREATE },
-  { label: 'RAG Knowledge Chat', path: ROUTES.CHAT, icon: MessageSquare, requiredPermission: Permission.AI_CHAT },
+  { label: 'RAG Knowledge Chat', path: ROUTES.CHAT, icon: MessageSquare, requiredPermission: Permission.AI_CHAT, badge: 'Phase 2.2' },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
   {

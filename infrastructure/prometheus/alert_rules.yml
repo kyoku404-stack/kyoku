@@ -165,3 +165,50 @@ groups:
           description: "Vector embedding latency is {{ $value | printf \"%.3f\" }}s (SLA: 0.500s)."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#aiembeddinglatencyhigh"
 
+      # ------------------------------------------------------------------------
+      # AI Retrieval-Augmented Generation (RAG) Engine Alerts (Phase 2.2)
+      # ------------------------------------------------------------------------
+      - alert: RAGQueryLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(rag_query_duration_seconds_bucket[5m])) by (le)) > 2.0
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: ai-rag
+        annotations:
+          summary: "RAG query p95 latency exceeds 2.0s target"
+          description: "End-to-end RAG answer synthesis p95 latency is {{ $value | printf \"%.2f\" }}s (SLA: 2.0s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#ragquerylatencyhigh"
+
+      - alert: RAGRetrievalFailureHigh
+        expr: (sum(rate(rag_queries_total{status="ERROR"}[5m])) / sum(rate(rag_queries_total[5m]))) * 100 > 5.0
+        for: 5m
+        labels:
+          severity: CRITICAL
+          tier: ai-rag
+        annotations:
+          summary: "CRITICAL: RAG retrieval & generation failure rate exceeds 5%"
+          description: "Hybrid search and LLM synthesis failure rate is {{ $value | printf \"%.2f\" }}% over 5m."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#ragretrievalfailurehigh"
+
+      - alert: RAGLowConfidenceRateHigh
+        expr: (sum(rate(rag_queries_low_confidence_total[10m])) / sum(rate(rag_queries_total[10m]))) * 100 > 20.0
+        for: 10m
+        labels:
+          severity: WARNING
+          tier: ai-rag
+        annotations:
+          summary: "High volume of low-confidence RAG queries (>20%)"
+          description: "Over 20% of RAG queries received confidence scores below 0.70, indicating potential knowledge base gaps."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#raglowconfidenceratehigh"
+
+      - alert: RAGTokenUsageHigh
+        expr: sum(rate(rag_tokens_consumed_total[5m])) * 60 > 100000
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: ai-rag
+        annotations:
+          summary: "RAG token consumption velocity exceeds 100k tokens/min"
+          description: "LLM token burn rate is {{ $value | printf \"%.0f\" }} tokens/min, exceeding baseline budget rate."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#ragtokenusagehigh"
+

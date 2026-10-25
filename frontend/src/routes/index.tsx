@@ -17,6 +17,9 @@ const ObservabilityPage = lazy(() =>
 const IngestionPage = lazy(() =>
   import('@/pages/IngestionPage').then((m) => ({ default: m.IngestionPage }))
 );
+const RAGChatPage = lazy(() =>
+  import('@/pages/RAGChatPage').then((m) => ({ default: m.RAGChatPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -248,7 +251,15 @@ export const router = createBrowserRouter([
         path: 'chat',
         element: (
           <SuspenseWrapper>
-            <DashboardPage />
+            <RAGChatPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'rag',
+        element: (
+          <SuspenseWrapper>
+            <RAGChatPage />
           </SuspenseWrapper>
         ),
       },
