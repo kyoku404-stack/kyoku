@@ -126,7 +126,4 @@ storage/*
 !storage/.gitkeep
 uploads/*
 !uploads/.gitkeep
-
-
-#xx
-playwright-report/
+
