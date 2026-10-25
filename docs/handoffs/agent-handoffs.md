@@ -3845,16 +3845,95 @@ COMPLETED / READY FOR BACKEND IMPLEMENTATION
 - [x] Full backend unit test suite: `pytest tests/unit/` -> 273/273 passed (100%).
 
 #### Target Receiving Agent
-- **Member 2 (Backend & Database Lead)**: Implement ORM models, migrations, RAG services, and REST APIs.
+- **Member 3 (Frontend & UI Lead)**: Develop the AI Chat & RAG Command Center UI.
 
 #### Required Action for Receiving Agent
-1. **Member 2 (Backend Lead)**:
-   - Implement `RAGQuery` and `RAGFeedback` SQLAlchemy models in `backend/app/models/rag.py`.
-   - Author Alembic migration for `rag_queries` and `rag_feedbacks` tables, plus the `search_vector` column and GIN index on `document_chunks`.
-   - Implement `RAGService`, `HybridSearchService`, `RerankingService`, `ContextBuilderService`, and `CitationService` in `backend/app/services/rag/`.
-   - Implement Pydantic validation schemas in `backend/app/schemas/rag.py`.
-   - Implement FastAPI REST endpoints in `backend/app/api/v1/rag.py` and mount them in `backend/app/api/v1/router.py`.
-   - Author unit and integration tests verifying RAG endpoints.
+1. **Member 3 (Frontend Lead)**:
+   - Implement TypeScript interfaces in `frontend/src/types/rag.ts`.
+   - Implement API client methods in `frontend/src/services/ragService.ts`.
+   - Implement custom hook `useRAG` in `frontend/src/hooks/useRAG.ts`.
+   - Build UI components in `frontend/src/features/rag/` (Chat Interface, Citation Drawer, Filter Bar, Feedback Form).
+   - Build master `RAGChatPage` in `frontend/src/pages/RAGChatPage.tsx` and configure routes.
+   - Author frontend tests and verify build.
+
+---
+
+### Handoff Entry #043: Phase 2.2 — RAG Backend Persistence, Services, and REST APIs
+
+#### Date
+2026-10-26
+
+#### Author Agent
+Member 2 (Backend & Database Lead)
+
+#### Status
+COMPLETED / READY FOR FRONTEND IMPLEMENTATION
+
+#### Implemented Features
+1. **SQLAlchemy ORM Models (`backend/app/models/rag.py`)**:
+   - `RAGQuery`: Entity logging all enterprise RAG interactions, tokens (prompt + completion), wall-clock latency (retrieval, generation, total), confidence scores, and structured citation JSONB.
+   - `RAGFeedback`: Entity capturing 1-5 star ratings, helpfulness flags, and human user comments.
+   - Exported in `backend/app/models/__init__.py`.
+
+2. **Alembic Database Migration (`backend/migrations/versions/d4e5f6a7b8c9_phase_2_2_rag_tables.py`)**:
+   - Revision ID `d4e5f6a7b8c9` chained from `c3d4e5f6a7b8`.
+   - Tables: `rag_queries` and `rag_feedbacks` with composite indexes on `(organization_id, created_at)`.
+   - Verified head status with `alembic heads`.
+
+3. **Hybrid Search Service (`backend/app/services/rag/hybrid_search_service.py`)**:
+   - Multi-tenant dense cosine similarity + sparse lexical search with term frequency overlap and exact phrase boosting.
+   - Reciprocal Rank Fusion (RRF, $k=60$) combining dense ($w=0.65$) and sparse ($w=0.35$) ranks into a unified candidate pool.
+
+4. **Master RAG Service (`backend/app/services/rag/service.py`)**:
+   - Full pipeline orchestrator integrating query normalization, embedding generation, hybrid search, multi-factor reranking, token budgeting, hallucination guardrails, and citation parsing.
+   - Relational persistence of queries and multi-turn conversational session tracking (`ChatSession` + `ChatMessage`).
+   - Organizational statistics aggregation and feedback management.
+
+5. **Pydantic Validation Schemas (`backend/app/schemas/rag.py`)**:
+   - Conforming strictly to `docs/api/api-contract.md` Section 9: `RAGQueryRequest`, `RAGQueryResponse`, `RAGCitationResponse`, `RAGHistoryResponse`, `RAGCitationDetailResponse`, `RAGFeedbackRequest`, `RAGFeedbackResponse`, `RAGStatisticsResponse`.
+
+6. **FastAPI REST Router (`backend/app/api/v1/rag.py`)**:
+   - Mounted at `/api/v1/rag` in `backend/app/api/v1/router.py`:
+     - `POST /api/v1/rag/query`: Grounded Q&A query execution.
+     - `GET /api/v1/rag/history`: Multi-turn conversational session history.
+     - `GET /api/v1/rag/citations/{id}`: Citation source metadata and chunk content lookup.
+     - `POST /api/v1/rag/feedback`: User response feedback submission.
+     - `GET /api/v1/rag/statistics`: Aggregate organizational RAG engine metrics.
+
+7. **Unit & Integration Test Suites**:
+   - `tests/unit/test_rag_services.py` (4 unit tests, 100% pass rate).
+   - `tests/integration/test_rag_endpoints.py` (7 integration tests, 100% pass rate).
+
+#### Files Modified / Created
+- `backend/app/models/rag.py` (Created)
+- `backend/app/models/__init__.py` (Modified — Exported RAGQuery, RAGFeedback)
+- `backend/migrations/versions/d4e5f6a7b8c9_phase_2_2_rag_tables.py` (Created)
+- `backend/app/schemas/rag.py` (Created)
+- `backend/app/services/rag/hybrid_search_service.py` (Created)
+- `backend/app/services/rag/service.py` (Created)
+- `backend/app/api/v1/rag.py` (Created)
+- `backend/app/api/v1/router.py` (Modified — Mounted rag_router)
+- `tests/unit/test_rag_services.py` (Created)
+- `tests/integration/test_rag_endpoints.py` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #043)
+
+#### Verification & Tests Executed
+- [x] Ruff lint check: `.\.venv\Scripts\ruff.exe check backend/ tests/` -> 0 errors.
+- [x] Phase 2.2 unit & integration test suites: `pytest tests/unit/test_rag_services.py tests/integration/test_rag_endpoints.py` -> 11/11 passed (100%).
+- [x] Full backend test suite: `pytest tests/unit/ tests/integration/test_rag_endpoints.py` -> 284/284 passed (100%).
+
+#### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**: Develop the AI Chat & RAG Command Center UI.
+
+#### Required Action for Receiving Agent
+1. **Member 3 (Frontend Lead)**:
+   - Implement TypeScript interfaces in `frontend/src/types/rag.ts`.
+   - Implement API client methods in `frontend/src/services/ragService.ts`.
+   - Implement custom hook `useRAG` in `frontend/src/hooks/useRAG.ts`.
+   - Build UI components in `frontend/src/features/rag/` (Chat Interface, Citation Drawer, Filter Bar, Feedback Form).
+   - Build master `RAGChatPage` in `frontend/src/pages/RAGChatPage.tsx` and configure routes.
+   - Author frontend tests and verify build.
+
 
 
 

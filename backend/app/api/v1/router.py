@@ -20,6 +20,7 @@ from backend.app.api.v1.metrics import router as metrics_router
 from backend.app.api.v1.notifications import router as notifications_router
 from backend.app.api.v1.organizations import router as organizations_router
 from backend.app.api.v1.projects import router as projects_router
+from backend.app.api.v1.rag import router as rag_router
 from backend.app.api.v1.search import router as search_router
 from backend.app.api.v1.teams import router as teams_router
 from backend.app.api.v1.users import router as users_router
@@ -38,6 +39,7 @@ api_v1_router.include_router(invitations_router)
 api_v1_router.include_router(members_router)
 api_v1_router.include_router(documents_router)
 api_v1_router.include_router(ingestion_router)
+api_v1_router.include_router(rag_router)
 api_v1_router.include_router(dashboard_router)
 api_v1_router.include_router(activity_router)
 api_v1_router.include_router(notifications_router)

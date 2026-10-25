@@ -10,6 +10,7 @@ from backend.app.models.meeting import Meeting
 from backend.app.models.notification import Notification
 from backend.app.models.organization import Organization
 from backend.app.models.project import Project, project_users
+from backend.app.models.rag import RAGFeedback, RAGQuery
 from backend.app.models.task import Task
 from backend.app.models.team import Team
 from backend.app.models.user import User
@@ -30,6 +31,8 @@ __all__ = [
     "Notification",
     "Organization",
     "Project",
+    "RAGFeedback",
+    "RAGQuery",
     "Task",
     "Team",
     "User",
