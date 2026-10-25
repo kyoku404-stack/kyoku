@@ -1,0 +1,268 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Phase 2.2 — RAG Engine & Hybrid Semantic Search Performance",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["mean"], "values": false }
+      },
+      "title": "RAG Query Rate (QPS)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(rag_queries_total[2m]))",
+          "legendFormat": "Queries/sec",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1.0 },
+              { "color": "red", "value": 2.0 }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "title": "RAG p95 Latency",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rag_query_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 Duration",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.70 },
+              { "color": "green", "value": 0.85 }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["mean"], "values": false }
+      },
+      "title": "Mean Confidence Score",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "avg(rag_confidence_score_sum / rag_confidence_score_count)",
+          "legendFormat": "Confidence",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 90 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "title": "Positive Feedback Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "(sum(rag_feedback_helpful_total) / sum(rag_feedback_total)) * 100",
+          "legendFormat": "Helpful %",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 20, "lineWidth": 2 },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "id": 6,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "title": "Retrieval Pipeline Latency Breakdown",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rag_retrieval_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 Hybrid Retrieval",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rag_rerank_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 Neural Rerank",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rag_generation_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 LLM Synthesis",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 15, "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "id": 7,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "title": "Hybrid Retrieval Candidate Yield (Dense vs Sparse)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "avg_over_time(rag_dense_candidates_count[5m])",
+          "legendFormat": "pgvector Dense Chunks",
+          "refId": "A"
+        },
+        {
+          "expr": "avg_over_time(rag_sparse_candidates_count[5m])",
+          "legendFormat": "tsvector BM25 Sparse Chunks",
+          "refId": "B"
+        },
+        {
+          "expr": "avg_over_time(rag_reranked_candidates_count[5m])",
+          "legendFormat": "Final Reranked Context Chunks",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 25, "lineWidth": 1 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 13 },
+      "id": 8,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "title": "Hallucination Guard Refusals & Low Grounding Alerts",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(rag_hallucination_refusals_total[5m])) * 60",
+          "legendFormat": "Refusals / min",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(rag_queries_low_confidence_total[5m])) * 60",
+          "legendFormat": "Low Confidence (<0.70) / min",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "keep-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 20, "lineWidth": 2 },
+          "unit": "tokens"
+        }
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 13 },
+      "id": 9,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "title": "Token Consumption Velocity",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(rag_tokens_prompt_total[5m])) * 60",
+          "legendFormat": "Prompt Tokens / min",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(rag_tokens_completion_total[5m])) * 60",
+          "legendFormat": "Completion Tokens / min",
+          "refId": "B"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["keep", "phase-2.2", "rag", "hybrid-search", "semantic-search", "ai"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m"] },
+  "timezone": "browser",
+  "title": "KEEP — Phase 2.2 RAG Engine & Semantic Search Dashboard",
+  "uid": "keep-ai-rag-dashboard",
+  "version": 1
+}

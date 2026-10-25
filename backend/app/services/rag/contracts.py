@@ -282,14 +282,14 @@ class DefaultRAGReranker(BaseRAGReranker):
         query_terms = set(re.findall(r"\w+", query.lower()))
 
         for cand in candidates:
-            # 1. Semantic score: derived from dense similarity or normalized RRF score
+            # 1. Semantic score: derived from dense similarity and lexical term overlap
+            content_terms = set(re.findall(r"\w+", cand.content.lower()))
+            overlap = len(query_terms.intersection(content_terms))
+            lexical = min(1.0, overlap / max(1, len(query_terms)))
             if cand.dense_similarity > 0.0:
-                semantic = min(1.0, max(0.0, cand.dense_similarity))
+                semantic = min(1.0, max(cand.dense_similarity, lexical))
             else:
-                # Lexical term overlap heuristic
-                content_terms = set(re.findall(r"\w+", cand.content.lower()))
-                overlap = len(query_terms.intersection(content_terms))
-                semantic = min(1.0, overlap / max(1, len(query_terms)))
+                semantic = lexical
 
             # 2. Freshness score with exponential decay
             cand_time = cand.created_at
