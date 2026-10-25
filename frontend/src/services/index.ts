@@ -25,3 +25,4 @@ export * from './auditService';
 export * from './dashboardService';
 export * from './observabilityService';
 export * from './ingestionService';
+export * from './ragService';
