@@ -13,6 +13,7 @@ Copy the prompt block below, fill in the parameter placeholders:
 - `[SUBPHASE_NUMBER]` (e.g. `1` or `2`)
 - `[SUBPHASE_TITLE]` (e.g. `AI Knowledge Ingestion Pipeline` or `Vector Database & Semantic Search Architecture`)
 - `[FEATURE_SLUG]` (e.g. `ai-ingestion-pipeline` or `vector-database-semantic-search`)
+- `[PRIMARY_ROLE_DOMAIN]` (Primary leading domain according to AGENT_RULES.md convention: `ai-lead` / `backend` / `frontend` / `devops`, e.g. `ai-lead` for Phase 2.1/2.2)
 
 Then send it to your local Antigravity AI Agent. The agent will execute all 4 member roles sequentially, maintaining strict domain isolation, enforcing tests and migrations at each step, logging asynchronous handoffs, and producing a complete sub-phase delivery ready for human review.
 
@@ -25,7 +26,8 @@ KEEP PROJECT — FULL SUB-PHASE SEQUENTIAL EXECUTION PROMPT
 
 CURRENT SUB-PHASE TO EXECUTE: Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] — [SUBPHASE_TITLE]
 SPECIFICATION SOURCE FILE: devdocs/p[PHASE_NUMBER]/p[PHASE_NUMBER].[SUBPHASE_NUMBER].txt
-ISOLATED FEATURE BRANCH: agent/feature/phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]-[FEATURE_SLUG]
+ISOLATED FEATURE BRANCH: agent/[PRIMARY_ROLE_DOMAIN]/feature/phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]-[FEATURE_SLUG]
+(or sub-phase lead domain: `agent/ai-lead/feature/...`, `agent/backend/feature/...`, `agent/frontend/feature/...`, `agent/devops/feature/...`)
 
 OPERATING DIRECTIVE:
 You are tasked with executing the ENTIRETY of Phase [PHASE_NUMBER].[SUBPHASE_NUMBER] from start to finish.
@@ -67,8 +69,9 @@ Execute the following Git commands prior to writing code:
 1. Check repository status: `git status`
 2. Fetch latest changes: `git fetch origin`
 3. Switch to integration baseline (`main` or `develop`): `git checkout main; git pull origin main`
-4. Create the isolated sub-phase feature branch:
-   `git checkout -b agent/feature/phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]-[FEATURE_SLUG]`
+4. Create the isolated sub-phase feature branch using the strict naming convention:
+   `git checkout -b agent/[PRIMARY_ROLE_DOMAIN]/feature/phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]-[FEATURE_SLUG]`
+   (Allowed [PRIMARY_ROLE_DOMAIN] values: `ai-lead`, `backend`, `frontend`, `devops` — e.g., `agent/ai-lead/feature/phase-2.2-vector-database-semantic-search`)
 
 --------------------------------------------------------------------------------
 3. DOMAIN OWNERSHIP & TRAFFIC LANE GOVERNANCE
@@ -181,7 +184,7 @@ Once all 4 stages are completed and verified:
    `git fetch origin`
    `git rebase origin/main` (or origin/develop)
 3. Push the feature branch to central repository:
-   `git push -u origin agent/feature/phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]-[FEATURE_SLUG]`
+   `git push -u origin agent/[PRIMARY_ROLE_DOMAIN]/feature/phase-[PHASE_NUMBER].[SUBPHASE_NUMBER]-[FEATURE_SLUG]`
 
 --------------------------------------------------------------------------------
 6. MANDATORY CONSOLIDATED COMPLETION REPORT & GATING RULE
