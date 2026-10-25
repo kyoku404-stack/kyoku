@@ -26,3 +26,4 @@ export * from './permission';
 export * from './audit';
 export * from './dashboard';
 export * from './observability';
+export * from './ingestion';

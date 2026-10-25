@@ -22,6 +22,7 @@ import {
   Sparkles,
   X,
   FileStack,
+  Cpu,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -46,6 +47,13 @@ const navItems: NavItem[] = [
     icon: FileStack,
     requiredPermission: Permission.DOCUMENT_CREATE,
     badge: 'New',
+  },
+  {
+    label: 'AI Ingestion Pipeline',
+    path: ROUTES.INGESTION,
+    icon: Cpu,
+    requiredPermission: Permission.DOCUMENT_CREATE,
+    badge: 'Phase 2.1',
   },
   { label: 'Document Upload', path: ROUTES.UPLOAD, icon: UploadCloud, requiredPermission: Permission.DOCUMENT_CREATE },
   { label: 'RAG Knowledge Chat', path: ROUTES.CHAT, icon: MessageSquare, requiredPermission: Permission.AI_CHAT },

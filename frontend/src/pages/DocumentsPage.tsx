@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FolderOpen,
   UploadCloud,
@@ -11,6 +12,7 @@ import {
   Shield,
   Zap,
   ChevronRight,
+  Cpu,
 } from 'lucide-react';
 import { DocumentExplorer } from '@/features/upload/DocumentExplorer';
 import { DocumentUploadModal } from '@/features/upload/DocumentUploadModal';
@@ -20,6 +22,7 @@ import { Permission } from '@/types/permission';
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export const DocumentsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [uploadOpen, setUploadOpen] = useState(false);
   const { can } = useAuthorization();
   const canUpload = can(Permission.DOCUMENT_CREATE);
@@ -40,16 +43,28 @@ export const DocumentsPage: React.FC = () => {
           </div>
         </div>
 
-        {canUpload && (
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            id="page-upload-btn"
-            onClick={() => setUploadOpen(true)}
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
+            id="view-ingestion-btn"
+            data-testid="view-ingestion-btn"
+            onClick={() => navigate('/ingestion')}
+            className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/50 shadow-xs transition-colors"
           >
-            <UploadCloud className="h-4 w-4" />
-            Upload Documents
+            <Cpu className="h-4 w-4 text-primary" />
+            AI Ingestion Pipeline
           </button>
-        )}
+
+          {canUpload && (
+            <button
+              id="page-upload-btn"
+              onClick={() => setUploadOpen(true)}
+              className="flex shrink-0 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-xs transition-colors"
+            >
+              <UploadCloud className="h-4 w-4" />
+              Upload Documents
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ─── Feature Pills ────────────────────────────────────────────── */}
