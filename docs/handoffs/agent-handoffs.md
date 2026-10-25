@@ -3588,6 +3588,92 @@ COMPLETED ✓ — MANDATORY HUMAN GATING STOP
    - Implement TypeScript API client for Ingestion endpoints (`frontend/src/services/ingestionService.ts`) matching Section 8 of `docs/api/api-contract.md`.
    - Build Ingestion Dashboard components in `frontend/src/features/ingestion/`.
 
+---
+
+## Entry #040: Phase 2.1 — AI Ingestion Pipeline Frontend: Command Center, Stage Progress Stepper, Metrics Grid & REST Client
+
+### Date
+2026-10-25
+
+### Author Agent
+Member 3 (Frontend Lead)
+
+### Status
+COMPLETED ✓ — MANDATORY HUMAN GATING STOP
+
+### Implemented Features
+1. **Strongly-Typed Domain Contracts (`frontend/src/types/ingestion.ts`)**:
+   - Defined `IngestionJobStatus` (10-stage state machine: `PENDING`, `EXTRACTING`, `OCR_PROCESSING`, `NORMALIZING`, `CHUNKING`, `EMBEDDING`, `INDEXING`, `COMPLETED`, `FAILED`, `RETRYING`).
+   - Defined `ChunkingStrategy` (ADR-032: `SEMANTIC_HEADING_AWARE`, `FIXED_TOKEN_OVERLAP`, `PARAGRAPH_BOUNDARY`, `HIERARCHICAL_RECURSIVE`, `DOCUMENT_STRUCTURE_AWARE`).
+   - Defined `EmbeddingModelProvider` (ADR-033: `OPENAI`, `LOCAL_BGE`, `COHERE`, `VOYAGE`, `HUGGINGFACE`).
+   - Defined request models (`StartIngestionRequest`, `IngestionJobListParams`) and API response models (`StartIngestionResponseData`, `IngestionJobStatusResponseData`, `IngestionJobListItem`, `IngestionRetryResponseData`, `IngestionStatisticsResponseData`).
+   - Re-exported from central types barrel `frontend/src/types/index.ts`.
+
+2. **Ingestion REST API Client (`frontend/src/services/ingestionService.ts`)**:
+   - Implemented `startIngestion(payload)` -> `POST /api/v1/ingestion/start` (202 Accepted).
+   - Implemented `getIngestionStatus(id)` -> `GET /api/v1/ingestion/status/{id}` (200 OK).
+   - Implemented `listIngestionJobs(params)` -> `GET /api/v1/ingestion/jobs` (200 OK, paginated).
+   - Implemented `retryIngestionJob(id)` -> `POST /api/v1/ingestion/retry/{id}` (200 OK).
+   - Implemented `getIngestionStatistics()` -> `GET /api/v1/ingestion/statistics` (200 OK).
+   - Re-exported from central services barrel `frontend/src/services/index.ts`.
+
+3. **Custom React Hook (`frontend/src/hooks/useIngestion.ts`)**:
+   - Implemented real-time polling mechanism (5s configurable interval) with toggle controls.
+   - Manages paginated job states, total pages, filter tabs (`All`, `In Progress`, `Completed`, `Failed`), and document ID filtering.
+   - Provides mutations for enqueuing jobs (`startIngestion`) and retrying failures (`retryJob`).
+
+4. **UI Components (`frontend/src/features/ingestion/`)**:
+   - `PipelineStageStepper.tsx`: 8-stage interactive visual stepper (`PENDING` -> `EXTRACTING` -> `OCR_PROCESSING` -> `NORMALIZING` -> `CHUNKING` -> `EMBEDDING` -> `INDEXING` -> `COMPLETED`) with animated active node pulse, progress percentage bar, and error/retry states.
+   - `IngestionMetricsGrid.tsx`: 4 executive KPI cards displaying total jobs, active queues, chunks indexed in pgvector, throughput velocity (pages/min), mean processing duration, OCR utilization rate, and retry success rate.
+   - `IngestionJobTable.tsx`: Searchable & filterable execution log table with status filter tabs, search by title/ID, chunk counts, wall-clock time, inspect modal triggers, and one-click retry for failed jobs.
+   - `IngestionProgressModal.tsx`: Live modal stage inspector providing real-time progress, processed page ratios, vector counts, OCR engine status, execution timestamps, and diagnostic error log viewer with retry capability.
+   - `StartIngestionModal.tsx`: Modal allowing manual ingestion dispatch with fine-grained configuration for force OCR, heading-aware chunking, target chunk size/overlap, and vector embedding model.
+
+5. **Master Page & Routing Integration**:
+   - Built `IngestionPage` (`frontend/src/pages/IngestionPage.tsx`) assembling the complete Ingestion Command Center with live polling toggle, manual refresh, architecture summary banner, KPI grid, and jobs table.
+   - Added `/ingestion` route in `frontend/src/routes/paths.ts` and mounted lazy-loaded `IngestionPage` in `frontend/src/routes/index.tsx`.
+   - Updated navigation in `frontend/src/components/common/Sidebar.tsx` with `AI Ingestion Pipeline` link and Phase 2.1 badge.
+   - Added `AI Ingestion Pipeline` navigation action button to `frontend/src/pages/DocumentsPage.tsx`.
+
+### Files Modified / Created
+- `frontend/src/types/ingestion.ts` (Created — TypeScript types & enums for Phase 2.1)
+- `frontend/src/types/index.ts` (Modified — Exported ingestion types)
+- `frontend/src/services/ingestionService.ts` (Created — REST client for all 5 ingestion endpoints)
+- `frontend/src/services/index.ts` (Modified — Exported ingestionService)
+- `frontend/src/hooks/useIngestion.ts` (Created — Custom hook with real-time polling)
+- `frontend/src/features/ingestion/PipelineStageStepper.tsx` (Created — 8-stage visual stepper)
+- `frontend/src/features/ingestion/IngestionMetricsGrid.tsx` (Created — Executive KPI cards)
+- `frontend/src/features/ingestion/IngestionJobTable.tsx` (Created — Filterable jobs table with retry)
+- `frontend/src/features/ingestion/IngestionProgressModal.tsx` (Created — Real-time stage progress inspector)
+- `frontend/src/features/ingestion/StartIngestionModal.tsx` (Created — Manual ingestion config modal)
+- `frontend/src/features/ingestion/index.ts` (Created — Feature barrel exports)
+- `frontend/src/pages/IngestionPage.tsx` (Created — Ingestion Command Center page)
+- `frontend/src/routes/paths.ts` (Modified — Added INGESTION route)
+- `frontend/src/routes/index.tsx` (Modified — Mounted lazy-loaded IngestionPage)
+- `frontend/src/components/common/Sidebar.tsx` (Modified — Added AI Ingestion Pipeline nav item)
+- `frontend/src/pages/DocumentsPage.tsx` (Modified — Added AI Ingestion Pipeline button)
+- `frontend/src/tests/ingestionService.test.ts` (Created — 5 unit tests)
+- `frontend/src/tests/ingestionComponents.test.tsx` (Created — 14 unit and integration tests)
+- `PROJECT_STATE.md` (Modified — Recorded Phase 2.1 Member 3 completion)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #040)
+
+### Verification & Tests Executed
+- [x] ESLint verification: `npm.cmd run lint` → **0 warnings, 0 errors**
+- [x] TypeScript build verification: `npm.cmd run build` → **Built cleanly in 4.24s**
+- [x] Dedicated Ingestion unit & integration tests: `src/tests/ingestionService.test.ts` & `src/tests/ingestionComponents.test.tsx` → **19/19 PASSED**
+- [x] Full frontend test suite: `npm.cmd test` → **212/212 tests PASSED (100% across 24 test files)**
+- [x] Backend unit test suite verification: `pytest tests/unit/` → **261/261 tests PASSED (100%)**
+- [x] Feature branch: `agent/frontend/feature/phase-2.1-ai-ingestion-dashboard`
+
+### Target Receiving Agent
+- **Member 4 (DevOps / QA Lead)**: Configure worker container topology (`ai_ingestion_queue`, `ai_embedding_queue`), Redis brokers, PaddleOCR/Tesseract container provisioning, and automated Playwright E2E verification of the Ingestion dashboard and retry flow.
+
+### Required Action for Receiving Agent
+1. **Member 4 (DevOps Lead)**:
+   - Create feature branch: `agent/devops/feature/phase-2.1-ingestion-worker-infra`.
+   - Update `docker-compose.yml` and `docker-compose.prod.yml` with AI worker definitions and Redis queue topology.
+   - Author Playwright E2E automated test suite exercising document upload -> automated ingestion -> real-time progress update on Ingestion Dashboard.
+
 
 
 

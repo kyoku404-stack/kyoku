@@ -24,3 +24,4 @@ export * from './activityService';
 export * from './auditService';
 export * from './dashboardService';
 export * from './observabilityService';
+export * from './ingestionService';
