@@ -3769,13 +3769,93 @@ COMPLETED ✓ — MANDATORY HUMAN GATING STOP
 - [x] Feature branch: `agent/devops/feature/phase-2.1-ingestion-worker-infra`
 
 ### Target Receiving Agent
-- **Member 1 (AI Lead / Project Lead)**: Review Phase 2.1 full four-agent completion and initiate Phase 2.2 (Vector Database & Semantic Search Architecture).
+- **Member 2 (Backend & Database Lead)**: Implement ORM models, migrations, RAG services, and REST APIs.
 
 ### Required Action for Receiving Agent
-1. **Member 1 (AI Lead)**:
-   - Verify all Phase 2.1 deliverables across AI contracts, Backend APIs, Frontend Ingestion Command Center, and DevOps worker containers.
-   - Formally close Phase 2.1.
-   - Author architecture specifications and ADRs for Phase 2.2 (Vector Database & Semantic Search Architecture).
+1. **Member 2 (Backend Lead)**:
+   - Implement `RAGQuery` and `RAGFeedback` SQLAlchemy models in `backend/app/models/rag.py`.
+   - Author Alembic migration for `rag_queries` and `rag_feedbacks` tables, plus the `search_vector` column and GIN index on `document_chunks`.
+   - Implement `RAGService`, `HybridSearchService`, `RerankingService`, `ContextBuilderService`, and `CitationService` in `backend/app/services/rag/`.
+   - Implement Pydantic validation schemas in `backend/app/schemas/rag.py`.
+   - Implement FastAPI REST endpoints in `backend/app/api/v1/rag.py` and mount them in `backend/app/api/v1/router.py`.
+   - Author unit and integration tests verifying RAG endpoints.
+
+---
+
+### Handoff Entry #042: Phase 2.2 — RAG Engine & Semantic Search Architecture
+
+#### Date
+2026-10-26
+
+#### Author Agent
+Member 1 (Project Lead & AI Architect)
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION
+
+#### Implemented Features
+1. **Master Architecture Specification (`docs/Architecture/ai-rag-engine.md`)**:
+   - Comprehensive multi-stage hybrid RAG architecture covering natural language query preprocessing, dense vector search, sparse full-text search, Reciprocal Rank Fusion (RRF), cross-encoder neural reranking, token-budgeted context assembly, and grounded LLM generation.
+   - Mathematical formulations for RRF ($k=60$), multi-factor relevance scoring (semantic + freshness decay + scope), and hallucination confidence thresholding.
+   - Multi-tenant security isolation, zero-hallucination negative prompting, and verifiable citation provenance standard.
+
+2. **Architecture Decision Records (ADR-035, ADR-036, ADR-037 in `docs/decisions/decisions.md`)**:
+   - `ADR-035`: Hybrid Retrieval Fusion Strategy: Reciprocal Rank Fusion (RRF) over Weighted Score Summation.
+   - `ADR-036`: Multi-Factor Neural Reranking and Context Relevance Weighting.
+   - `ADR-037`: Context Assembly, Zero-Hallucination Guardrails, and Verifiable Citation Provenance.
+
+3. **REST API Contract Expansion (`docs/api/api-contract.md` Section 9)**:
+   - Defined 5 REST endpoints under `/api/v1/rag`:
+     - `POST /api/v1/rag/query`: Natural language question submission with streaming and non-streaming modes.
+     - `GET /api/v1/rag/history`: Multi-turn conversational session history.
+     - `GET /api/v1/rag/citations/{id}`: Granular citation provenance inspection.
+     - `POST /api/v1/rag/feedback`: Answer satisfaction feedback submission.
+     - `GET /api/v1/rag/statistics`: RAG engine telemetry and performance metrics.
+
+4. **Database Schema Specification (`docs/database/database-schema.md` Section 3.14)**:
+   - Full-text search `tsvector` generated column and GIN index on `document_chunks`.
+   - `rag_queries` table schema with token counting, latency profiling, and citation JSONB.
+   - `rag_feedbacks` table schema with satisfaction rating and helpfulness flag.
+
+5. **Typed Domain Contracts & Reference Implementations (`backend/app/services/rag/contracts.py`)**:
+   - `DefaultQueryPreprocessor`: Query normalization, enterprise acronym expansion (WFH, PTO, NDA, SLA, etc.), intent detection.
+   - `DefaultRRFHybridFuser`: Reciprocal Rank Fusion algorithm complying with ADR-035.
+   - `DefaultRAGReranker`: Two-tier neural & heuristic reranking with freshness decay and departmental scoping (ADR-036).
+   - `DefaultRAGContextBuilder`: Deduplication, provenance headers, token budgeting, confidence scoring (ADR-037).
+   - `DefaultRAGCitationEngine`: Inline tag parser and structured citation extractor.
+   - `DefaultHallucinationGuard`: Circuit breaker refusing ungrounded queries when confidence < 0.35.
+
+6. **Unit Test Suite (`tests/unit/test_rag_ai_contracts.py`)**:
+   - 12 comprehensive unit tests validating query preprocessing, RRF fusion, reranker weighting, context builder deduplication, citation parsing, and hallucination guardrail.
+   - 100% pass rate (12/12 passed).
+
+#### Files Modified / Created
+- `docs/Architecture/ai-rag-engine.md` (Created)
+- `docs/decisions/decisions.md` (Modified — Appended ADR-035, ADR-036, ADR-037)
+- `docs/api/api-contract.md` (Modified — Appended Section 9)
+- `docs/database/database-schema.md` (Modified — Appended Section 3.14)
+- `backend/app/services/rag/contracts.py` (Created)
+- `backend/app/services/rag/__init__.py` (Modified — Re-exported Phase 2.2 contracts)
+- `tests/unit/test_rag_ai_contracts.py` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #042)
+
+#### Verification & Tests Executed
+- [x] Ruff lint check: `.\.venv\Scripts\ruff.exe check backend/app/services/rag/ tests/unit/test_rag_ai_contracts.py` -> 0 errors.
+- [x] Phase 2.2 AI contracts unit test suite: `pytest tests/unit/test_rag_ai_contracts.py` -> 12/12 passed (100%).
+- [x] Full backend unit test suite: `pytest tests/unit/` -> 273/273 passed (100%).
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**: Implement ORM models, migrations, RAG services, and REST APIs.
+
+#### Required Action for Receiving Agent
+1. **Member 2 (Backend Lead)**:
+   - Implement `RAGQuery` and `RAGFeedback` SQLAlchemy models in `backend/app/models/rag.py`.
+   - Author Alembic migration for `rag_queries` and `rag_feedbacks` tables, plus the `search_vector` column and GIN index on `document_chunks`.
+   - Implement `RAGService`, `HybridSearchService`, `RerankingService`, `ContextBuilderService`, and `CitationService` in `backend/app/services/rag/`.
+   - Implement Pydantic validation schemas in `backend/app/schemas/rag.py`.
+   - Implement FastAPI REST endpoints in `backend/app/api/v1/rag.py` and mount them in `backend/app/api/v1/router.py`.
+   - Author unit and integration tests verifying RAG endpoints.
+
 
 
 

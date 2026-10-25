@@ -1707,4 +1707,198 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; 
 }
 ```
 
+---
+
+## 9. Phase 2.2 — RAG Engine & Semantic Search APIs (`/api/v1/rag`)
+
+### 9.1 Overview & Security Model
+- **Auth Requirement**: All endpoints require a valid JWT Bearer Token.
+- **Tenant Isolation**: Mandatory `organization_id` isolation extracted from JWT claims.
+- **Permission Scope**:
+  - `rag.query`: Execute queries and read conversational answers.
+  - `rag.history`: Read conversation history.
+  - `rag.feedback`: Submit answer satisfaction feedback.
+  - `rag.analytics`: View aggregate RAG engine metrics.
+
+### 9.2 Endpoints
+
+#### 9.2.1 Submit AI Question (RAG Query)
+- **Method**: `POST`
+- **Path**: `/api/v1/rag/query`
+- **Auth**: Bearer JWT (`rag.query` permission)
+- **Request Body**:
+```json
+{
+  "query": "What is our employee leave policy?",
+  "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "department_id": "7fa85f64-5717-4562-b3fc-2c963f66afb2",
+  "project_id": null,
+  "hybrid_dense_weight": 0.65,
+  "hybrid_sparse_weight": 0.35,
+  "top_k": 5,
+  "stream": false
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Query processed successfully.",
+  "data": {
+    "query_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "query": "What is our employee leave policy?",
+    "answer": "All full-time employees are entitled to 20 days of paid annual leave per year, requiring approval from their immediate supervisor [Doc 1, Page 18]. Medical leave is granted up to 10 days with a medical certificate [Doc 1, Page 20].",
+    "confidence_score": 0.885,
+    "is_grounded": true,
+    "processing_time_ms": 420.5,
+    "citations": [
+      {
+        "citation_id": "cit_1",
+        "document_id": "d3b07384-d113-46fb-a0b4-eb40a3f7ff95",
+        "document_title": "Employee Handbook.pdf",
+        "document_version_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "page_number": 18,
+        "section": "Section 4.2: Paid Annual Leave",
+        "chunk_id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+        "similarity_score": 0.892,
+        "excerpt": "All full-time employees are entitled to 20 days of paid annual leave..."
+      }
+    ],
+    "retrieval_metrics": {
+      "dense_candidates": 30,
+      "sparse_candidates": 30,
+      "reranked_candidates": 5,
+      "latency_retrieval_ms": 115.2,
+      "latency_generation_ms": 305.3,
+      "tokens_prompt": 850,
+      "tokens_completion": 92
+    }
+  }
+}
+```
+- **Error Codes**: `VALIDATION_ERROR` (422), `UNAUTHORIZED` (401), `CIRCUIT_BREAKER_LOW_CONFIDENCE` (200 with fallback refusal message)
+
+#### 9.2.2 Get Conversation History
+- **Method**: `GET`
+- **Path**: `/api/v1/rag/history`
+- **Auth**: Bearer JWT (`rag.history` permission)
+- **Query Parameters**:
+  - `session_id` (optional, UUID): Specific chat session. If omitted, returns all sessions for the user.
+  - `page` (optional, int, default 1)
+  - `page_size` (optional, int, default 20)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "sessions": [
+      {
+        "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "title": "Employee Leave Policy Q&A",
+        "created_at": "2026-10-26T02:00:00Z",
+        "updated_at": "2026-10-26T02:15:00Z",
+        "message_count": 4,
+        "messages": [
+          {
+            "message_id": "m1",
+            "role": "user",
+            "content": "What is our leave policy?",
+            "created_at": "2026-10-26T02:00:00Z"
+          },
+          {
+            "message_id": "m2",
+            "role": "assistant",
+            "content": "All full-time employees are entitled to 20 days...",
+            "citations_json": "[...]",
+            "created_at": "2026-10-26T02:00:02Z"
+          }
+        ]
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20
+  }
+}
+```
+
+#### 9.2.3 Retrieve Citations Detail
+- **Method**: `GET`
+- **Path**: `/api/v1/rag/citations/{id}`
+- **Auth**: Bearer JWT (`rag.query` permission)
+- **Path Parameters**:
+  - `id`: UUID (Chunk ID or Citation ID)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "citation_id": "cit_1",
+    "chunk_id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+    "document_id": "d3b07384-d113-46fb-a0b4-eb40a3f7ff95",
+    "document_title": "Employee Handbook.pdf",
+    "document_version_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "chunk_index": 12,
+    "page_number": 18,
+    "section": "Section 4.2: Paid Annual Leave",
+    "full_content": "All full-time employees are entitled to 20 days of paid annual leave...",
+    "metadata": {
+      "author": "People Operations",
+      "department": "Human Resources",
+      "upload_date": "2026-09-01T10:00:00Z"
+    }
+  }
+}
+```
+- **Error Codes**: `NOT_FOUND` (404)
+
+#### 9.2.4 Submit User Feedback
+- **Method**: `POST`
+- **Path**: `/api/v1/rag/feedback`
+- **Auth**: Bearer JWT (`rag.feedback` permission)
+- **Request Body**:
+```json
+{
+  "query_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "rating": 5,
+  "is_helpful": true,
+  "comment": "Accurate response with direct citation to policy handbook."
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Feedback submitted successfully.",
+  "data": {
+    "feedback_id": "fb_123",
+    "recorded_at": "2026-10-26T02:20:00Z"
+  }
+}
+```
+
+#### 9.2.5 Get RAG Engine Statistics
+- **Method**: `GET`
+- **Path**: `/api/v1/rag/statistics`
+- **Auth**: Bearer JWT (`rag.analytics` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "total_queries": 1250,
+    "total_sessions": 310,
+    "average_latency_ms": 485.2,
+    "average_confidence_score": 0.862,
+    "hallucination_refusal_count": 14,
+    "positive_feedback_percentage": 94.2,
+    "total_citations_rendered": 3820,
+    "cache_hit_ratio": 0.32
+  }
+}
+```
+
+
 

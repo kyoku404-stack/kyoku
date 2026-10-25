@@ -1056,4 +1056,107 @@ Member 1 establishes domain interfaces (`BaseIngestionCoordinator`, `IngestionPi
 #### Status
 ACCEPTED
 
+---
+
+### ADR-035 — Hybrid Retrieval Fusion Strategy: Reciprocal Rank Fusion (RRF) over Weighted Score Summation
+
+#### Date
+2026-10-26
+
+#### Context
+`devdocs/p2/p2.2.txt` (Chapters 3, 6 & 7) mandates combining dense semantic vector search with sparse keyword search. Dense vector search excels at conceptual similarity but struggles with exact alphanumeric identifiers, error codes, and specific names. Sparse full-text search (BM25 / PostgreSQL `tsvector`) excels at exact term matches but fails on synonyms or semantic paraphrase. Combining the two requires a robust rank aggregation strategy.
+
+#### Decision
+1. Implement **Reciprocal Rank Fusion (RRF)** to combine dense and sparse search results:
+   $$\text{RRF\_Score}(d) = \frac{w_{\text{dense}}}{k + r_{\text{dense}}(d)} + \frac{w_{\text{sparse}}}{k + r_{\text{sparse}}(d)}$$
+   with default smoothing parameter $k = 60$, $w_{\text{dense}} = 0.65$, and $w_{\text{sparse}} = 0.35$.
+2. Candidate Retrieval:
+   - Retrieve top $N_1 = 30$ chunks from dense vector similarity (pgvector cosine distance).
+   - Retrieve top $N_2 = 30$ chunks from sparse full-text search (`tsvector @@ websearch_to_tsquery`).
+   - Merge candidate pool and sort by descending $\text{RRF\_Score}$.
+3. Fallback:
+   - If either search method returns zero results (e.g. specialized acronyms with no vector neighbor or non-lexical terms), the opposing method gracefully populates the candidate pool without dividing by zero.
+
+#### Alternatives Considered
+- Direct Score Summation (normalized vector score + BM25 score): Rejected because BM25 scores are unbounded $[0, \infty)$ while cosine similarities are bounded $[-1, 1]$, causing score distortion across diverse queries.
+- Pure Vector Search: Rejected due to degradation on exact serial numbers, acronyms, and specialized code identifiers.
+
+#### Reason
+RRF is scale-invariant, hyperparameter-resilient, and empirically proven in information retrieval literature to outperform linear score combinations across heterogeneous search backends.
+
+#### Impact
+Member 1 specifies `BaseHybridSearchService` and `RRFRetrievalPipeline`. Member 2 implements the SQL query generator and rank aggregator. Member 4 conducts latency profiling.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-036 — Multi-Factor Neural Reranking and Context Relevance Weighting
+
+#### Date
+2026-10-26
+
+#### Context
+`devdocs/p2/p2.2.txt` (Chapter 8) specifies that raw hybrid search returns dozens of candidate chunks that vary widely in document freshness, organization priority, and contextual density. Feeding raw chunks directly into the LLM increases token costs and risks attention dilution ("Lost in the Middle").
+
+#### Decision
+1. Implement a **Two-Tier Reranking Pipeline**:
+   - **Tier 1 (Cross-Encoder / Bi-Encoder Scoring)**: Computes fine-grained semantic interaction score $S_{\text{semantic}}(Q, C) \in [0, 1]$.
+   - **Tier 2 (Enterprise Metadata Heuristics)**:
+     - Document Freshness $S_{\text{freshness}} = \exp(-\Delta t / 180\text{ days})$.
+     - Scoped Alignment $S_{\text{scope}} \in \{0.0, 0.5, 1.0\}$ prioritizing the user's active department and project.
+2. Composite Rerank Score:
+   $$\text{Score}_{\text{final}} = 0.70 \cdot S_{\text{semantic}} + 0.15 \cdot S_{\text{freshness}} + 0.15 \cdot S_{\text{scope}}$$
+3. Truncation: Select top $K = 5$ scoring chunks for prompt context assembly.
+
+#### Alternatives Considered
+- Heavy Cross-Encoder on all 1,000+ document chunks: Rejected due to unacceptable latency ($> 2,000\text{ ms}$).
+- No Reranking (pass top-5 RRF directly): Rejected because RRF does not account for document freshness or enterprise departmental relevance.
+
+#### Reason
+Two-tier reranking bounds latency to $< 100\text{ ms}$ while ensuring top-tier context precision for the LLM.
+
+#### Impact
+Member 1 provides `BaseReranker` contract. Member 2 integrates reranking into `RAGService`. Member 4 benchmarks reranking throughput.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-037 — Context Assembly, Zero-Hallucination Guardrails, and Verifiable Citation Provenance
+
+#### Date
+2026-10-26
+
+#### Context
+`devdocs/p2/p2.2.txt` (Chapters 9, 10, 11, 13 & 14) mandates that every generated response must be grounded in enterprise documents, include verifiable citations (document title, page, section, chunk ID), and strictly refrain from hallucinating policies when knowledge is absent.
+
+#### Decision
+1. **Context Window Assembly**:
+   - Token budget: Maximum 3,000 tokens for retrieved chunks.
+   - Chunks are assembled with explicit provenance envelopes:
+     `[Source <ID>: <Document Title> | Page <P> | Section <S>]\n<Content>`
+2. **Strict Grounding Prompt**:
+   - The LLM is conditioned with a negative constraint: *"Answer the user's question solely based on the provided context. If the context does not contain sufficient facts to answer the question, state clearly: 'I do not have sufficient information in the organization knowledge base to answer this question.' Never invent or extrapolate policies."*
+3. **Confidence Scoring & Circuit Breaker**:
+   - If mean chunk relevance score $\text{Confidence} < 0.35$, bypass LLM synthesis and immediately return the standardized out-of-knowledge response, saving tokens and eliminating hallucination risk.
+4. **Citation Extraction & Verification**:
+   - The engine automatically extracts citation markers from the response, validates them against the provided context chunks, and enriches the API response with full metadata (document title, version, page, section, excerpt, download/preview URL).
+
+#### Alternatives Considered
+- Permitting LLM parametric general knowledge: Rejected — enterprise knowledge compliance requires strict grounded attribution.
+- Post-hoc citation search: Rejected — prone to misattribution and slow latency.
+
+#### Reason
+Grounded prompting coupled with confidence thresholding guarantees enterprise trust, auditability, and verifiable provenance for corporate compliance.
+
+#### Impact
+Member 1 delivers `BaseContextBuilder`, `BaseCitationFormatter`, and prompt templates. Member 2 implements citation parsing and database persistence. Member 3 builds the Citation Drawer UI.
+
+#### Status
+ACCEPTED
+
+
 
