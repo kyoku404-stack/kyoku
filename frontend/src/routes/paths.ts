@@ -31,6 +31,7 @@ export const ROUTES = {
   HEALTH: '/health',
   OBSERVABILITY: '/observability',
   INGESTION: '/ingestion',
+  ASSISTANT: '/assistant',
   NOT_FOUND: '*',
 } as const;
 

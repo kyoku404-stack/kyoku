@@ -4042,6 +4042,270 @@ COMPLETED / READY FOR FRONTEND IMPLEMENTATION
 - [x] Frontend production build: `npm run build` -> Clean exit code 0 (`tsc && vite build`).
 - [x] Playwright E2E test discovery: `playwright test --list` -> 15/15 tests discovered cleanly.
 
+### Handoff Entry #046: Phase 2.3 — Stage 1: Project Lead & AI Architect
+- **Delivering Role:** Member 1 (Project Lead & AI Architect)
+- **Receiving Role:** Member 2 (Backend & Database Lead)
+- **Date:** 2026-10-27
+- **Status:** COMPLETED ✓ — READY FOR BACKEND IMPLEMENTATION
+
+#### Implemented Features
+1. **Master Architecture Specification (`docs/Architecture/ai-assistant-agentic-workflows.md`)**:
+   - Outlines 5-stage NLU pipeline (Language normalization, intent classification, entity extraction, context resolution, DAG planning).
+   - Specifies DAG task planning engine decomposing user requests into atomic tool calls with dependency tracking.
+   - Formalizes dynamic enterprise tool registry with category taxonomy (`KNOWLEDGE`, `ANALYTICS`, `ADMINISTRATION`, `PRODUCTIVITY`, `NOTIFICATION`).
+   - Defines Two-Phase Commit Human-in-the-Loop (HITL) safety gating for destructive and policy-sensitive operations.
+   - Outlines short-term conversational session memory, report synthesis, proactive recommendations, and multi-agent coordination roadmap.
+
+2. **Architecture Decision Records (ADRs)** in `docs/decisions/decisions.md`:
+   - `ADR-038`: Deterministic Agentic Task Planning & Directed Acyclic Graph (DAG) Workflow Orchestration.
+   - `ADR-039`: Dynamic Enterprise Tool-Calling Registry with Enforced RBAC Boundaries.
+   - `ADR-040`: Two-Phase Commit Human-in-the-Loop (HITL) Approval Gating for Destructive Operations.
+
+3. **API Contract Updates (`docs/api/api-contract.md`)**:
+   - Added Section 10 specifying all 7 Phase 2.3 Assistant endpoints:
+     - `POST /api/v1/assistant/chat`: Natural language assistant chat with intent classification and tool execution.
+     - `POST /api/v1/assistant/task`: Multi-step DAG workflow plan formulation and execution.
+     - `GET /api/v1/assistant/history`: Multi-turn session message and conversation history.
+     - `POST /api/v1/assistant/report`: Structured organizational report generation.
+     - `GET /api/v1/assistant/workflows`: Workflow execution statuses and step progress logs.
+     - `POST /api/v1/assistant/approve`: Human-in-the-loop decision endpoint for sensitive actions.
+     - `GET /api/v1/assistant/recommendations`: Proactive knowledge and workspace recommendations.
+
+4. **Database Schema Updates (`docs/database/database-schema.md`)**:
+   - Added Section 3.15 defining relational schemas for `assistant_workflows`, `assistant_tasks`, `assistant_approvals`, and `assistant_reports` with composite indexes and status check constraints.
+
+5. **AI Domain Contracts & Reference Implementations (`backend/app/services/assistant/`)**:
+   - `contracts.py`:
+     - Enums: `AssistantIntent`, `WorkflowStatus`, `TaskStepStatus`, `ApprovalStatus`, `ToolCategory`, `ReportType`, `ReportFormat`, `RecommendationCategory`.
+     - Dataclasses: `WorkflowExecutionContext`, `TaskStepSpec`, `TaskPlanSpec`, `ToolCallResult`, `ApprovalRequestSpec`, `AssistantReportSpec`, `ProactiveRecommendation`.
+     - Abstract Interfaces: `BaseTool`, `BaseToolRegistry`, `BaseAssistantPlanner`, `BaseWorkflowOrchestrator`, `BaseReportGenerator`, `BaseRecommendationEngine`.
+     - Concrete Reference Implementations: `DocumentTool`, `SearchTool`, `AnalyticsTool`, `ReportTool`, `UserTool`, `ProjectTool`, `NotificationTool`, `DefaultToolRegistry`, `DefaultAssistantPlanner`, `DefaultWorkflowOrchestrator`, `DefaultReportGenerator`, `DefaultRecommendationEngine`.
+   - `__init__.py`: Clean sorted re-exports of all contracts.
+
+6. **Unit Test Suite (`tests/unit/test_ai_assistant_contracts.py`)**:
+   - 10 unit tests verifying intent classification, DAG task planning, dependency resolution, tool registry, tool execution, workflow orchestrator topological execution, approval pause gating, report generation, and proactive recommendation engine (100% pass rate).
+
+#### Files Modified / Created
+- `docs/Architecture/ai-assistant-agentic-workflows.md` (Created)
+- `docs/decisions/decisions.md` (Modified — Added ADR-038, ADR-039, ADR-040)
+- `docs/api/api-contract.md` (Modified — Added Section 10 Assistant APIs)
+- `docs/database/database-schema.md` (Modified — Added Section 3.15 Assistant Tables)
+- `backend/app/services/assistant/__init__.py` (Created)
+- `backend/app/services/assistant/contracts.py` (Created)
+- `tests/unit/test_ai_assistant_contracts.py` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #046)
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**: Implement SQLAlchemy ORM models (`backend/app/models/assistant.py`), Alembic migration, Pydantic v2 schemas (`backend/app/schemas/assistant.py`), backend service orchestrator (`backend/app/services/assistant/service.py`), and FastAPI router endpoints (`backend/app/api/v1/assistant.py`).
+
+### Handoff Entry #047: Phase 2.3 — Stage 2: Backend & Database Lead
+- **Delivering Role:** Member 2 (Backend & Database Lead)
+- **Receiving Role:** Member 3 (Frontend & UI Lead)
+- **Date:** 2026-10-27
+- **Status:** COMPLETED ✓ — READY FOR FRONTEND CLIENT & UI IMPLEMENTATION
+
+#### Implemented Features
+1. **SQLAlchemy ORM Models (`backend/app/models/assistant.py`)**:
+   - `AssistantWorkflow`: Models workflow lifecycle, trigger type, current/total DAG steps, context JSONB, error diagnostics, and timestamps.
+   - `AssistantTask`: Models individual DAG task step nodes, target tool names, step inputs/outputs JSONB, latency, and linked approvals.
+   - `AssistantApproval`: Models Human-in-the-Loop review requests, action type, description, review status (`PENDING`, `APPROVED`, `REJECTED`), reviewer foreign key, and 24h expiration.
+   - `AssistantReport`: Models compiled enterprise reports, format (`MARKDOWN`, `PDF`, `DOCX`, `JSON`), structured text content, and metadata.
+   - Re-exported in `backend/app/models/__init__.py`.
+
+2. **Alembic Schema Migration (`backend/migrations/versions/e5f6a7b8c9d0_phase_2_3_assistant_tables.py`)**:
+   - Chained from `d4e5f6a7b8c9` to `e5f6a7b8c9d0 (head)`.
+   - Generates all 4 assistant tables, tenant composite indexes, foreign keys with cascade policies, and status check constraints.
+
+3. **Pydantic v2 Validation Schemas (`backend/app/schemas/assistant.py`)**:
+   - Conforms strictly to `docs/api/api-contract.md` Section 10:
+     - `AssistantChatRequest`, `AssistantChatResponseData`
+     - `TaskExecuteRequest`, `TaskExecuteResponseData`, `TaskStepResponse`
+     - `ReportGenerateRequest`, `ReportGenerateResponseData`
+     - `WorkflowListResponseData`, `WorkflowItemResponse`
+     - `ApprovalActionRequest`, `ApprovalActionResponseData`
+     - `RecommendationResponseData`, `ProactiveRecommendationItem`
+
+4. **Backend Service Orchestrator (`backend/app/services/assistant/service.py`)**:
+   - `AssistantService` coordinating:
+     - Chat interaction with conversational session history, intent detection, DAG planning, and tool execution.
+     - Multi-step task execution persisting `AssistantWorkflow` and `AssistantTask` rows.
+     - Two-phase commit human-in-the-loop review processing (`process_approval`).
+     - Multi-format report compilation and persistence (`generate_report`).
+     - Telemetry-derived proactive recommendations (`get_recommendations`).
+     - Multi-turn conversation sessions retrieval (`get_conversation_history`).
+
+5. **FastAPI REST Router (`backend/app/api/v1/assistant.py`)**:
+   - Mounted in `backend/app/api/v1/router.py`:
+     - `POST /api/v1/assistant/chat`
+     - `POST /api/v1/assistant/task`
+     - `GET /api/v1/assistant/history`
+     - `POST /api/v1/assistant/report`
+     - `GET /api/v1/assistant/workflows`
+     - `POST /api/v1/assistant/approve`
+     - `GET /api/v1/assistant/recommendations`
+
+6. **Unit & Integration Test Suites**:
+   - `tests/unit/test_assistant_services.py`: 6 tests validating chat knowledge queries, approval gating, DAG task execution, report generation, approval processing, and recommendations (100% pass rate).
+   - `tests/integration/test_assistant_endpoints.py`: 8 tests validating all 7 REST endpoints with JWT authorization and tenant boundaries (100% pass rate).
+   - `tests/integration/test_db_migrations.py`: Updated and verified for `e5f6a7b8c9d0` (100% pass rate).
+
+#### Files Modified / Created
+- `backend/app/models/assistant.py` (Created)
+- `backend/app/models/__init__.py` (Modified — Re-exported assistant models)
+- `backend/migrations/versions/e5f6a7b8c9d0_phase_2_3_assistant_tables.py` (Created)
+- `backend/app/schemas/assistant.py` (Created)
+- `backend/app/services/assistant/service.py` (Created)
+- `backend/app/services/assistant/__init__.py` (Modified — Re-exported AssistantService)
+- `backend/app/api/v1/assistant.py` (Created)
+- `backend/app/api/v1/router.py` (Modified — Mounted assistant_router)
+- `tests/unit/test_assistant_services.py` (Created)
+- `tests/integration/test_assistant_endpoints.py` (Created)
+- `tests/integration/test_db_migrations.py` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #047)
+
+#### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**: Implement TypeScript interfaces (`frontend/src/types/assistant.ts`), API client (`frontend/src/services/assistantService.ts`), custom React hook (`frontend/src/hooks/useAssistant.ts`), UI feature components (`frontend/src/features/assistant/`), master `AssistantPage.tsx`, routing, and Vitest test suites.
+
+---
+
+### Handoff Entry #048: Phase 2.3 — Enterprise AI Assistant UI, Agentic Workflow Visualizer, HITL Modal & State Hook
+
+#### Date
+2026-10-27
+
+#### Author Agent
+Member 3 — Frontend & UI Lead
+
+#### Status
+COMPLETED / READY FOR INTEGRATION & DEVOPS VALIDATION
+
+#### Implemented Features
+1. **TypeScript Type System & Domain Contracts (`frontend/src/types/assistant.ts`, `frontend/src/types/index.ts`)**:
+   - Strongly typed definitions mirroring Section 10 API contracts: `AssistantIntent`, `WorkflowStatus`, `TaskStepStatus`, `ApprovalStatus`, `ToolCategory`, `ReportType`, `ReportFormat`, `RecommendationCategory`.
+   - Complete interfaces for `AssistantTaskStep`, `AssistantWorkflowState`, `AssistantApprovalRequest`, `AssistantApprovalDecision`, `AssistantReportSummary`, `ProactiveRecommendation`, `AssistantChatRequest`, `AssistantChatResponse`, `AssistantTaskRequest`, and `AssistantAuditMetrics`.
+   - Re-exported via centralized barrel `frontend/src/types/index.ts`.
+2. **Assistant API Client Service (`frontend/src/services/assistantService.ts`, `frontend/src/services/index.ts`)**:
+   - Full REST client interfacing with all 7 Phase 2.3 backend endpoints:
+     - `sendChatMessage(request)` (`POST /api/v1/assistant/chat`)
+     - `executeTask(request)` (`POST /api/v1/assistant/task`)
+     - `getSessionHistory(sessionId)` (`GET /api/v1/assistant/history`)
+     - `generateReport(request)` (`POST /api/v1/assistant/report`)
+     - `getWorkflows(limit)` (`GET /api/v1/assistant/workflows`)
+     - `submitApproval(request)` (`POST /api/v1/assistant/approve`)
+     - `getRecommendations()` (`GET /api/v1/assistant/recommendations`)
+   - Re-exported via `frontend/src/services/index.ts`.
+3. **Reactive Custom State Hook (`frontend/src/hooks/useAssistant.ts`)**:
+   - Coordinates conversational chat state, multi-step DAG workflow tracking, interactive human-in-the-loop approval triggers, executive report synthesis, and dismissable proactive recommendation items.
+   - Built-in metrics calculation tracking active workflows, completed steps, pending approvals, and generated reports.
+4. **Modular Feature Components (`frontend/src/features/assistant/`)**:
+   - `AssistantMetricsBanner.tsx`: High-impact KPI stat cards for Active Workflows, Success Rate, Pending Approvals, and Synthesized Reports.
+   - `WorkflowVisualizer.tsx`: Interactive DAG step visualizer rendering step dependency progress, tool invocation parameters, duration badges, and expandable output accordions.
+   - `ApprovalModal.tsx`: Two-phase commit Human-in-the-Loop review modal showing risk severity badge, action description, tool name, and Approve/Reject controls.
+   - `ReportViewer.tsx`: Report configuration drawer with Type, Title, and Format selectors, synthesized markdown preview, copy-to-clipboard, and markdown file download.
+   - `RecommendationsWidget.tsx`: Proactive recommendation list displaying urgency badges, contextual tips, action buttons, and dismissal.
+   - `AssistantChatBox.tsx`: Conversational thread with message history, tool execution chips, suggested prompt chips, auto-scrolling, and disabled states.
+   - Re-exported via `frontend/src/features/assistant/index.ts`.
+5. **Master Application Integration & Routing**:
+   - Master Page: `frontend/src/pages/AssistantPage.tsx` assembling chat box, DAG visualizer, recommendation widget, KPI banner, approval modal, and report viewer into an enterprise cockpit layout.
+   - Routing: Added `ROUTES.ASSISTANT = '/assistant'` to `frontend/src/routes/paths.ts` and lazy route in `frontend/src/routes/index.tsx`.
+   - Navigation: Added `Enterprise AI Assistant` to `frontend/src/components/common/Sidebar.tsx` with `Bot` icon and `Phase 2.3` badge.
+6. **Unit & Component Testing Suites**:
+   - `frontend/src/tests/assistantService.test.ts`: 7 unit tests covering all client endpoints with mock responses.
+   - `frontend/src/tests/assistantComponents.test.tsx`: 9 unit tests covering metrics banner, workflow visualizer, approval modal decisions, report viewer generation, recommendation dismissals, and chat box interactions.
+   - All 28 frontend test files (243 tests) pass 100%.
+   - Full production Vite build passed with zero errors (`npm run build`).
+
+#### Files Modified / Created
+- `frontend/src/types/assistant.ts` (Created)
+- `frontend/src/types/index.ts` (Modified)
+- `frontend/src/services/assistantService.ts` (Created)
+- `frontend/src/services/index.ts` (Modified)
+- `frontend/src/hooks/useAssistant.ts` (Created)
+- `frontend/src/features/assistant/AssistantMetricsBanner.tsx` (Created)
+- `frontend/src/features/assistant/WorkflowVisualizer.tsx` (Created)
+- `frontend/src/features/assistant/ApprovalModal.tsx` (Created)
+- `frontend/src/features/assistant/ReportViewer.tsx` (Created)
+- `frontend/src/features/assistant/RecommendationsWidget.tsx` (Created)
+- `frontend/src/features/assistant/AssistantChatBox.tsx` (Created)
+- `frontend/src/features/assistant/index.ts` (Created)
+- `frontend/src/pages/AssistantPage.tsx` (Created)
+- `frontend/src/routes/paths.ts` (Modified)
+- `frontend/src/routes/index.tsx` (Modified)
+- `frontend/src/components/common/Sidebar.tsx` (Modified)
+- `frontend/src/tests/assistantService.test.ts` (Created)
+- `frontend/src/tests/assistantComponents.test.tsx` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #048)
+
+#### Target Receiving Agent
+- **Member 4 (Integration & DevOps Lead)**: Infrastructure telemetry (Prometheus alert rules, Grafana dashboard), backend end-to-end integration pipeline tests, Playwright E2E browser test suite, and full branch verification.
+
+---
+
+### Handoff Entry #049: Phase 2.3 — AI Assistant Telemetry, Grafana Dashboard, Integration Pipeline & E2E Validation
+
+#### Date
+2026-10-27
+
+#### Author Agent
+Member 4 — Integration & DevOps Lead
+
+#### Status
+COMPLETED / VERIFIED GREEN / 100% DONE
+
+#### Implemented Features
+1. **Prometheus Alerting Infrastructure (`infrastructure/prometheus/alert_rules.yml`)**:
+   - Added production alerting rules for Phase 2.3 AI Assistant & Agentic Workflows:
+     - `AssistantWorkflowFailureHigh`: Critical alert when workflow execution failure rate > 5% over 5-minute rolling window.
+     - `AssistantApprovalPendingLag`: Warning alert when pending HITL approval queue depth exceeds 20 for > 15 minutes.
+     - `AssistantTaskExecutionLatencyHigh`: Warning alert when task step p95 latency exceeds 3.0s SLA target.
+     - `AssistantToolErrorRateHigh`: Critical alert when tool execution error rate across plugins exceeds 5% over 5 minutes.
+2. **Dedicated Grafana Monitoring Dashboard (`infrastructure/grafana/dashboards/ai-assistant-dashboard.json`)**:
+   - Standardized dashboard (UID: `keep-ai-assistant`) visualizing:
+     - Active Workflows gauge
+     - Task Step p95 Latency gauge (thresholds: green < 1.5s, yellow < 3.0s, red >= 3.0s)
+     - Pending HITL Approvals queue depth
+     - Tool Invocation Success Rate percentage
+     - Workflow Execution Velocity & Status breakdown timeseries
+     - Tool Invocation Distribution by Category bar chart
+     - Report Synthesis Velocity by Type timeseries
+     - Assistant Failure & Rejection Rates dual timeseries
+3. **End-to-End Backend Integration & Benchmark Test Suite (`tests/integration/test_assistant_pipeline.py`)**:
+   - 7/7 integration tests passed (100%):
+     - `test_01_conversational_chat_and_session_history`: Tests intent classification (`KNOWLEDGE_QA`), tool execution chips, and session history persistence.
+     - `test_02_dag_task_execution_and_performance_benchmark`: Multi-step DAG planning and execution benchmarked against the < 3.0s latency SLA target.
+     - `test_03_hitl_approval_commit_flow`: Two-phase commit HITL review confirming APPROVED decision and task execution.
+     - `test_04_hitl_approval_reject_flow`: HITL rejection confirming REJECTED decision and terminal workflow state.
+     - `test_05_automated_report_synthesis`: Structured markdown report compilation with title, metrics, and markdown formatting.
+     - `test_06_proactive_recommendations`: Querying proactive recommendations across `FREQUENT_DOCUMENTS` and `MISSING_DOCUMENTATION` categories.
+     - `test_07_tenant_boundary_quarantine_enforcement`: Proves strict tenant isolation by blocking cross-tenant approval mutations and verifying workflow visibility isolation.
+4. **Playwright E2E Browser Test Suite (`tests/e2e/assistant_workflows.spec.ts`)**:
+   - 18 automated browser tests (6 suites across Chromium, Firefox, WebKit):
+     - Navigation & AI Assistant Cockpit Layout (KPI banner, quick actions, header).
+     - Conversational Chat & Intent Pipeline (message input, reply rendering, tool execution chips).
+     - Quick Action: Compliance Audit DAG Workflow (multi-step progress visualization).
+     - Enterprise Report Synthesis Modal (form configuration, generation, preview, download).
+     - Proactive Recommendations Interaction (cards, badges, dismissal).
+     - Responsive Viewports (Desktop 1440x900, Tablet 768x1024, Mobile 375x667).
+5. **Quality & Verification Summary**:
+   - Backend unit and integration tests: 35/35 passing (100%).
+   - Frontend Vitest tests: 243/243 passing (100%).
+   - Production Vite build: 0 errors (`tsc && vite build`).
+   - Python code quality: 0 errors (`ruff check backend/ tests/`).
+   - Monorepo tests: 998+ tests passing.
+
+#### Files Modified / Created
+- `infrastructure/prometheus/alert_rules.yml` (Modified)
+- `infrastructure/grafana/dashboards/ai-assistant-dashboard.json` (Created)
+- `tests/integration/test_assistant_pipeline.py` (Created)
+- `tests/e2e/assistant_workflows.spec.ts` (Created)
+- `PROJECT_STATE.md` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #049)
+
+#### Target Receiving Agent
+- **Project Lead / User**: Phase 2.3 is 100% complete across all 4 member roles, fully verified, and ready for merge.
+
+
+
 
 
 

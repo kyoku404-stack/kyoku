@@ -1,4 +1,10 @@
 from backend.app.models.activity import ActivityLog
+from backend.app.models.assistant import (
+    AssistantApproval,
+    AssistantReport,
+    AssistantTask,
+    AssistantWorkflow,
+)
 from backend.app.models.chat import ChatMessage, ChatSession
 from backend.app.models.department import Department
 from backend.app.models.document import Document
@@ -17,6 +23,10 @@ from backend.app.models.user import User
 
 __all__ = [
     "ActivityLog",
+    "AssistantApproval",
+    "AssistantReport",
+    "AssistantTask",
+    "AssistantWorkflow",
     "ChatMessage",
     "ChatSession",
     "Department",

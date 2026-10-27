@@ -1900,5 +1900,267 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; 
 }
 ```
 
+---
 
+## 10. Phase 2.3 — Enterprise AI Assistant & Agentic Workflow APIs (`/api/v1/assistant`)
 
+### 10.1 Overview & Security Model
+- **Auth Requirement**: All endpoints require a valid JWT Bearer Token.
+- **Tenant Isolation**: Strict `organization_id` boundary enforced across all assistant tasks, tools, and history.
+- **Permission Scope**:
+  - `assistant.chat`: Interact with conversational assistant and execute read-only tools.
+  - `assistant.task`: Submit multi-step automated task execution plans.
+  - `assistant.report`: Generate organizational summaries and analytical reports.
+  - `assistant.approve`: Review, approve, or reject pending human-in-the-loop actions.
+
+### 10.2 Endpoints
+
+#### 10.2.1 Chat with Enterprise AI Assistant
+- **Method**: `POST`
+- **Path**: `/api/v1/assistant/chat`
+- **Auth**: Bearer JWT (`assistant.chat` permission)
+- **Request Body**:
+```json
+{
+  "message": "Summarize all HR documents from last month and email me the summary.",
+  "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "department_id": null,
+  "project_id": null
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Assistant message processed successfully.",
+  "data": {
+    "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "message_id": "m_1029384756",
+    "reply": "I retrieved 4 HR policy documents and generated a summary. Sending the email requires your confirmation.",
+    "detected_intent": "DOCUMENT_SUMMARIZATION",
+    "workflow_id": "wf_49a85f64-5717-4562-b3fc-2c963f66af01",
+    "tools_executed": ["DocumentTool", "ReportTool"],
+    "requires_approval": true,
+    "approval_id": "appr_7fa85f64-5717-4562-b3fc-2c963f66afb2",
+    "created_at": "2026-10-27T10:00:00Z"
+  }
+}
+```
+
+#### 10.2.2 Execute Multi-Step AI Task
+- **Method**: `POST`
+- **Path**: `/api/v1/assistant/task`
+- **Auth**: Bearer JWT (`assistant.task` permission)
+- **Request Body**:
+```json
+{
+  "title": "Quarterly Policy Audit",
+  "instructions": "Extract key compliance policies from all PDF reports and generate an audit checklist.",
+  "session_id": null,
+  "context": {
+    "category": "COMPLIANCE",
+    "max_documents": 10
+  }
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Task plan formulated and execution initiated.",
+  "data": {
+    "workflow_id": "wf_11a85f64-5717-4562-b3fc-2c963f66af99",
+    "title": "Quarterly Policy Audit",
+    "status": "COMPLETED",
+    "total_steps": 3,
+    "completed_steps": 3,
+    "steps": [
+      {
+        "step_number": 1,
+        "tool_name": "DocumentTool",
+        "description": "Fetch compliance documents",
+        "status": "COMPLETED",
+        "latency_ms": 120.5
+      },
+      {
+        "step_number": 2,
+        "tool_name": "SearchTool",
+        "description": "Retrieve audit sections via semantic RAG",
+        "status": "COMPLETED",
+        "latency_ms": 280.1
+      },
+      {
+        "step_number": 3,
+        "tool_name": "ReportTool",
+        "description": "Synthesize compliance checklist",
+        "status": "COMPLETED",
+        "latency_ms": 310.4
+      }
+    ],
+    "result_summary": "Successfully formulated audit checklist from 3 compliance documents."
+  }
+}
+```
+
+#### 10.2.3 Retrieve Conversation History
+- **Method**: `GET`
+- **Path**: `/api/v1/assistant/history`
+- **Auth**: Bearer JWT (`assistant.chat` permission)
+- **Query Parameters**:
+  - `session_id` (optional, UUID): Specific chat session. If omitted, returns all sessions.
+  - `page` (optional, int, default 1)
+  - `page_size` (optional, int, default 20)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "sessions": [
+      {
+        "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "title": "HR Documents & Policy Summary",
+        "created_at": "2026-10-27T09:30:00Z",
+        "updated_at": "2026-10-27T10:00:00Z",
+        "message_count": 2,
+        "messages": [
+          {
+            "id": "m1",
+            "role": "user",
+            "content": "Summarize HR documents from last month.",
+            "created_at": "2026-10-27T09:30:00Z"
+          },
+          {
+            "id": "m2",
+            "role": "assistant",
+            "content": "Here is the summary of HR documents...",
+            "created_at": "2026-10-27T09:30:04Z"
+          }
+        ]
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20
+  }
+}
+```
+
+#### 10.2.4 Generate Structured Enterprise Report
+- **Method**: `POST`
+- **Path**: `/api/v1/assistant/report`
+- **Auth**: Bearer JWT (`assistant.report` permission)
+- **Request Body**:
+```json
+{
+  "report_type": "WEEKLY_ROLLUP",
+  "title": "Engineering Knowledge Base Weekly Rollup",
+  "format": "MARKDOWN",
+  "filters": {
+    "department_id": "7fa85f64-5717-4562-b3fc-2c963f66afb2",
+    "days_back": 7
+  }
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Report generated successfully.",
+  "data": {
+    "report_id": "rep_9fa85f64-5717-4562-b3fc-2c963f66afe1",
+    "report_type": "WEEKLY_ROLLUP",
+    "title": "Engineering Knowledge Base Weekly Rollup",
+    "format": "MARKDOWN",
+    "content": "# Weekly Knowledge Rollup\n\n## Overview\nDuring the past 7 days, 14 new documents were ingested...",
+    "created_at": "2026-10-27T10:15:00Z"
+  }
+}
+```
+
+#### 10.2.5 List & Inspect Workflows
+- **Method**: `GET`
+- **Path**: `/api/v1/assistant/workflows`
+- **Auth**: Bearer JWT (`assistant.task` permission)
+- **Query Parameters**:
+  - `status` (optional, string): Filter by status (`RUNNING`, `WAITING_APPROVAL`, `COMPLETED`, `FAILED`)
+  - `page` (optional, int, default 1)
+  - `page_size` (optional, int, default 20)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "workflows": [
+      {
+        "id": "wf_11a85f64-5717-4562-b3fc-2c963f66af99",
+        "title": "Quarterly Policy Audit",
+        "trigger_type": "TASK",
+        "status": "COMPLETED",
+        "total_steps": 3,
+        "completed_steps": 3,
+        "created_at": "2026-10-27T08:00:00Z",
+        "completed_at": "2026-10-27T08:00:02Z"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20
+  }
+}
+```
+
+#### 10.2.6 Human-in-the-Loop Action Approval
+- **Method**: `POST`
+- **Path**: `/api/v1/assistant/approve`
+- **Auth**: Bearer JWT (`assistant.approve` permission)
+- **Request Body**:
+```json
+{
+  "approval_id": "appr_7fa85f64-5717-4562-b3fc-2c963f66afb2",
+  "decision": "APPROVED",
+  "reason": "Verified document archival meets compliance policy."
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Approval processed and action executed successfully.",
+  "data": {
+    "approval_id": "appr_7fa85f64-5717-4562-b3fc-2c963f66afb2",
+    "workflow_id": "wf_49a85f64-5717-4562-b3fc-2c963f66af01",
+    "decision": "APPROVED",
+    "status": "COMPLETED",
+    "executed_at": "2026-10-27T10:05:00Z"
+  }
+}
+```
+
+#### 10.2.7 Get Proactive Recommendations
+- **Method**: `GET`
+- **Path**: `/api/v1/assistant/recommendations`
+- **Auth**: Bearer JWT (`assistant.chat` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "recommendations": [
+      {
+        "id": "rec_1",
+        "category": "FREQUENT_DOCUMENTS",
+        "title": "Employee Handbook 2026",
+        "description": "High query traffic detected this week (42 inquiries).",
+        "suggested_action": "Pin to workspace quick access"
+      },
+      {
+        "id": "rec_2",
+        "category": "MISSING_DOCUMENTATION",
+        "title": "Remote Work Expenses",
+        "description": "8 ungrounded queries identified regarding remote equipment stipend.",
+        "suggested_action": "Upload policy guideline"
+      }
+    ]
+  }
+}
+```

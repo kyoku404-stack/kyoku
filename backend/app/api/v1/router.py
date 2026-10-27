@@ -6,6 +6,7 @@ Mounts and registers all v1 modular sub-routers.
 from backend.app.api.v1.activity import router as activity_router
 from backend.app.api.v1.ai import router as ai_router
 from backend.app.api.v1.analytics import router as analytics_router
+from backend.app.api.v1.assistant import router as assistant_router
 from backend.app.api.v1.audit import router as audit_router
 from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.chat import router as chat_router
@@ -40,6 +41,7 @@ api_v1_router.include_router(members_router)
 api_v1_router.include_router(documents_router)
 api_v1_router.include_router(ingestion_router)
 api_v1_router.include_router(rag_router)
+api_v1_router.include_router(assistant_router)
 api_v1_router.include_router(dashboard_router)
 api_v1_router.include_router(activity_router)
 api_v1_router.include_router(notifications_router)

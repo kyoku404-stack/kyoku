@@ -1158,5 +1158,109 @@ Member 1 delivers `BaseContextBuilder`, `BaseCitationFormatter`, and prompt temp
 #### Status
 ACCEPTED
 
+---
 
+### ADR-038 — Deterministic Agentic Task Planning & Directed Acyclic Graph (DAG) Workflow Orchestration
 
+#### Date
+2026-10-27
+
+#### Context
+`devdocs/p2/p2.3.txt` (Chapters 3, 6 & 8) specifies that enterprise user requests frequently encompass complex, multi-step operations (e.g. "Find all marketing reports from last month, summarize them, and notify the team"). Relying on unconstrained recursive LLM tool-calling loops ("ReAct loops") leads to non-deterministic execution paths, infinite loops, high token consumption, and unpredictable latencies in an enterprise environment.
+
+#### Decision
+1. Implement a **Deterministic DAG Task Planner**:
+   - The user request is parsed into an explicit, structured `TaskPlan` composed of ordered `TaskStep` nodes.
+   - Each step specifies `step_id`, target `tool_name`, validated `input_parameters`, and explicit `dependencies` ($step_j \in \text{deps}(step_i) \implies j < i$).
+2. Topological Sequential & Parallel Execution:
+   - Independent steps are eligible for parallel execution where thread-safe.
+   - Dependent steps receive outputs from prerequisite steps passed via a shared `WorkflowExecutionContext`.
+3. Circuit Breakers:
+   - Maximum 10 steps per workflow.
+   - Per-step execution timeout of 10.0 seconds.
+   - Workflow overall execution deadline of 30.0 seconds.
+
+#### Alternatives Considered
+- Unconstrained autonomous ReAct loops: Rejected due to risk of unbounded token cost and infinite tool calling loops.
+- Static hardcoded workflow scripts: Rejected because enterprise users require dynamic combinations of tools.
+
+#### Reason
+DAG-based planning gives full transparency, predictability, auditable task state, and clean dependency management for multi-step enterprise automation.
+
+#### Impact
+Member 1 implements `BaseAssistantPlanner` and `TaskPlan` contracts. Member 2 develops the backend `WorkflowOrchestrator`. Member 3 visualizes the execution graph in `WorkflowVisualizer.tsx`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-039 — Dynamic Enterprise Tool-Calling Registry with Enforced RBAC Boundaries
+
+#### Date
+2026-10-27
+
+#### Context
+`devdocs/p2/p2.3.txt` (Chapters 7 & 14) mandates that the AI Assistant interact with platform services through modular tools (Document, Semantic Search, Analytics, Report, User, Project, Notification). An AI Assistant must never bypass the security model or execute actions beyond the calling user's permissions.
+
+#### Decision
+1. **Unified Tool Interface (`BaseTool`)**:
+   - Every tool declares: `name`, `description`, `category`, `required_permissions`, `is_destructive`, and `parameters_schema`.
+2. **Pre-Execution Security & Tenancy Validation**:
+   - Prior to tool execution, the runner checks the user's JWT security context against `required_permissions`.
+   - All tool queries automatically enforce the caller's `organization_id` tenant boundary.
+3. **Core Platform Tool Registry**:
+   - `DocumentTool`: Retrieval and metadata inspection of tenant documents.
+   - `SearchTool`: Hybrid RAG search execution.
+   - `AnalyticsTool`: System and organizational KPI queries.
+   - `ReportTool`: Structured multi-format report synthesis.
+   - `UserTool`: User profile and team roster lookups.
+   - `ProjectTool`: Project metadata, workspace association, and status.
+   - `NotificationTool`: Delivery of alerts and event notices.
+
+#### Alternatives Considered
+- Direct database mutation from LLM prompts: Strongly rejected as a severe SQL injection and privilege escalation vector.
+- External function calling without RBAC checks: Rejected because user permission boundaries must be enforced inside the application service layer.
+
+#### Reason
+Formal tool contracts ensure least-privilege execution, total tenant isolation, and modularity for adding future tools.
+
+#### Impact
+Member 1 specifies `BaseTool` and `BaseToolRegistry`. Member 2 implements core tools connecting to services. Member 4 conducts tool security auditing.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-040 — Two-Phase Commit Human-in-the-Loop (HITL) Approval Gating for Destructive Operations
+
+#### Date
+2026-10-27
+
+#### Context
+`devdocs/p2/p2.3.txt` (Chapter 10) mandates that destructive, irreversible, or policy-critical operations (e.g. deleting documents, removing users, modifying tenant permissions, archiving workspaces) must not execute autonomously without human review and confirmation.
+
+#### Decision
+1. **Safety Classification**:
+   - Tools and actions are tagged as either `SAFE_AUTO` or `CRITICAL_CONFIRMATION_REQUIRED`.
+2. **Two-Phase Approval Workflow**:
+   - **Phase 1 (Preparation & Hold)**: When a task planner identifies a destructive step, the workflow sets status to `WAITING_APPROVAL`, creates an `AssistantApproval` record with status `PENDING`, and halts execution.
+   - **Phase 2 (Review & Commit)**:
+     - If the authorized reviewer submits an `APPROVE` decision, execution resumes, the tool mutates state, and status updates to `COMPLETED`.
+     - If the reviewer submits a `REJECT` decision, the workflow terminates immediately with status `CANCELLED` and logs the rejection reason.
+3. **Expiration**:
+   - Unreviewed approval requests expire after 24 hours to prevent stale execution of outdated intents.
+
+#### Alternatives Considered
+- Optimistic execution with post-hoc rollback: Rejected — deleted files or removed permissions cannot always be cleanly rolled back and cause user distress.
+- Completely disallowing destructive actions via AI: Rejected — enterprise administrators require assisted batch operations with oversight.
+
+#### Reason
+Guarantees human accountability, zero unintended data loss, compliance with enterprise risk governance, and audit traceability.
+
+#### Impact
+Member 1 provides approval contracts. Member 2 implements approval ORM tables and endpoints. Member 3 builds the `ApprovalModal.tsx` UI component.
+
+#### Status
+ACCEPTED

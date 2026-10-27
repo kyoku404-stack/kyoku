@@ -114,7 +114,6 @@ __all__ = [
     "KGRelationshipRecord",
     "ProcessedQuery",
     "QueryIntent",
-    "RAGAnalyticsRecord",
     "RAGCitation",
     "RAGFeedbackSubmission",
     "RAGObservabilityTelemetry",

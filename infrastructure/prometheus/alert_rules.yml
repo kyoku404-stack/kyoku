@@ -210,5 +210,49 @@ groups:
         annotations:
           summary: "RAG token consumption velocity exceeds 100k tokens/min"
           description: "LLM token burn rate is {{ $value | printf \"%.0f\" }} tokens/min, exceeding baseline budget rate."
-          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#ragtokenusagehigh"
+      # ------------------------------------------------------------------------
+      # AI Assistant & Agentic Workflow Alerts (Phase 2.3)
+      # ------------------------------------------------------------------------
+      - alert: AssistantWorkflowFailureHigh
+        expr: (sum(rate(assistant_workflows_total{status="FAILED"}[5m])) / sum(rate(assistant_workflows_total[5m]))) * 100 > 5.0
+        for: 5m
+        labels:
+          severity: CRITICAL
+          tier: ai-assistant
+        annotations:
+          summary: "CRITICAL: AI Assistant workflow failure rate exceeds 5%"
+          description: "Agentic DAG workflow execution failure rate is {{ $value | printf \"%.2f\" }}% over a 5-minute rolling window."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#assistantworkflowfailurehigh"
 
+      - alert: AssistantApprovalPendingLag
+        expr: assistant_approvals_pending_total > 20
+        for: 15m
+        labels:
+          severity: WARNING
+          tier: ai-assistant
+        annotations:
+          summary: "High volume of pending Human-in-the-Loop approvals (>20)"
+          description: "Over 20 workflow approvals are blocked in PENDING state for >15 minutes."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#assistantapprovalpendinglag"
+
+      - alert: AssistantTaskExecutionLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(assistant_task_duration_seconds_bucket[5m])) by (le)) > 3.0
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: ai-assistant
+        annotations:
+          summary: "Assistant task execution p95 latency exceeds 3.0s SLA"
+          description: "Multi-step agent task execution duration is {{ $value | printf \"%.2f\" }}s (SLA: 3.0s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#assistanttaskexecutionlatencyhigh"
+
+      - alert: AssistantToolErrorRateHigh
+        expr: (sum(rate(assistant_tool_invocations_total{status="ERROR"}[5m])) / sum(rate(assistant_tool_invocations_total[5m]))) * 100 > 5.0
+        for: 5m
+        labels:
+          severity: CRITICAL
+          tier: ai-assistant
+        annotations:
+          summary: "CRITICAL: Assistant tool invocation error rate exceeds 5%"
+          description: "Tool execution failure rate across registered plugins is {{ $value | printf \"%.2f\" }}% over 5m."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#assistanttoolerrorratehigh"

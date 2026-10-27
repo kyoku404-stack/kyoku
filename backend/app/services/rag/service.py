@@ -260,7 +260,7 @@ class RAGService:
         session_id: UUID | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> tuple[list[dict], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         """Retrieves user conversation sessions and messages."""
         stmt = (
             select(ChatSession)
@@ -319,7 +319,7 @@ class RAGService:
         db: AsyncSession,
         chunk_id: UUID,
         organization_id: UUID,
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         """Inspects full content and source metadata for a specific citation chunk."""
         stmt = (
             select(DocumentChunk, Document)
