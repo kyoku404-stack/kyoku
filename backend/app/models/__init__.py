@@ -1,4 +1,9 @@
 from backend.app.models.activity import ActivityLog
+from backend.app.models.analytics import (
+    AIRecommendation,
+    AnalyticsSnapshot,
+    DetectedAnomaly,
+)
 from backend.app.models.assistant import (
     AssistantApproval,
     AssistantReport,
@@ -22,7 +27,9 @@ from backend.app.models.team import Team
 from backend.app.models.user import User
 
 __all__ = [
+    "AIRecommendation",
     "ActivityLog",
+    "AnalyticsSnapshot",
     "AssistantApproval",
     "AssistantReport",
     "AssistantTask",
@@ -30,6 +37,7 @@ __all__ = [
     "ChatMessage",
     "ChatSession",
     "Department",
+    "DetectedAnomaly",
     "Document",
     "DocumentChunk",
     "DocumentVersion",
