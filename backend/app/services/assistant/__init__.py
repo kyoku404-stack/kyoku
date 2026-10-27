@@ -38,12 +38,14 @@ from backend.app.services.assistant.contracts import (
     WorkflowExecutionContext,
     WorkflowStatus,
 )
+from backend.app.services.assistant.service import AssistantService
 
 __all__ = [
     "ApprovalRequestSpec",
     "ApprovalStatus",
     "AssistantIntent",
     "AssistantReportSpec",
+    "AssistantService",
     "BaseAssistantPlanner",
     "BaseRecommendationEngine",
     "BaseReportGenerator",
