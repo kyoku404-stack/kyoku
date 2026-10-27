@@ -48,6 +48,7 @@ class EntityType(StrEnum):
     # Technical & Conceptual
     TECHNOLOGY = "TECHNOLOGY"
     TOPIC = "TOPIC"
+    CONCEPT = "CONCEPT"
 
 
 class RelationType(StrEnum):
@@ -65,7 +66,15 @@ class RelationType(StrEnum):
     EXPERT_IN = "EXPERT_IN"
     GOVERNED_BY = "GOVERNED_BY"
     BLOCKS = "BLOCKS"
+    BLOCKED_BY = "BLOCKED_BY"
     REPORTS_TO = "REPORTS_TO"
+    BELONGS_TO = "BELONGS_TO"
+    OWNED_BY = "OWNED_BY"
+    MEMBER_OF = "MEMBER_OF"
+    CONTRIBUTES_TO = "CONTRIBUTES_TO"
+    PART_OF = "PART_OF"
+    AUTHORS = "AUTHORS"
+    MENTIONS = "MENTIONS"
 
 
 # -----------------------------------------------------------------------------
@@ -94,6 +103,11 @@ class RelationshipSpec:
     target_type: EntityType
     weight: float = 1.0
     properties: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def confidence(self) -> float:
+        """Alias for edge weight reflecting extraction confidence."""
+        return self.weight
 
 
 @dataclass
@@ -199,7 +213,7 @@ class BaseEntityNormalizer(ABC):
     """Abstract interface for canonical string normalization and entity deduplication."""
 
     @abstractmethod
-    def normalize_name(self, name: str, entity_type: EntityType) -> str:
+    def normalize_name(self, name: str, entity_type: EntityType | str = EntityType.CONCEPT) -> str:
         """Normalizes name string into canonical format."""
 
     @abstractmethod
@@ -285,9 +299,14 @@ class DefaultEntityNormalizer(BaseEntityNormalizer):
         "secops": "Security Operations",
     }
 
-    def normalize_name(self, name: str, entity_type: EntityType) -> str:
+    def normalize_name(self, name: str, entity_type: EntityType | str = EntityType.CONCEPT) -> str:
         if not name:
             return ""
+        if isinstance(entity_type, str):
+            try:
+                entity_type = EntityType(entity_type)
+            except ValueError:
+                entity_type = EntityType.CONCEPT
         # 1. NFKC Unicode normalization
         clean = unicodedata.normalize("NFKC", name).strip()
         # 2. Collapse internal whitespace
@@ -301,7 +320,7 @@ class DefaultEntityNormalizer(BaseEntityNormalizer):
         # 4. Title case for names and departments if not acronym
         if len(clean) > 4 and clean.isupper():
             return clean
-        if entity_type in (EntityType.DEPARTMENT, EntityType.TOPIC, EntityType.ROLE if hasattr(EntityType, "ROLE") else EntityType.TEAM):
+        if entity_type in (EntityType.DEPARTMENT, EntityType.TOPIC, EntityType.TEAM):
             return clean.title()
 
         return clean
@@ -317,6 +336,13 @@ class DefaultEntityExtractor(BaseEntityExtractor):
 
     def __init__(self, normalizer: BaseEntityNormalizer | None = None) -> None:
         self.normalizer = normalizer or DefaultEntityNormalizer()
+
+    def extract(self, text: str, min_confidence: float = 0.0) -> list[EntitySpec]:
+        """Convenience method filtering extracted entities by min_confidence."""
+        entities = self.extract_entities(text)
+        if min_confidence > 0.0:
+            return [e for e in entities if e.confidence >= min_confidence]
+        return entities
 
     def extract_entities(self, text: str) -> list[EntitySpec]:
         if not text:
@@ -376,6 +402,18 @@ class DefaultEntityExtractor(BaseEntityExtractor):
 class DefaultRelationshipExtractor(BaseRelationshipExtractor):
     """Extracts semantic relational triples between discovered entity nodes."""
 
+    def extract(
+        self,
+        text: str,
+        known_entities: list[EntitySpec] | None = None,
+        min_confidence: float = 0.0,
+    ) -> list[RelationshipSpec]:
+        """Convenience method filtering extracted relationships by min_confidence."""
+        rels = self.extract_relationships(text, known_entities or [])
+        if min_confidence > 0.0:
+            return [r for r in rels if r.confidence >= min_confidence]
+        return rels
+
     def extract_relationships(
         self, text: str, entities: list[EntitySpec]
     ) -> list[RelationshipSpec]:
@@ -383,15 +421,35 @@ class DefaultRelationshipExtractor(BaseRelationshipExtractor):
             return []
 
         relationships: list[RelationshipSpec] = []
-        # 1. Employee LEADS Project: "[Person] leads/led [Project]"
+        # 1. Employee LEADS Project: "[Person] leads/led [Project]" or "[Project] is led by [Person]"
         leads_matches = re.finditer(
-            r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:leads|is leading|led|managed)\s+(Project\s+[A-Za-z0-9_-]+)\b",
+            r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:leads|is leading|led|managed)\s+(Project\s+[A-Za-z0-9_-]+|[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)?)\b",
             text,
             re.IGNORECASE,
         )
         for m in leads_matches:
             person = m.group(1).title()
-            proj = m.group(2).title()
+            proj = m.group(2).strip().title()
+            relationships.append(
+                RelationshipSpec(
+                    source_name=person,
+                    source_type=EntityType.EMPLOYEE,
+                    relation_type=RelationType.LEADS,
+                    target_name=proj,
+                    target_type=EntityType.PROJECT,
+                    weight=0.95,
+                )
+            )
+
+        # 1b. Passive: "[Project / Taskforce] is led by [Person]"
+        passive_leads = re.finditer(
+            r"\b([A-Za-z0-9_\s]{2,40}?)\s+(?:is led by|led by|managed by)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b",
+            text,
+            re.IGNORECASE,
+        )
+        for m in passive_leads:
+            proj = m.group(1).strip().title()
+            person = m.group(2).strip().title()
             relationships.append(
                 RelationshipSpec(
                     source_name=person,
@@ -405,12 +463,12 @@ class DefaultRelationshipExtractor(BaseRelationshipExtractor):
 
         # 2. Project / Policy APPLIES_TO Department: "[Project/Policy] applies to [Department]"
         applies_matches = re.finditer(
-            r"\b(Project\s+[A-Za-z0-9_-]+|[A-Za-z\s]+Policy)\s+(?:applies to|governs|affects)\s+(?:the\s+)?([A-Za-z\s]+?)\s+(?:department|team)?\b",
+            r"\b([A-Za-z0-9_\s]{2,40}?)\s+(?:applies to|governs|affects)\s+(?:the\s+)?([A-Za-z\s]+?)\s*(?:department|team)?\b",
             text,
             re.IGNORECASE,
         )
         for m in applies_matches:
-            src = m.group(1).strip()
+            src = m.group(1).strip().title()
             target_dept = m.group(2).strip().title()
             relationships.append(
                 RelationshipSpec(

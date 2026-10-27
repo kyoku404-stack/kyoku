@@ -25,6 +25,7 @@ from backend.app.services.graph.contracts import (
     RelationshipSpec,
     RelationType,
 )
+from backend.app.services.graph.service import KnowledgeGraphService
 
 __all__ = [
     "BaseEntityExtractor",
@@ -48,6 +49,7 @@ __all__ = [
     "GraphRAGContext",
     "GraphTraversalPath",
     "ImpactAnalysisResult",
+    "KnowledgeGraphService",
     "RelationType",
     "RelationshipSpec",
 ]

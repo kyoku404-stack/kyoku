@@ -4359,6 +4359,67 @@ COMPLETED / READY FOR BACKEND IMPLEMENTATION
 #### Target Receiving Agent
 - **Member 2 (Backend & Database Lead)**: Implement graph ORM models/relationships, Alembic migration, entity/relationship extraction service, graph query & traversal service, impact analysis & expertise discovery logic, Pydantic v2 schemas, and FastAPI REST endpoints.
 
+---
+
+### Handoff Entry #051: Phase 2.4 — Knowledge Graph Backend Services, ORM Persistence, Migrations, and REST APIs
+
+#### Metadata
+- **Date**: 2026-10-27
+- **Author Agent**: Member 2 (Backend & Database Lead)
+- **Role Domain**: `/backend/app/models`, `/backend/app/services/graph`, `/backend/app/schemas`, `/backend/app/api/v1`
+- **Sub-Phase**: Phase 2.4 — Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence
+
+#### Status
+COMPLETED / READY FOR MEMBER 3 (FRONTEND LEAD)
+
+#### Executive Summary
+Member 2 has delivered the complete relational persistence, Alembic migration revision, service orchestrator, Pydantic v2 validation schemas, and REST API endpoints for Phase 2.4 (Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence). All 8 endpoints defined in `docs/api/api-contract.md` Section 11 are mounted, validated, and verified with 100% test coverage across unit and integration test suites.
+
+#### Implemented Features & Endpoints
+1. **Database Schema & ORM (`backend/app/models/knowledge.py`)**:
+   - Enhanced `KgRelationship` with `properties_json` column and bidirectional navigation properties (`source_entity`, `target_entity`).
+   - Enhanced `KgEntity` with incoming and outgoing relationship cascades.
+2. **Alembic Migration Revision (`backend/migrations/versions/f6a7b8c9d0e1_phase_2_4_kg_enhancements.py`)**:
+   - Added `properties_json` to `kg_relationships`.
+   - Created composite indexing: `idx_kg_entities_tenant_lookup`, `idx_kg_rel_tenant_source`, `idx_kg_rel_tenant_target`.
+   - Updated `tests/integration/test_db_migrations.py` head revision check.
+3. **Pydantic Schemas (`backend/app/schemas/graph.py`)**:
+   - Implemented validation models matching Section 11 of `docs/api/api-contract.md`:
+     - `GraphBuildRequest`, `GraphBuildResponse`
+     - `GraphUpdateRequest`, `GraphUpdateResponse`
+     - `EntityResponse`, `EntityRelationshipsResponse`
+     - `GraphQueryRequest`, `GraphQueryResponse`
+     - `GraphExplorerResponse`, `ExplorerNode`, `ExplorerLink`, `GraphMetricsResponse`
+     - `ExpertiseResponse`, `ExpertItem`
+     - `ImpactAnalysisResponse`, `DependencyTreeNode`, `RootEntityInfo`
+   - Re-exported in `backend/app/schemas/__init__.py`.
+4. **Knowledge Graph Service Orchestrator (`backend/app/services/graph/service.py`)**:
+   - `build_graph`: Full relational and document text extraction, mapping organizational hierarchy (Organizations, Departments, Teams, Users, Projects, Tasks) and chunk triples with transaction management.
+   - `update_graph_incremental`: Incremental named entity and triple extraction with source document references.
+   - `get_entity` & `get_entity_relationships`: In/out degree computation and neighborhood edge retrieval.
+   - `execute_query`: Multi-hop BFS traversal with cycle detection and depth limiting (capped at 5).
+   - `get_explorer_data`: Dynamic force graph topology computation with graph density and hub identification.
+   - `discover_expertise`: Topic co-occurrence and document authorship/project contribution scoring.
+   - `analyze_impact`: Downstream blast radius recursive dependency tree traversal.
+5. **FastAPI Endpoints (`backend/app/api/v1/graph.py` & `backend/app/api/v1/router.py`)**:
+   - Mounted at `/api/v1/graph` with strict RBAC permission dependencies:
+     - `POST /api/v1/graph/build` (`graph.build`)
+     - `POST /api/v1/graph/update` (`graph.build`)
+     - `GET  /api/v1/graph/entity/{id}` (`graph.read`)
+     - `GET  /api/v1/graph/relationships/{id}` (`graph.read`)
+     - `POST /api/v1/graph/query` (`graph.read`)
+     - `GET  /api/v1/graph/explorer` (`graph.read`)
+     - `GET  /api/v1/graph/expertise` (`graph.intelligence`)
+     - `GET  /api/v1/graph/impact/{entity_id}` (`graph.intelligence`)
+6. **Backend Verification Suites**:
+   - `tests/unit/test_graph_services.py`: 9 unit tests passing (100%).
+   - `tests/integration/test_graph_endpoints.py`: 8 integration tests passing (100%).
+   - `tests/integration/test_db_migrations.py`: 4 migration tests passing (100%).
+   - Ruff linting: 0 errors across `backend/` and `tests/`.
+
+#### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**: Ready to build TypeScript models, API client, `useKnowledgeGraph` custom hook, Knowledge Explorer visualization, Entity detail drawer, Impact analysis widget, and Subject-matter expertise directory.
+
 
 
 

@@ -108,6 +108,11 @@ class AIPermission(str, Enum):
     DOCUMENT_PREVIEW = "document.preview"
     DOCUMENT_VERSION = "document.version"
 
+    # Phase 2.4 Knowledge Graph & Enterprise Intelligence
+    GRAPH_READ = "graph.read"
+    GRAPH_BUILD = "graph.build"
+    GRAPH_INTELLIGENCE = "graph.intelligence"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -129,6 +134,8 @@ VIEWER_PERMISSIONS: set[str] = {
     # Phase 1.8 document permissions
     AIPermission.DOCUMENT_DOWNLOAD.value,
     AIPermission.DOCUMENT_PREVIEW.value,
+    # Phase 2.4 graph permissions
+    AIPermission.GRAPH_READ.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -147,6 +154,8 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     AIPermission.PROJECT_CREATE_ACTION.value,
     # Phase 1.8 document permissions
     AIPermission.DOCUMENT_VERSION.value,
+    # Phase 2.4 graph permissions
+    AIPermission.GRAPH_INTELLIGENCE.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -163,6 +172,8 @@ PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.MEETING_CREATE.value,
     AIPermission.MEETING_MANAGE.value,
     AIPermission.USER_INVITE.value,
+    # Phase 2.4 graph permissions
+    AIPermission.GRAPH_BUILD.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
