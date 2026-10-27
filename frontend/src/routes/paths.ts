@@ -32,6 +32,7 @@ export const ROUTES = {
   OBSERVABILITY: '/observability',
   INGESTION: '/ingestion',
   ASSISTANT: '/assistant',
+  KNOWLEDGE_GRAPH: '/graph',
   NOT_FOUND: '*',
 } as const;
 

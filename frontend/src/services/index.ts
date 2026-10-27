@@ -27,3 +27,4 @@ export * from './observabilityService';
 export * from './ingestionService';
 export * from './ragService';
 export * from './assistantService';
+export * from './graphService';

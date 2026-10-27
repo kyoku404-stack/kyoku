@@ -23,6 +23,9 @@ const RAGChatPage = lazy(() =>
 const AssistantPage = lazy(() =>
   import('@/pages/AssistantPage').then((m) => ({ default: m.AssistantPage }))
 );
+const KnowledgeGraphPage = lazy(() =>
+  import('@/pages/KnowledgeGraphPage').then((m) => ({ default: m.KnowledgeGraphPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -279,6 +282,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <AssistantPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'graph',
+        element: (
+          <SuspenseWrapper>
+            <KnowledgeGraphPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'knowledge-graph',
+        element: (
+          <SuspenseWrapper>
+            <KnowledgeGraphPage />
           </SuspenseWrapper>
         ),
       },

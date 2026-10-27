@@ -4420,6 +4420,60 @@ Member 2 has delivered the complete relational persistence, Alembic migration re
 #### Target Receiving Agent
 - **Member 3 (Frontend & UI Lead)**: Ready to build TypeScript models, API client, `useKnowledgeGraph` custom hook, Knowledge Explorer visualization, Entity detail drawer, Impact analysis widget, and Subject-matter expertise directory.
 
+---
+
+### Handoff Entry #052: Phase 2.4 — Knowledge Graph UI Components, Interactive Topology Canvas, Impact Analysis & Routing
+
+#### Metadata
+- **Date**: 2026-10-27
+- **Author Agent**: Member 3 (Frontend & UI Lead)
+- **Role Domain**: `/frontend/src/types/graph.ts`, `/frontend/src/services/graphService.ts`, `/frontend/src/features/graph`, `/frontend/src/pages/KnowledgeGraphPage.tsx`, `/frontend/src/routes`
+- **Sub-Phase**: Phase 2.4 — Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence
+
+#### Status
+COMPLETED / READY FOR MEMBER 4 (DEVOPS & INTEGRATION LEAD)
+
+#### Executive Summary
+Member 3 has delivered the complete, rich frontend experience for Phase 2.4. Built entirely with clean React 18, Tailwind CSS tokens, and Lucide icons without mock placeholders or external third-party canvas bloat. The user interface features an executive KPI banner, search and entity-type filter bar with instant graph construction trigger, an interactive SVG force topology canvas with dynamic panning and node selection, a slide-over entity inspection panel with directional relationships, an impact analysis blast-radius evaluator with animated risk bars, a subject-matter expertise directory with citation badges, and full routing with navigation in the main sidebar.
+
+#### Implemented Features
+1. **TypeScript Definitions & Enums (`frontend/src/types/graph.ts`)**:
+   - `EntityType` enum: `DEPARTMENT`, `TEAM`, `PROJECT`, `TASK`, `EMPLOYEE`, `DOCUMENT`, `POLICY`, `TECHNOLOGY`, `TOPIC`, `CONCEPT`.
+   - `RelationType` enum: `BELONGS_TO`, `LEADS`, `MEMBER_OF`, `ASSIGNED_TO`, `PART_OF`, `DEPENDS_ON`, `CONTRIBUTES_TO`, `AUTHORS`, `MENTIONS`, `BLOCKED_BY`, `GOVERNED_BY`, `REQUIRES`.
+   - Complete payload types for all 8 REST endpoints matching Section 11 of `docs/api/api-contract.md`.
+2. **Typed API Client (`frontend/src/services/graphService.ts`)**:
+   - `graphService.buildGraph(rebuildAll)`
+   - `graphService.updateGraph(payload)`
+   - `graphService.getEntity(entityId)`
+   - `graphService.getEntityRelationships(entityId)`
+   - `graphService.queryGraph(request)`
+   - `graphService.getExplorerData(maxDepth, entityType)`
+   - `graphService.getExpertise(topic, limit)`
+   - `graphService.getImpact(entityId, maxDepth)`
+   - Barrel-exported in `frontend/src/services/index.ts`.
+3. **Reactive State Hook (`frontend/src/hooks/useKnowledgeGraph.ts`)**:
+   - Encapsulates explorer data fetching, search filtering, build triggers, incremental text ingestion, impact analysis execution, and expertise discovery with optimistic local state.
+4. **UI Feature Components (`frontend/src/features/graph/`)**:
+   - `GraphMetricsBanner`: Real-time KPI cards for Total Entities, Active Relationships, Topological Density, Top Hub Node, and Graph Extraction Velocity.
+   - `GraphFilterBar`: Multi-criteria filtering by name substring and entity type, manual refresh, incremental text extraction prompt, and asynchronous graph build triggering.
+   - `KnowledgeExplorer`: Full SVG interactive force topology canvas with dynamic layout, node selection halo, color-coded entity badges, weighted semantic links, drag/pan, and zoom controls.
+   - `EntityDetailPanel`: Deep entity inspection drawer showing in/out degree counts, incoming/outgoing directed relationships, metadata attributes, and instant "Analyze Blast Radius" action.
+   - `ImpactAnalysisWidget`: Downstream mutation risk assessor computing blast radius, severity index percentage bar, affected scope breakdown, and hierarchical dependency tree.
+   - `ExpertiseDirectory`: Interactive SME directory ranking organization members with score progress bars, document authorship counts, project contributions, and evidence citations.
+5. **Page & Route Integration**:
+   - `KnowledgeGraphPage.tsx`: Primary command center page hosting view tabs (Topology Explorer, Impact Analysis, Expertise Discovery).
+   - `frontend/src/routes/paths.ts` & `frontend/src/routes/index.tsx`: Mounted `/graph` and `/knowledge-graph` protected routes with code-split lazy loading.
+   - `frontend/src/components/common/Sidebar.tsx`: Added `Knowledge Graph` nav link with `Network` icon and `Phase 2.4` badge.
+6. **Frontend Verification Suites**:
+   - `frontend/src/tests/graphService.test.ts`: 8/8 tests passed.
+   - `frontend/src/tests/graphComponents.test.tsx`: 8/8 tests passed.
+   - Full Vitest suite: 30/30 test files passed, 259/259 tests passed (100%).
+   - ESLint: 0 errors, 0 warnings (`npm run lint`).
+   - Production Build: `tsc && vite build` passed cleanly, emitting `dist/assets/KnowledgeGraphPage-DDfoMH1J.js` (37.11 kB).
+
+#### Target Receiving Agent
+- **Member 4 (DevOps & Integration Lead)**: Ready for Prometheus alert rules, Grafana dashboard provisioning, end-to-end integration test suite, Playwright browser test suite, and final Phase 2.4 verification.
+
 
 
 

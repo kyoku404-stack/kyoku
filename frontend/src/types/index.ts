@@ -20,7 +20,14 @@ export * from './health';
 export * from './theme';
 export * from './meeting';
 export * from './task';
-export * from './knowledge';
+export type {
+  KgEntity,
+  KgRelationship,
+  KgEntityCreate,
+  KgRelationshipCreate,
+  KgQueryRequest,
+  KgQueryResponse,
+} from './knowledge';
 export * from './activity';
 export * from './permission';
 export * from './audit';
@@ -29,3 +36,4 @@ export * from './observability';
 export * from './ingestion';
 export * from './rag';
 export * from './assistant';
+export * from './graph';
