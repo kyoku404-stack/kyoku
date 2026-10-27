@@ -28,3 +28,4 @@ export * from './dashboard';
 export * from './observability';
 export * from './ingestion';
 export * from './rag';
+export * from './assistant';

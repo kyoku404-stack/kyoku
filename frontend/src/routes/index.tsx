@@ -20,6 +20,9 @@ const IngestionPage = lazy(() =>
 const RAGChatPage = lazy(() =>
   import('@/pages/RAGChatPage').then((m) => ({ default: m.RAGChatPage }))
 );
+const AssistantPage = lazy(() =>
+  import('@/pages/AssistantPage').then((m) => ({ default: m.AssistantPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -260,6 +263,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <RAGChatPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'assistant',
+        element: (
+          <SuspenseWrapper>
+            <AssistantPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'ai-assistant',
+        element: (
+          <SuspenseWrapper>
+            <AssistantPage />
           </SuspenseWrapper>
         ),
       },
