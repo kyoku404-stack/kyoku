@@ -28,8 +28,10 @@ from backend.app.services.connectors.contracts import (
     SyncMetrics,
     SyncMode,
 )
+from backend.app.services.connectors.service import EnterpriseConnectorService
 
 __all__ = [
+    "EnterpriseConnectorService",
     "AuthCredentials",
     "AuthType",
     "BaseChangeDetector",
