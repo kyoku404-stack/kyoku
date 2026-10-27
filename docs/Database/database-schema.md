@@ -840,3 +840,69 @@ CREATE INDEX idx_kg_rel_tenant_target ON kg_relationships(organization_id, targe
 CREATE UNIQUE INDEX idx_kg_rel_unique_edge ON kg_relationships(organization_id, source_entity_id, target_entity_id, relation_type);
 ```
 
+---
+
+### 3.17 Enterprise Intelligence & Analytics Schema (Phase 2.5)
+
+#### 3.17.1 `analytics_snapshots` Table
+Stores precomputed point-in-time analytical aggregations and Knowledge Health Score metrics:
+```sql
+CREATE TABLE analytics_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    snapshot_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    metric_category VARCHAR(50) NOT NULL,
+    health_score INT,
+    metrics_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_snapshot_health_score CHECK (health_score IS NULL OR (health_score >= 0 AND health_score <= 100))
+);
+
+CREATE INDEX idx_analytics_snapshots_tenant_date ON analytics_snapshots(organization_id, snapshot_date DESC);
+CREATE INDEX idx_analytics_snapshots_category ON analytics_snapshots(organization_id, metric_category);
+```
+
+#### 3.17.2 `ai_recommendations` Table
+Stores actionable, prioritized AI strategic recommendations:
+```sql
+CREATE TABLE ai_recommendations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    category VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    impact_score FLOAT NOT NULL DEFAULT 5.0,
+    effort_score FLOAT NOT NULL DEFAULT 3.0,
+    priority_index FLOAT NOT NULL DEFAULT 2.5,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    action_payload JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_rec_status CHECK (status IN ('ACTIVE', 'APPLIED', 'DISMISSED')),
+    CONSTRAINT chk_rec_category CHECK (category IN ('ARCHIVE', 'DEDUPLICATE', 'COVERAGE', 'OWNERSHIP', 'COLLABORATION', 'SECURITY'))
+);
+
+CREATE INDEX idx_recommendations_tenant_status ON ai_recommendations(organization_id, status, priority_index DESC);
+```
+
+#### 3.17.3 `detected_anomalies` Table
+Stores operational anomaly detection events:
+```sql
+CREATE TABLE detected_anomalies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    metric_name VARCHAR(100) NOT NULL,
+    anomaly_type VARCHAR(50) NOT NULL,
+    severity VARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
+    description TEXT NOT NULL,
+    deviation_score FLOAT NOT NULL DEFAULT 0.0,
+    detected_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT chk_anomaly_severity CHECK (severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'))
+);
+
+CREATE INDEX idx_anomalies_tenant_time ON detected_anomalies(organization_id, detected_at DESC);
+CREATE INDEX idx_anomalies_unresolved ON detected_anomalies(organization_id, severity) WHERE (resolved_at IS NULL);
+```
+
+
