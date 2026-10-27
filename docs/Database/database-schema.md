@@ -666,3 +666,116 @@ CREATE INDEX idx_rag_feedbacks_query ON rag_feedbacks(query_id);
 CREATE INDEX idx_rag_feedbacks_org ON rag_feedbacks(organization_id, created_at DESC);
 ```
 
+---
+
+### 3.15 Phase 2.3 — Assistant Workflows, Tasks, Approvals & Reports Schema
+
+#### 3.15.1 `assistant_workflows` Table
+Tracks agentic workflow execution plans, trigger sources, state progression, and context payloads:
+```sql
+CREATE TABLE assistant_workflows (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_id UUID REFERENCES chat_sessions(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    trigger_type VARCHAR(50) NOT NULL DEFAULT 'CHAT',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    current_step INTEGER NOT NULL DEFAULT 0,
+    total_steps INTEGER NOT NULL DEFAULT 0,
+    context_json JSONB DEFAULT '{}'::jsonb,
+    error_message TEXT,
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_workflow_status CHECK (
+        status IN ('PENDING', 'RUNNING', 'WAITING_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED')
+    )
+);
+
+CREATE INDEX idx_assistant_workflows_tenant ON assistant_workflows(organization_id, status);
+CREATE INDEX idx_assistant_workflows_user ON assistant_workflows(user_id, created_at DESC);
+CREATE INDEX idx_assistant_workflows_session ON assistant_workflows(session_id);
+```
+
+#### 3.15.2 `assistant_tasks` Table
+Tracks atomic DAG step nodes within a workflow:
+```sql
+CREATE TABLE assistant_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    workflow_id UUID NOT NULL REFERENCES assistant_workflows(id) ON DELETE CASCADE,
+    step_number INTEGER NOT NULL,
+    tool_name VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    input_parameters_json JSONB DEFAULT '{}'::jsonb,
+    output_result_json JSONB DEFAULT '{}'::jsonb,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    requires_approval BOOLEAN NOT NULL DEFAULT FALSE,
+    approval_id UUID,
+    execution_latency_ms FLOAT NOT NULL DEFAULT 0.0,
+    error_message TEXT,
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_task_status CHECK (
+        status IN ('PENDING', 'RUNNING', 'WAITING_APPROVAL', 'COMPLETED', 'FAILED', 'SKIPPED')
+    )
+);
+
+CREATE INDEX idx_assistant_tasks_workflow ON assistant_tasks(workflow_id, step_number);
+CREATE INDEX idx_assistant_tasks_tenant ON assistant_tasks(organization_id, status);
+```
+
+#### 3.15.3 `assistant_approvals` Table
+Captures Human-in-the-Loop review requests for destructive or policy-sensitive AI operations:
+```sql
+CREATE TABLE assistant_approvals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    workflow_id UUID REFERENCES assistant_workflows(id) ON DELETE CASCADE,
+    task_id UUID REFERENCES assistant_tasks(id) ON DELETE CASCADE,
+    action_type VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    payload_json JSONB DEFAULT '{}'::jsonb,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    reviewed_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    rejection_reason TEXT,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_approval_status CHECK (
+        status IN ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED')
+    )
+);
+
+CREATE INDEX idx_assistant_approvals_tenant ON assistant_approvals(organization_id, status);
+CREATE INDEX idx_assistant_approvals_workflow ON assistant_approvals(workflow_id);
+CREATE INDEX idx_assistant_approvals_user ON assistant_approvals(user_id, status);
+```
+
+#### 3.15.4 `assistant_reports` Table
+Stores generated multi-format organizational summaries and executive reports:
+```sql
+CREATE TABLE assistant_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    report_type VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    format VARCHAR(50) NOT NULL DEFAULT 'MARKDOWN',
+    content TEXT NOT NULL,
+    metadata_json JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_report_format CHECK (
+        format IN ('MARKDOWN', 'PDF', 'DOCX', 'JSON')
+    )
+);
+
+CREATE INDEX idx_assistant_reports_tenant ON assistant_reports(organization_id, report_type);
+CREATE INDEX idx_assistant_reports_user ON assistant_reports(user_id, created_at DESC);
+```
+
