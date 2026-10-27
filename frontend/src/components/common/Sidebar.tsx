@@ -25,6 +25,7 @@ import {
   Cpu,
   Bot,
   Network,
+  BrainCircuit,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -61,6 +62,13 @@ const navItems: NavItem[] = [
   { label: 'RAG Knowledge Chat', path: ROUTES.CHAT, icon: MessageSquare, requiredPermission: Permission.AI_CHAT, badge: 'Phase 2.2' },
   { label: 'Enterprise AI Assistant', path: ROUTES.ASSISTANT, icon: Bot, requiredPermission: Permission.AI_CHAT, badge: 'Phase 2.3' },
   { label: 'Knowledge Graph', path: ROUTES.KNOWLEDGE_GRAPH, icon: Network, badge: 'Phase 2.4' },
+  {
+    label: 'Enterprise Intelligence',
+    path: ROUTES.INTELLIGENCE,
+    icon: BrainCircuit,
+    requiredPermission: Permission.ANALYTICS_VIEW,
+    badge: 'Phase 2.5',
+  },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
   {

@@ -33,6 +33,8 @@ export const ROUTES = {
   INGESTION: '/ingestion',
   ASSISTANT: '/assistant',
   KNOWLEDGE_GRAPH: '/graph',
+  INTELLIGENCE: '/intelligence',
+  ENTERPRISE_INTELLIGENCE: '/enterprise-intelligence',
   NOT_FOUND: '*',
 } as const;
 

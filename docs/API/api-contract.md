@@ -2429,3 +2429,234 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; 
   }
 }
 ```
+
+---
+
+## 12. Enterprise Intelligence & Predictive Analytics Endpoints (Phase 2.5)
+
+### 12.1 Overview & Base URI
+All intelligence and predictive analytics endpoints are mounted at `/api/v1/analytics` with organization-scoped multi-tenant isolation and role-based access control.
+
+### 12.2 Endpoints Specification
+
+#### 12.2.1 Executive Intelligence Dashboard
+- **Method**: `GET`
+- **Path**: `/api/v1/analytics/dashboard`
+- **Auth**: Bearer JWT (`analytics.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Executive dashboard retrieved successfully.",
+  "data": {
+    "health_score": {
+      "overall_score": 88,
+      "rating": "EXCELLENT",
+      "coverage_score": 92.0,
+      "freshness_score": 84.0,
+      "quality_score": 86.0,
+      "retrieval_score": 90.0,
+      "duplicate_penalty": 4.0
+    },
+    "kpis": {
+      "active_users": 42,
+      "documents_uploaded": 128,
+      "ai_queries": 450,
+      "search_success_rate": 0.94,
+      "avg_response_time_ms": 185.0,
+      "storage_used_bytes": 1073741824,
+      "storage_capacity_bytes": 10737418240
+    },
+    "active_anomalies_count": 1,
+    "top_recommendations_count": 3,
+    "executive_summary": "Knowledge contributions increased by 18% this month with strong AI adoption (26% growth). Storage runway is projected at 142 days."
+  }
+}
+```
+
+#### 12.2.2 Core Operational KPIs
+- **Method**: `GET`
+- **Path**: `/api/v1/analytics/kpis`
+- **Auth**: Bearer JWT (`analytics.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "KPI metrics retrieved successfully.",
+  "data": {
+    "active_users": 42,
+    "documents_uploaded": 128,
+    "ai_queries": 450,
+    "search_success_rate": 0.94,
+    "avg_response_time_ms": 185.0,
+    "storage_used_bytes": 1073741824,
+    "storage_capacity_bytes": 10737418240,
+    "knowledge_health_score": 88
+  }
+}
+```
+
+#### 12.2.3 Trend Analysis
+- **Method**: `GET`
+- **Path**: `/api/v1/analytics/trends`
+- **Auth**: Bearer JWT (`analytics.view` permission)
+- **Query Parameters**:
+  - `metric`: string (e.g. `documents`, `ai_usage`, `storage`, `collaboration`, default: `all`)
+  - `days`: int (e.g. 30, 60, 90, default: 30)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Trend analysis retrieved successfully.",
+  "data": {
+    "period_days": 30,
+    "document_growth": [
+      { "date": "2026-10-01", "value": 110 },
+      { "date": "2026-10-15", "value": 120 },
+      { "date": "2026-10-28", "value": 128 }
+    ],
+    "ai_query_volume": [
+      { "date": "2026-10-01", "value": 310 },
+      { "date": "2026-10-15", "value": 390 },
+      { "date": "2026-10-28", "value": 450 }
+    ],
+    "department_activity": [
+      { "department": "Platform Engineering", "document_count": 64, "query_count": 210 },
+      { "department": "Product Management", "document_count": 32, "query_count": 140 }
+    ]
+  }
+}
+```
+
+#### 12.2.4 Predictive Analytics & Forecasting
+- **Method**: `GET`
+- **Path**: `/api/v1/analytics/predictions`
+- **Auth**: Bearer JWT (`analytics.view` permission)
+- **Query Parameters**:
+  - `horizon_days`: int (default: 30)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Predictions generated successfully.",
+  "data": {
+    "horizon_days": 30,
+    "document_forecast": {
+      "current_value": 128,
+      "projected_value": 164,
+      "growth_rate_pct": 28.1,
+      "confidence_lower": 152,
+      "confidence_upper": 176
+    },
+    "storage_runway": {
+      "current_usage_bytes": 1073741824,
+      "capacity_bytes": 10737418240,
+      "days_to_85_pct": 142,
+      "days_to_full": 185,
+      "is_critical": false
+    },
+    "query_volume_forecast": {
+      "current_daily_avg": 45.0,
+      "projected_daily_avg": 58.5,
+      "monthly_tokens_projected": 2400000
+    }
+  }
+}
+```
+
+#### 12.2.5 Operational Anomaly Detection
+- **Method**: `GET`
+- **Path**: `/api/v1/analytics/anomalies`
+- **Auth**: Bearer JWT (`analytics.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Anomalies retrieved successfully.",
+  "data": {
+    "total_detected": 1,
+    "anomalies": [
+      {
+        "id": "anom-001",
+        "metric_name": "cross_department_collaboration",
+        "anomaly_type": "ACTIVITY_DROP",
+        "severity": "MEDIUM",
+        "description": "Cross-team document sharing dropped 42% below 30-day baseline.",
+        "deviation_score": 2.35,
+        "detected_at": "2026-10-27T14:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### 12.2.6 Strategic Recommendations
+- **Method**: `GET`
+- **Path**: `/api/v1/analytics/recommendations`
+- **Auth**: Bearer JWT (`analytics.view` permission)
+- **Query Parameters**:
+  - `status`: string (`ACTIVE`, `APPLIED`, `DISMISSED`, default: `ACTIVE`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Recommendations retrieved successfully.",
+  "data": {
+    "total_recommendations": 2,
+    "recommendations": [
+      {
+        "id": "rec-001",
+        "category": "ARCHIVE",
+        "title": "Archive 14 Stale Operational Manuals",
+        "description": "Documents have not been viewed, cited, or updated in >180 days.",
+        "impact_score": 7.5,
+        "effort_score": 1.5,
+        "priority_index": 7.5,
+        "status": "ACTIVE",
+        "action_payload": { "doc_ids": ["doc-1", "doc-2"] }
+      },
+      {
+        "id": "rec-002",
+        "category": "COVERAGE",
+        "title": "Document Human Resources SOPs",
+        "description": "HR department has 0 indexed operational documents in knowledge base.",
+        "impact_score": 8.0,
+        "effort_score": 3.0,
+        "priority_index": 4.0,
+        "status": "ACTIVE",
+        "action_payload": { "department": "Human Resources" }
+      }
+    ]
+  }
+}
+```
+
+#### 12.2.7 Multi-Dimensional Knowledge Health Score
+- **Method**: `GET`
+- **Path**: `/api/v1/analytics/knowledge-health`
+- **Auth**: Bearer JWT (`analytics.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Knowledge health score computed successfully.",
+  "data": {
+    "overall_score": 88,
+    "rating": "EXCELLENT",
+    "coverage_score": 92.0,
+    "freshness_score": 84.0,
+    "quality_score": 86.0,
+    "retrieval_score": 90.0,
+    "duplicate_penalty": 4.0,
+    "department_breakdown": [
+      { "department": "Platform Engineering", "score": 94, "rating": "EXCELLENT" },
+      { "department": "Operations", "score": 72, "rating": "GOOD" }
+    ],
+    "identified_gaps": [
+      "Human Resources has no active policy documentation.",
+      "Legal contracts require freshness review (>120 days old)."
+    ]
+  }
+}
+```
+

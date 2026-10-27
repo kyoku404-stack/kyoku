@@ -1371,3 +1371,96 @@ Member 1 defines traversal interfaces (`GraphQuerySpec`, `ImpactAnalysisResult`,
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-044 — Multi-Dimensional Knowledge Health Scoring (KHS) & Decomposition Model
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p2/p2.5.txt` (Chapters 2, 9, 13) mandates the calculation of an objective, actionable **Knowledge Health Score (KHS)** (0–100) representing institutional knowledge vitality, coverage, freshness, quality, and redundancy across departments.
+
+#### Decision
+1. Implement a decomposed linear health scoring model:
+   $$KHS = \min(100, \max(0, 0.30 \cdot C_{cov} + 0.25 \cdot C_{fresh} + 0.25 \cdot C_{qual} + 0.20 \cdot C_{ret} - 0.15 \cdot C_{dup}))$$
+2. Decompose into 4 transparent tiers: Excellent ($\ge 85$), Good ($70-84$), Fair ($50-69$), and At Risk ($< 50$).
+3. Persist point-in-time calculation snapshots in `analytics_snapshots` with a 300-second Redis cache to eliminate redundant computation.
+
+#### Alternatives Considered
+- Black-box LLM scoring: Rejected — inconsistent outputs, unexplainable to leadership, non-deterministic.
+- Single metric (e.g. document count only): Rejected — volume does not imply freshness, completeness, or retrieval quality.
+
+#### Reason
+Decomposition allows leadership to instantly pinpoint *why* a score dropped (e.g., stale HR documentation or high redundancy in Marketing).
+
+#### Impact
+Member 1 provides mathematical formulation and test contracts. Member 2 implements DB aggregations and snapshots. Member 3 builds the executive health gauge and breakdown cards.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-045 — Hybrid Statistical Time-Series Forecasting & Z-Score Anomaly Detection
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p2/p2.5.txt` (Chapters 7, 8) requires forecasting future organizational growth (documents, storage runway, AI query volume) and alerting on operational anomalies (sudden drop in collaboration, abnormal deletion bursts, spike in retrieval failures).
+
+#### Decision
+1. **Statistical OLS Linear Trend Regression with Standard Error Envelopes**:
+   - Compute slope $\beta$ and intercept $\alpha$ over a rolling 30-day baseline to forecast 30-, 60-, and 90-day horizons with 95% confidence intervals ($\pm 1.96 \cdot \text{SE}$).
+   - Calculate storage capacity runway (days until 85% and 95% threshold breaches).
+2. **Dynamic Z-Score Anomaly Detection**:
+   - Maintain rolling mean $\mu$ and standard deviation $\sigma$ across activity indicators.
+   - Flag events with $Z \ge 2.0$ (Medium), $Z \ge 2.5$ (High), and $Z \ge 3.0$ (Critical).
+
+#### Alternatives Considered
+- Heavy deep learning forecasting (e.g. Prophet / LSTM): Rejected — excessive CPU/GPU footprint and operational latency for sub-second dashboard rendering.
+- Static threshold alerts: Rejected — unable to adapt to different tenant sizes and growing organizations.
+
+#### Reason
+Statistical OLS regression and Z-score testing provide sub-millisecond execution, high interpretability, and robust performance on multi-tenant databases.
+
+#### Impact
+Member 1 provides forecasting and anomaly contracts. Member 2 implements analytical services. Member 3 builds predictive charts with confidence bounds.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-046 — Prioritized Strategic AI Recommendations Engine & Multi-Tenant Decision Support
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p2/p2.5.txt` (Chapters 12, 14, 16) specifies that KEEP must generate actionable, prioritized organizational recommendations (e.g. archiving stale documents, merging duplicate knowledge, filling uncovered department knowledge gaps, resolving orphan graph entities).
+
+#### Decision
+1. **Priority Index ($PI$) Algorithm**:
+   $$PI = \frac{\text{Impact Score} (1-10) \times 1.5}{\text{Effort Score} (1-5)}$$
+   Sort active recommendations descending by $PI$ to ensure leadership focuses on high-impact, low-effort wins.
+2. **Lifecycle State Machine**:
+   Recommendations transition through `ACTIVE` $\rightarrow$ `APPLIED` or `DISMISSED` with action audit payloads.
+3. **Automated Executive Briefing Synthesis**:
+   Synthesize concise, multi-bullet executive summaries summarizing weekly trend deltas, top risks, and high-priority recommendations.
+
+#### Alternatives Considered
+- Unranked recommendations: Rejected — causes alert fatigue for executive users.
+- Permanent static suggestions: Rejected — suggestions must be dynamically updated as documents are uploaded or resolved.
+
+#### Reason
+Priority Index ranking and actionable state transitions transform raw analytics into a proactive operational management system.
+
+#### Impact
+Member 1 specifies recommendation taxonomy and contracts. Member 2 provides ORM models, migration, and CRUD endpoints. Member 3 implements the interactive recommendation panel.
+
+#### Status
+ACCEPTED
+

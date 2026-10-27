@@ -4,7 +4,7 @@
 Phase 2 — AI Knowledge Architecture & RAG Pipeline
 
 ## Current Sub-Phase
-Phase 2.4 — Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence
+Phase 2.5 — AI Insights, Predictive Analytics & Enterprise Intelligence Dashboard
 
 ## Repository Health
 GREEN
@@ -15,6 +15,54 @@ Phase 2.1 (AI Knowledge Ingestion Pipeline) is 100% COMPLETE across all four mem
 Phase 2.2 (Retrieval-Augmented Generation Engine & Semantic Search) is 100% COMPLETE across all four member roles.
 Phase 2.3 (Enterprise AI Assistant, Agentic Workflows & Intelligent Task Automation) is 100% COMPLETE across all four member roles.
 Phase 2.4 (Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence) is 100% COMPLETE across all four member roles.
+Phase 2.5 (AI Insights, Predictive Analytics & Enterprise Intelligence Dashboard) is 100% COMPLETE across all four member roles.
+
+Phase 2.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/enterprise-intelligence-predictive-analytics.md`) detailing the 5-factor Knowledge Health Score (KHS) formulation, Ordinary Least Squares (OLS) linear trend regression with 95% confidence intervals, storage capacity runway estimation, statistical Z-score anomaly detection, and Priority Index ($PI = \frac{\text{Impact} \times 1.5}{\text{Effort}}$) strategic recommendation heuristics.
+- Authored Architecture Decision Records ADR-044, ADR-045, and ADR-046 in `docs/decisions/decisions.md`:
+  - `ADR-044`: Multi-Dimensional Knowledge Health Score (KHS) Mathematical Formulation & Factor Decomposition.
+  - `ADR-045`: Hybrid Statistical Time-Series Forecasting & Z-Score Anomaly Detection Engine.
+  - `ADR-046`: Prioritized Strategic Recommendations Engine & Impact-to-Effort Ranking Heuristics.
+- Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 12 defining all 7 Phase 2.5 endpoints: `GET /api/v1/analytics/dashboard`, `GET /api/v1/analytics/kpis`, `GET /api/v1/analytics/trends`, `GET /api/v1/analytics/predictions`, `GET /api/v1/analytics/anomalies`, `GET /api/v1/analytics/recommendations`, and `GET /api/v1/analytics/knowledge-health`.
+- Updated Database Schema Specification (`docs/database/database-schema.md`) with Section 3.17 defining tables `analytics_snapshots`, `ai_recommendations`, and `detected_anomalies` with indexes, constraints, and audit linkages.
+- Implemented typed domain contracts and reference algorithms in `backend/app/services/intelligence/contracts.py` and `backend/app/services/intelligence/__init__.py`:
+  - Enums: `HealthScoreRating`, `AnomalySeverity`, `AnomalyType`, `RecommendationCategory`, `RecommendationStatus`.
+  - Concrete Reference Engines: `DefaultKnowledgeHealthScorer`, `DefaultTimeSeriesForecaster`, `DefaultAnomalyDetector`, `DefaultRecommendationEngine`.
+- Authored dedicated unit test suite `tests/unit/test_enterprise_intelligence_contracts.py` (7 tests, 100% pass rate).
+
+Phase 2.5 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models `AnalyticsSnapshot`, `AIRecommendation`, and `DetectedAnomaly` (`backend/app/models/analytics.py`) matching schema 3.17; re-exported in `backend/app/models/__init__.py`.
+- Authored and verified clean Alembic schema migration revision `a8b9c0d1e2f3_phase_2_5_analytics_intelligence.py` chained from `f6a7b8c9d0e1` to `a8b9c0d1e2f3 (head)`.
+- Implemented Pydantic v2 validation schemas in `backend/app/schemas/intelligence.py` validating requests and responses for all 7 endpoints; re-exported in `backend/app/schemas/__init__.py`.
+- Implemented `EnterpriseIntelligenceService` (`backend/app/services/intelligence/service.py`) providing multi-dimensional KHS factor decomposition, OLS linear regression forecasting with 95% confidence intervals, storage runway projection, statistical Z-score anomaly detection, and Priority Index recommendation ranking.
+- Implemented all 7 FastAPI REST endpoints in `backend/app/api/v1/analytics.py` and mounted in `backend/app/api/v1/router.py`.
+- Authored unit test suite `tests/unit/test_intelligence_services.py` (7 tests) and integration test suites `tests/integration/test_analytics_intelligence_endpoints.py` (7 tests) and `tests/integration/test_db_migrations.py` (4 tests).
+
+Phase 2.5 Member 3 (Frontend & UI Lead) deliverables are COMPLETED:
+- Authored TypeScript interfaces and enums in `frontend/src/types/intelligence.ts` and re-exported in `frontend/src/types/index.ts`.
+- Implemented `intelligenceService` (`frontend/src/services/intelligenceService.ts`) covering all 7 REST API endpoints; re-exported in `frontend/src/services/index.ts`.
+- Developed `useEnterpriseIntelligence` custom React hook (`frontend/src/hooks/useEnterpriseIntelligence.ts`) managing view tabs, historical time windows, forecast horizons, and real-time polling.
+- Built modular UI feature components in `frontend/src/features/intelligence/`:
+  - `KnowledgeHealthGauge.tsx`: Circular SVG gauge, rating badge, factor breakdown progress bars, department health cards, and knowledge gap alerts.
+  - `ExecutiveBriefingCard.tsx`: AI narrative executive summary card with 4 KPI stat counters.
+  - `ForecastVisualizer.tsx`: OLS linear regression forecast projections, 95% confidence bounds, and storage capacity runway indicator.
+  - `AnomalyAlertFeed.tsx`: Operational anomaly alert feed with severity filters and Z-scores.
+  - `RecommendationPanel.tsx`: Actionable recommendations sorted by Priority Index with one-click execution.
+  - `TrendChartWidget.tsx`: Multi-series trend curves and department activity comparative bars.
+- Built master `EnterpriseIntelligencePage` (`frontend/src/pages/EnterpriseIntelligencePage.tsx`) assembling the command center.
+- Configured routes `/intelligence` and `/enterprise-intelligence` in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+- Updated navigation in `frontend/src/components/common/Sidebar.tsx` with `Intelligence` link, `BrainCircuit` icon, and `Phase 2.5` badge.
+- Authored frontend test suites:
+  - `frontend/src/tests/intelligenceService.test.ts` (7 tests, 100% pass rate).
+  - `frontend/src/tests/intelligenceComponents.test.tsx` (6 tests, 100% pass rate).
+- Full Vitest suite: 32/32 test files passed, 272/272 tests passed (100%). ESLint clean (0 errors, 0 warnings). Clean production Vite build (`tsc && vite build`).
+
+Phase 2.5 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
+- Configured Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml`: `KnowledgeHealthCritical` (KHS < 50 for 15m), `StorageRunwayExhaustionRisk` (< 14 days), `HighOperationalAnomalyCount` (> 5), and `AnalyticsComputationLatencyHigh` (p95 > 2.0s).
+- Provisioned dedicated Grafana Enterprise Intelligence Dashboard (`infrastructure/grafana/dashboards/enterprise-intelligence-dashboard.json`) visualizing Knowledge Health Score gauge, Storage Runway countdown, Active Anomalies counter, Active Recommendations counter, Document Growth Projection vs Actual time series, and AI Query Volume & Adoption Trends.
+- Authored backend integration and SLA benchmark test suite (`tests/integration/test_intelligence_pipeline.py`) validating multi-tenant isolation, KHS factor decomposition, OLS regression forecasting with 95% CI bounds, anomaly detection lifecycle, recommendation Priority Index ranking, and < 2000ms SLA latency benchmark (6 tests, 100% pass rate).
+- Authored Playwright E2E browser test suite (`tests/e2e/enterprise_intelligence.spec.ts`) covering page navigation, executive briefing card, KHS circular gauge and factor bars, forecast visualizer and storage runway, anomaly alert feed with severity filters, recommendation panel with execution trigger, and responsive viewports (Desktop, Tablet, Mobile).
+- Total monorepo tests passing: 638 backend tests (100%) + 272 frontend Vitest tests (100%) + 222 Playwright tests discovered with zero lint or build errors. Phase 2.5 is 100% complete across all 4 member roles.
 
 Phase 2.4 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Knowledge Graph Architecture Specification (`docs/Architecture/knowledge-graph-enterprise-intelligence.md`) detailing relational ontology, bi-directional edge mapping, BFS/DFS multi-hop graph traversal algorithms, GraphRAG context enrichment, subject-matter expertise discovery scoring, downstream blast radius impact analysis, and multi-tenant security quarantine boundaries.
