@@ -905,4 +905,99 @@ CREATE INDEX idx_anomalies_tenant_time ON detected_anomalies(organization_id, de
 CREATE INDEX idx_anomalies_unresolved ON detected_anomalies(organization_id, severity) WHERE (resolved_at IS NULL);
 ```
 
+---
+
+### 3.18 Enterprise Integrations & Connectors Schema (Phase 3.1)
+
+#### 3.18.1 `connectors` Table
+Stores enterprise SaaS connector instances, authentication methods, encrypted credentials, synchronization settings, and operational health status:
+```sql
+CREATE TABLE connectors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    platform_type VARCHAR(50) NOT NULL,
+    platform_category VARCHAR(50) NOT NULL,
+    auth_type VARCHAR(50) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'CONFIGURED',
+    config_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    encrypted_credentials TEXT,
+    last_sync_at TIMESTAMP WITH TIME ZONE,
+    last_sync_status VARCHAR(30),
+    total_documents_synced INT NOT NULL DEFAULT 0,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_connector_status CHECK (
+        status IN ('CONFIGURED', 'AUTHENTICATING', 'CONNECTED', 'SYNCING', 'HEALTHY', 'DEGRADED', 'ERROR', 'DISCONNECTED')
+    ),
+    CONSTRAINT chk_platform_category CHECK (
+        platform_category IN ('CLOUD_STORAGE', 'DOCUMENTATION', 'COMMUNICATION', 'DEVELOPMENT', 'PROJECT_MANAGEMENT', 'CRM')
+    ),
+    CONSTRAINT chk_auth_type CHECK (
+        auth_type IN ('OAUTH2', 'OPENID_CONNECT', 'PERSONAL_ACCESS_TOKEN', 'API_KEY', 'SERVICE_ACCOUNT')
+    )
+);
+
+CREATE INDEX idx_connectors_tenant_platform ON connectors(organization_id, platform_type);
+CREATE INDEX idx_connectors_tenant_status ON connectors(organization_id, status);
+CREATE UNIQUE INDEX uq_connectors_org_name ON connectors(organization_id, name);
+```
+
+#### 3.18.2 `connector_sync_jobs` Table
+Tracks asynchronous full and incremental synchronization batches, throughput counters, and execution runtimes:
+```sql
+CREATE TABLE connector_sync_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    connector_id UUID NOT NULL REFERENCES connectors(id) ON DELETE CASCADE,
+    sync_mode VARCHAR(30) NOT NULL DEFAULT 'INCREMENTAL',
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    trigger_type VARCHAR(30) NOT NULL DEFAULT 'MANUAL',
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    duration_ms INT,
+    documents_discovered INT NOT NULL DEFAULT 0,
+    documents_added INT NOT NULL DEFAULT 0,
+    documents_updated INT NOT NULL DEFAULT 0,
+    documents_deleted INT NOT NULL DEFAULT 0,
+    documents_skipped INT NOT NULL DEFAULT 0,
+    documents_failed INT NOT NULL DEFAULT 0,
+    error_summary TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_sync_mode CHECK (sync_mode IN ('FULL', 'INCREMENTAL', 'SCHEDULED', 'REAL_TIME')),
+    CONSTRAINT chk_sync_job_status CHECK (status IN ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED')),
+    CONSTRAINT chk_trigger_type CHECK (trigger_type IN ('MANUAL', 'SCHEDULED', 'WEBHOOK'))
+);
+
+CREATE INDEX idx_sync_jobs_tenant_connector ON connector_sync_jobs(organization_id, connector_id, created_at DESC);
+CREATE INDEX idx_sync_jobs_status ON connector_sync_jobs(organization_id, status);
+```
+
+#### 3.18.3 `connector_sync_logs` Table
+Maintains detailed, immutable resource-level synchronization audit logs for provenance tracking and change verification:
+```sql
+CREATE TABLE connector_sync_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    connector_id UUID NOT NULL REFERENCES connectors(id) ON DELETE CASCADE,
+    sync_job_id UUID REFERENCES connector_sync_jobs(id) ON DELETE CASCADE,
+    external_document_id VARCHAR(255) NOT NULL,
+    document_title VARCHAR(512) NOT NULL,
+    source_url TEXT,
+    action_taken VARCHAR(30) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'SUCCESS',
+    error_detail TEXT,
+    checksum VARCHAR(64),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_sync_log_action CHECK (action_taken IN ('ADDED', 'UPDATED', 'DELETED', 'SKIPPED', 'FAILED')),
+    CONSTRAINT chk_sync_log_status CHECK (status IN ('SUCCESS', 'WARNING', 'FAILURE'))
+);
+
+CREATE INDEX idx_sync_logs_tenant_connector ON connector_sync_logs(organization_id, connector_id, created_at DESC);
+CREATE INDEX idx_sync_logs_job ON connector_sync_logs(sync_job_id);
+CREATE INDEX idx_sync_logs_external_doc ON connector_sync_logs(organization_id, connector_id, external_document_id);
+```
+
+
 

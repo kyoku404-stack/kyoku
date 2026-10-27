@@ -113,6 +113,11 @@ class AIPermission(str, Enum):
     GRAPH_BUILD = "graph.build"
     GRAPH_INTELLIGENCE = "graph.intelligence"
 
+    # Phase 3.1 Enterprise Integrations & Connector Framework
+    CONNECTOR_VIEW = "connector.view"
+    CONNECTOR_MANAGE = "connector.manage"
+    CONNECTOR_SYNC = "connector.sync"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -136,6 +141,8 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.DOCUMENT_PREVIEW.value,
     # Phase 2.4 graph permissions
     AIPermission.GRAPH_READ.value,
+    # Phase 3.1 connector permissions
+    AIPermission.CONNECTOR_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -174,6 +181,8 @@ PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.USER_INVITE.value,
     # Phase 2.4 graph permissions
     AIPermission.GRAPH_BUILD.value,
+    # Phase 3.1 connector permissions
+    AIPermission.CONNECTOR_SYNC.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
@@ -199,6 +208,8 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.AI_CONFIG.value,
     AIPermission.ANALYTICS_EXPORT.value,
     AIPermission.AUDIT_READ.value,
+    # Phase 3.1 connector permissions
+    AIPermission.CONNECTOR_MANAGE.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {

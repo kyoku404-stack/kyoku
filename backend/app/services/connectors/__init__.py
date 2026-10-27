@@ -1,0 +1,56 @@
+"""Enterprise Connector Framework Package.
+
+Author: Member 1 (Project Lead & AI Architect)
+"""
+
+from backend.app.services.connectors.contracts import (
+    AuthCredentials,
+    AuthType,
+    BaseChangeDetector,
+    BaseConnectorAdapter,
+    BaseDocumentNormalizer,
+    BaseSyncScheduler,
+    ChangeDetectionItem,
+    ChangeDetectionResult,
+    ConnectorConfig,
+    ConnectorStatus,
+    DefaultChangeDetector,
+    DefaultDocumentNormalizer,
+    DefaultSyncScheduler,
+    ExternalResourceItem,
+    MockExternalPlatformAdapter,
+    NormalizedDocument,
+    NormalizedPermissionLevel,
+    PlatformCategory,
+    PlatformType,
+    SyncAction,
+    SyncJobStatus,
+    SyncMetrics,
+    SyncMode,
+)
+
+__all__ = [
+    "AuthCredentials",
+    "AuthType",
+    "BaseChangeDetector",
+    "BaseConnectorAdapter",
+    "BaseDocumentNormalizer",
+    "BaseSyncScheduler",
+    "ChangeDetectionItem",
+    "ChangeDetectionResult",
+    "ConnectorConfig",
+    "ConnectorStatus",
+    "DefaultChangeDetector",
+    "DefaultDocumentNormalizer",
+    "DefaultSyncScheduler",
+    "ExternalResourceItem",
+    "MockExternalPlatformAdapter",
+    "NormalizedDocument",
+    "NormalizedPermissionLevel",
+    "PlatformCategory",
+    "PlatformType",
+    "SyncAction",
+    "SyncJobStatus",
+    "SyncMetrics",
+    "SyncMode",
+]
