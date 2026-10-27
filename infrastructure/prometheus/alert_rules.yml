@@ -304,3 +304,51 @@ groups:
           description: "Over 30% of entities in the knowledge graph have degree 0, indicating potential linking degradation."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#graphorphannoderatiohigh"
 
+      # ------------------------------------------------------------------------
+      # Enterprise Intelligence & Predictive Analytics Alerts (Phase 2.5)
+      # ------------------------------------------------------------------------
+      - alert: KnowledgeHealthCritical
+        expr: knowledge_health_score_composite < 50.0
+        for: 15m
+        labels:
+          severity: WARNING
+          tier: enterprise-intelligence
+        annotations:
+          summary: "Institutional Knowledge Health Score dropped below AT_RISK threshold (<50)"
+          description: "KHS composite score is {{ $value | printf \"%.1f\" }}/100, indicating severe coverage or freshness degradation."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#knowledgehealthcritical"
+
+      - alert: StorageRunwayExhaustionRisk
+        expr: storage_runway_days_to_warning < 14
+        for: 10m
+        labels:
+          severity: CRITICAL
+          tier: storage
+        annotations:
+          summary: "CRITICAL: Storage capacity runway is under 14 days"
+          description: "Projected storage growth estimates reach 85% capacity in {{ $value | printf \"%.0f\" }} days."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#storagerunwayexhaustionrisk"
+
+      - alert: HighOperationalAnomalyCount
+        expr: detected_anomalies_active_total > 5
+        for: 10m
+        labels:
+          severity: WARNING
+          tier: enterprise-intelligence
+        annotations:
+          summary: "High number of unresolved operational anomalies detected (>5)"
+          description: "{{ $value | printf \"%.0f\" }} statistical Z-score anomalies remain active across the organization."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#highoperationalanomalycount"
+
+      - alert: AnalyticsComputationLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(analytics_computation_duration_seconds_bucket[5m])) by (le)) > 2.0
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: enterprise-intelligence
+        annotations:
+          summary: "Analytics calculation p95 latency exceeds 2.0s SLA"
+          description: "Analytics & KHS computation duration is {{ $value | printf \"%.2f\" }}s (SLA: 2.0s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#analyticscomputationlatencyhigh"
+
+
