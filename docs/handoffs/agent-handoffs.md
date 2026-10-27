@@ -4304,6 +4304,62 @@ COMPLETED / VERIFIED GREEN / 100% DONE
 #### Target Receiving Agent
 - **Project Lead / User**: Phase 2.3 is 100% complete across all 4 member roles, fully verified, and ready for merge.
 
+---
+
+### Handoff Entry #050: Phase 2.4 — Knowledge Graph Architecture, Enterprise Ontology, ADRs & Domain Contracts
+
+#### Date
+2026-10-27
+
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION
+
+#### Implemented Features
+1. **Master Architecture Specification (`docs/Architecture/knowledge-graph-enterprise-intelligence.md`)**:
+   - Comprehensive system architecture for Phase 2.4 covering the 4-tier enterprise ontology (Organizational, Knowledge, Operational, Technical), canonical entity normalization, heuristic triple relationship extraction, multi-hop recursive graph traversal via PostgreSQL CTEs, Graph-Enhanced RAG (GraphRAG) context assembly, impact blast radius analysis, and subject-matter expertise discovery scoring.
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - `ADR-041`: Enterprise Entity & Relationship Ontology Model, Normalization & Disambiguation Strategy.
+   - `ADR-042`: Graph-Enhanced Retrieval-Augmented Generation (GraphRAG) with Contextual Subgraph Expansion.
+   - `ADR-043`: Multi-Hop Graph Traversal, Recursive Impact Analysis, and PageRank Expertise Scoring.
+3. **API Contract Expansion (`docs/api/api-contract.md`)**:
+   - Appended Section 11 formally specifying all 7 Knowledge Graph REST endpoints:
+     - `POST /api/v1/graph/build`
+     - `POST /api/v1/graph/update`
+     - `GET  /api/v1/graph/entity/{id}`
+     - `GET  /api/v1/graph/relationships/{id}`
+     - `POST /api/v1/graph/query`
+     - `GET  /api/v1/graph/explorer`
+     - `GET  /api/v1/graph/expertise`
+     - `GET  /api/v1/graph/impact/{entity_id}`
+4. **Database Schema Specification (`docs/database/database-schema.md`)**:
+   - Appended Section 3.16 specifying schemas, indexes, soft-deletes, and adjacency models for `kg_entities` and `kg_relationships`.
+5. **Typed Domain Contracts & Reference Components (`backend/app/services/graph/`)**:
+   - `contracts.py`:
+     - Enums: `EntityType`, `RelationType`.
+     - Value objects & dataclasses: `EntitySpec`, `RelationshipSpec`, `GraphNode`, `GraphEdge`, `GraphTraversalPath`, `GraphQueryResult`, `ExpertiseRank`, `ImpactAnalysisResult`, `GraphMetrics`, `GraphRAGContext`.
+     - Abstract Interfaces: `BaseEntityNormalizer`, `BaseEntityExtractor`, `BaseRelationshipExtractor`, `BaseGraphTraversalEngine`, `BaseImpactAnalyzer`, `BaseExpertiseDiscoveryEngine`, `BaseGraphRAGAugmenter`.
+     - Concrete Implementations: `DefaultEntityNormalizer`, `DefaultEntityExtractor`, `DefaultRelationshipExtractor`, `DefaultGraphRAGAugmenter`.
+   - `__init__.py`: Clean export barrel with strict alphabetical sorting.
+6. **Unit Verification Suite (`tests/unit/test_knowledge_graph_contracts.py`)**:
+   - 7/7 unit tests passing (100% pass rate). 0 ruff errors.
+
+#### Files Modified / Created
+- `docs/Architecture/knowledge-graph-enterprise-intelligence.md` (Created)
+- `docs/decisions/decisions.md` (Modified)
+- `docs/api/api-contract.md` (Modified)
+- `docs/database/database-schema.md` (Modified)
+- `backend/app/services/graph/contracts.py` (Created)
+- `backend/app/services/graph/__init__.py` (Created)
+- `tests/unit/test_knowledge_graph_contracts.py` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #050)
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**: Implement graph ORM models/relationships, Alembic migration, entity/relationship extraction service, graph query & traversal service, impact analysis & expertise discovery logic, Pydantic v2 schemas, and FastAPI REST endpoints.
+
+
 
 
 
