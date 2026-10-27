@@ -4,7 +4,7 @@
 Phase 2 — AI Knowledge Architecture & RAG Pipeline
 
 ## Current Sub-Phase
-Phase 2.3 — Enterprise AI Assistant, Agentic Workflows & Intelligent Task Automation
+Phase 2.4 — Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence
 
 ## Repository Health
 GREEN
@@ -14,6 +14,55 @@ Phase 1 (Phase 1.1 through Phase 1.10) is 100% COMPLETE across all four member r
 Phase 2.1 (AI Knowledge Ingestion Pipeline) is 100% COMPLETE across all four member roles.
 Phase 2.2 (Retrieval-Augmented Generation Engine & Semantic Search) is 100% COMPLETE across all four member roles.
 Phase 2.3 (Enterprise AI Assistant, Agentic Workflows & Intelligent Task Automation) is 100% COMPLETE across all four member roles.
+Phase 2.4 (Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence) is 100% COMPLETE across all four member roles.
+
+Phase 2.4 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Knowledge Graph Architecture Specification (`docs/Architecture/knowledge-graph-enterprise-intelligence.md`) detailing relational ontology, bi-directional edge mapping, BFS/DFS multi-hop graph traversal algorithms, GraphRAG context enrichment, subject-matter expertise discovery scoring, downstream blast radius impact analysis, and multi-tenant security quarantine boundaries.
+- Authored Architecture Decision Records ADR-041, ADR-042, and ADR-043 in `docs/decisions/decisions.md`:
+  - `ADR-041`: Enterprise Knowledge Graph Hybrid Relational-Graph Schema & Traversal Architecture.
+  - `ADR-042`: Bidirectional GraphRAG Context Fusion & Entity-Augmented Prompting.
+  - `ADR-043`: Downstream Blast Radius Impact Propagation & Expertise Discovery Scoring Algorithms.
+- Expanded official REST API Contract (`docs/api/api-contract.md`) with Section 11 defining all 8 Phase 2.4 endpoints: `POST /api/v1/graph/build`, `POST /api/v1/graph/update`, `GET /api/v1/graph/entity/{id}`, `GET /api/v1/graph/relationships/{id}`, `POST /api/v1/graph/query`, `GET /api/v1/graph/explorer`, `GET /api/v1/graph/expertise`, and `GET /api/v1/graph/impact/{entity_id}`.
+- Updated Database Schema Specification (`docs/database/database-schema.md`) with Section 3.16 documenting `kg_entities` and `kg_relationships` enhancements, composite indexes, and foreign key cascades.
+- Implemented typed domain contracts and reference components in `backend/app/services/graph/contracts.py` and `__init__.py`:
+  - Enums: `EntityType` (DEPARTMENT, TEAM, PROJECT, TASK, EMPLOYEE, DOCUMENT, POLICY, TECHNOLOGY, TOPIC, CONCEPT), `RelationType` (BELONGS_TO, LEADS, MEMBER_OF, ASSIGNED_TO, PART_OF, DEPENDS_ON, CONTRIBUTES_TO, AUTHORS, MENTIONS, BLOCKED_BY, GOVERNED_BY, REQUIRES, APPLIES_TO).
+  - Concrete Reference Engines: `DefaultEntityExtractor`, `DefaultRelationshipExtractor`, `DefaultGraphTraversalEngine`, `DefaultImpactAnalysisEngine`, `DefaultExpertiseEngine`.
+- Authored unit test suite `tests/unit/test_knowledge_graph_contracts.py` (7 tests, 100% pass rate).
+
+Phase 2.4 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
+- Enhanced SQLAlchemy models `KgEntity` and `KgRelationship` (`backend/app/models/knowledge.py`) adding `properties_json` column and bidirectional ORM relationship bindings.
+- Created and executed Alembic migration revision `f6a7b8c9d0e1_phase_2_4_kg_enhancements.py` adding `properties_json` and composite lookup indexes.
+- Implemented Pydantic v2 schemas in `backend/app/schemas/graph.py` validating requests and responses for all 8 endpoints; re-exported in `backend/app/schemas/__init__.py`.
+- Updated RBAC permission system (`backend/app/services/ai/interfaces.py`) adding `GRAPH_READ`, `GRAPH_BUILD`, and `GRAPH_INTELLIGENCE` permissions.
+- Implemented `KnowledgeGraphService` (`backend/app/services/graph/service.py`) supporting full graph builds, incremental text ingestion, entity queries, BFS multi-hop traversals with cycle prevention, dynamic topology metrics, expertise discovery, and blast radius impact analysis.
+- Implemented all 8 FastAPI REST endpoints in `backend/app/api/v1/graph.py` and mounted in `backend/app/api/v1/router.py`.
+- Authored unit test suite `tests/unit/test_graph_services.py` (9 tests) and integration test suite `tests/integration/test_graph_endpoints.py` (8 tests).
+
+Phase 2.4 Member 3 (Frontend & UI Lead) deliverables are COMPLETED:
+- Authored TypeScript interfaces and enums in `frontend/src/types/graph.ts` and re-exported in `frontend/src/types/index.ts`.
+- Implemented `graphService` (`frontend/src/services/graphService.ts`) covering all 8 REST API endpoints; re-exported in `frontend/src/services/index.ts`.
+- Developed `useKnowledgeGraph` custom React hook (`frontend/src/hooks/useKnowledgeGraph.ts`) managing explorer state, search filtering, build triggers, incremental extraction, impact analysis, and expertise discovery.
+- Built interactive UI components in `frontend/src/features/graph/`:
+  - `GraphMetricsBanner.tsx`: Real-time KPI cards for Total Entities, Active Relationships, Topological Density, Top Hub Node, and Graph Extraction Velocity.
+  - `GraphFilterBar.tsx`: Search input, Entity Type select, refresh trigger, build trigger, and incremental text extraction drawer.
+  - `KnowledgeExplorer.tsx`: Interactive SVG force topology canvas with node selection halo, weighted semantic edges, zoom/pan controls, and color-coded entity badges.
+  - `EntityDetailPanel.tsx`: Side inspection drawer displaying entity metadata, in/out degrees, directional relationships, and blast radius trigger.
+  - `ImpactAnalysisWidget.tsx`: Downstream blast radius risk assessor with calculated severity index bar, affected scope breakdown, and hierarchical dependency tree.
+  - `ExpertiseDirectory.tsx`: Subject-matter expertise directory ranking specialists with scoring bars, document authorship counts, project contributions, and citations.
+- Built master `KnowledgeGraphPage` (`frontend/src/pages/KnowledgeGraphPage.tsx`) assembling the command center with view switching tabs.
+- Configured routes `/graph` and `/knowledge-graph` in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+- Updated navigation in `frontend/src/components/common/Sidebar.tsx` with `Knowledge Graph` link, `Network` icon, and `Phase 2.4` badge.
+- Authored frontend test suites:
+  - `frontend/src/tests/graphService.test.ts` (8 tests, 100% pass rate).
+  - `frontend/src/tests/graphComponents.test.tsx` (8 tests, 100% pass rate).
+- Full Vitest suite: 30/30 test files passed, 259/259 tests passed (100%). ESLint clean (0 errors, 0 warnings). Clean production Vite build (`tsc && vite build`).
+
+Phase 2.4 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
+- Configured Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml`: `GraphQueryLatencyHigh` (p95 > 2.0s), `GraphTraversalDepthExceeded`, `GraphBuildFailureRateHigh`, and `GraphOrphanNodeRatioHigh`.
+- Provisioned dedicated Grafana Knowledge Graph Dashboard (`infrastructure/grafana/dashboards/knowledge-graph-dashboard.json`) visualizing Total Entities, Active Relationships, Topological Density, p50/p95/p99 Traversal Latency, Expertise Query Rate, Impact Analysis Rate, Entity Type Distribution, and Orphan Node Ratio.
+- Authored backend integration and security benchmark suite (`tests/integration/test_graph_pipeline.py`) validating full organizational graph construction, incremental text triple extraction, multi-hop traversal with cycle prevention, depth capping & validation, downstream blast radius impact analysis, expertise discovery, force layout explorer metrics, strict cross-tenant isolation, and query latency benchmark (< 2000ms SLA) (9 tests, 100% pass rate).
+- Authored Playwright E2E browser test suite (`tests/e2e/knowledge_graph.spec.ts`) covering page navigation, sidebar integration, executive KPI banner, filter bar and incremental ingestion drawer, knowledge explorer SVG canvas & node inspection drawer, downstream impact blast radius view, expertise discovery view, and responsive viewports (Desktop, Tablet, Mobile).
+- Total monorepo tests passing: 600+ backend tests (100%) + 259 frontend Vitest tests (100%) + all E2E test suites with zero lint or build errors. Phase 2.4 is 100% complete across all 4 member roles.
 
 Phase 2.3 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master AI Assistant Architecture Specification (`docs/Architecture/ai-assistant-agentic-workflows.md`) detailing the 5-stage NLU intent classification pipeline, DAG task planner and topological dependency scheduler, dynamic tool registry with RBAC boundaries, Two-Phase Commit Human-in-the-Loop (HITL) approval gating, session-scoped conversational memory, automated cross-domain report synthesis, and proactive knowledge recommendation heuristics.

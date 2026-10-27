@@ -251,22 +251,22 @@ test.describe('Phase 2.1 — AI Ingestion Pipeline Command Center', () => {
     // Total Jobs Card
     const totalJobsMetric = page.getByTestId('metric-total-jobs');
     await expect(totalJobsMetric).toBeVisible();
-    await expect(totalJobsMetric).toHaveTextContent('142');
+    await expect(totalJobsMetric).toContainText('142');
 
     // Chunks Indexed Card
     const chunksMetric = page.getByTestId('metric-chunks-indexed');
     await expect(chunksMetric).toBeVisible();
-    await expect(chunksMetric).toHaveTextContent('4,892');
+    await expect(chunksMetric).toContainText('4,892');
 
     // Throughput Velocity Card
     const throughputMetric = page.getByTestId('metric-throughput');
     await expect(throughputMetric).toBeVisible();
-    await expect(throughputMetric).toHaveTextContent('42');
+    await expect(throughputMetric).toContainText('42');
 
     // OCR Utilization Card
     const ocrMetric = page.getByTestId('metric-ocr-utilization');
     await expect(ocrMetric).toBeVisible();
-    await expect(ocrMetric).toHaveTextContent('19%');
+    await expect(ocrMetric).toContainText('19%');
   });
 
   test('3. Jobs table displays records, status badges, chunk counts, and search filter works', async ({ page }) => {
