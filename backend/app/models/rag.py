@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from backend.app.db.base import (
     Base,
@@ -37,10 +38,10 @@ class RAGQuery(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     total_latency_ms: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     prompt_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     completion_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    citations_json: Mapped[list | dict | None] = mapped_column(
+    citations_json: Mapped[list[Any] | dict[str, Any] | None] = mapped_column(
         JSONB, server_default="[]", nullable=True
     )
-    metadata_json: Mapped[dict | None] = mapped_column(
+    metadata_json: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB, server_default="{}", nullable=True
     )
 
