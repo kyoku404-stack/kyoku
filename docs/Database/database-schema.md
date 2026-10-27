@@ -779,3 +779,64 @@ CREATE INDEX idx_assistant_reports_tenant ON assistant_reports(organization_id, 
 CREATE INDEX idx_assistant_reports_user ON assistant_reports(user_id, created_at DESC);
 ```
 
+---
+
+### 3.16 Phase 2.4 — Knowledge Graph & Enterprise Intelligence Tables
+
+The enterprise Knowledge Graph enables semantic relationship mapping, recursive multi-hop graph traversal, impact blast radius analysis, and expertise discovery.
+
+#### 3.16.1 `kg_entities` Table
+Stores unique organizational, operational, and knowledge nodes:
+```sql
+CREATE TABLE kg_entities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    properties_json JSONB DEFAULT '{}'::jsonb,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_entity_type CHECK (
+        entity_type IN (
+            'ORGANIZATION', 'DEPARTMENT', 'TEAM', 'EMPLOYEE',
+            'DOCUMENT', 'POLICY', 'SOP', 'MEETING', 'REPORT', 'RESEARCH_PAPER',
+            'PROJECT', 'TASK', 'MILESTONE', 'RISK', 'DECISION',
+            'TECHNOLOGY', 'TOPIC'
+        )
+    )
+);
+
+CREATE INDEX idx_kg_entities_tenant_lookup ON kg_entities(organization_id, entity_type, is_deleted);
+CREATE UNIQUE INDEX idx_kg_entities_tenant_unique ON kg_entities(organization_id, entity_type, name) WHERE (is_deleted = FALSE);
+CREATE INDEX idx_kg_entities_properties ON kg_entities USING GIN (properties_json);
+```
+
+#### 3.16.2 `kg_relationships` Table
+Stores directed, weighted semantic relations between entity nodes:
+```sql
+CREATE TABLE kg_relationships (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    source_entity_id UUID NOT NULL REFERENCES kg_entities(id) ON DELETE CASCADE,
+    target_entity_id UUID NOT NULL REFERENCES kg_entities(id) ON DELETE CASCADE,
+    relation_type VARCHAR(100) NOT NULL,
+    weight FLOAT NOT NULL DEFAULT 1.0,
+    properties_json JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_relation_type CHECK (
+        relation_type IN (
+            'WORKS_IN', 'LEADS', 'PARTICIPATES_IN', 'AUTHORED',
+            'CONTAINS', 'REFERENCES', 'APPLIES_TO', 'DEPENDS_ON',
+            'DISCUSSED', 'EXPERT_IN', 'GOVERNED_BY', 'BLOCKS', 'REPORTS_TO'
+        )
+    ),
+    CONSTRAINT chk_relationship_no_self_loop CHECK (source_entity_id <> target_entity_id)
+);
+
+CREATE INDEX idx_kg_rel_tenant_source ON kg_relationships(organization_id, source_entity_id, relation_type);
+CREATE INDEX idx_kg_rel_tenant_target ON kg_relationships(organization_id, target_entity_id, relation_type);
+CREATE UNIQUE INDEX idx_kg_rel_unique_edge ON kg_relationships(organization_id, source_entity_id, target_entity_id, relation_type);
+```
+

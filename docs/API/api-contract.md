@@ -2164,3 +2164,268 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; 
   }
 }
 ```
+
+---
+
+## 11. Phase 2.4 — Knowledge Graph & Enterprise Intelligence APIs (`/api/v1/graph`)
+
+### 11.1 Overview & Security Model
+- **Auth Requirement**: All endpoints require a valid JWT Bearer Token.
+- **Tenant Isolation**: Mandatory `organization_id` boundary enforced at every graph traversal step. Cross-tenant traversal is strictly prohibited.
+- **Permission Scope**:
+  - `graph.read`: Query entities, inspect relationships, and view the Knowledge Explorer.
+  - `graph.build`: Trigger full or incremental knowledge graph reconstruction.
+  - `graph.intelligence`: Access impact analysis and subject-matter expertise discovery.
+
+### 11.2 Endpoints
+
+#### 11.2.1 Build Knowledge Graph
+- **Method**: `POST`
+- **Path**: `/api/v1/graph/build`
+- **Auth**: Bearer JWT (`graph.build` permission)
+- **Request Body**:
+```json
+{
+  "rebuild_all": false,
+  "confidence_threshold": 0.70,
+  "include_documents": true,
+  "include_organizational": true
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Knowledge graph build completed successfully.",
+  "data": {
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "entities_created": 45,
+    "entities_updated": 12,
+    "relationships_created": 88,
+    "duration_seconds": 1.45,
+    "total_entities": 120,
+    "total_relationships": 260
+  }
+}
+```
+
+#### 11.2.2 Incrementally Update Graph
+- **Method**: `POST`
+- **Path**: `/api/v1/graph/update`
+- **Auth**: Bearer JWT (`graph.build` permission)
+- **Request Body**:
+```json
+{
+  "document_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "text_content": "The AI Migration Project is led by Alice and applies to the Engineering department.",
+  "metadata": {"category": "ARCHITECTURE"}
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Incremental graph update completed.",
+  "data": {
+    "entities_extracted": 3,
+    "relationships_extracted": 2,
+    "extracted_entities": [
+      {"id": "e_1", "name": "AI Migration Project", "entity_type": "PROJECT"},
+      {"id": "e_2", "name": "Alice", "entity_type": "EMPLOYEE"},
+      {"id": "e_3", "name": "Engineering", "entity_type": "DEPARTMENT"}
+    ],
+    "extracted_relationships": [
+      {"source": "Alice", "relation": "LEADS", "target": "AI Migration Project"},
+      {"source": "AI Migration Project", "relation": "APPLIES_TO", "target": "Engineering"}
+    ]
+  }
+}
+```
+
+#### 11.2.3 Retrieve Entity Details
+- **Method**: `GET`
+- **Path**: `/api/v1/graph/entity/{id}`
+- **Auth**: Bearer JWT (`graph.read` permission)
+- **Path Parameters**:
+  - `id`: UUID (Entity ID)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "e_1",
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "name": "AI Migration Project",
+    "entity_type": "PROJECT",
+    "properties": {
+      "status": "ACTIVE",
+      "source_document_ids": ["3fa85f64-5717-4562-b3fc-2c963f66afa6"],
+      "confidence": 0.95
+    },
+    "in_degree": 2,
+    "out_degree": 3,
+    "created_at": "2026-10-27T12:00:00Z"
+  }
+}
+```
+
+#### 11.2.4 View Entity Relationships
+- **Method**: `GET`
+- **Path**: `/api/v1/graph/relationships/{id}`
+- **Auth**: Bearer JWT (`graph.read` permission)
+- **Path Parameters**:
+  - `id`: UUID (Entity ID)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "entity_id": "e_1",
+    "outgoing_relationships": [
+      {
+        "relationship_id": "r_1",
+        "target_entity_id": "e_3",
+        "target_entity_name": "Engineering",
+        "target_entity_type": "DEPARTMENT",
+        "relation_type": "APPLIES_TO",
+        "weight": 1.0
+      }
+    ],
+    "incoming_relationships": [
+      {
+        "relationship_id": "r_2",
+        "source_entity_id": "e_2",
+        "source_entity_name": "Alice",
+        "source_entity_type": "EMPLOYEE",
+        "relation_type": "LEADS",
+        "weight": 0.95
+      }
+    ]
+  }
+}
+```
+
+#### 11.2.5 Execute Multi-Hop Graph Query
+- **Method**: `POST`
+- **Path**: `/api/v1/graph/query`
+- **Auth**: Bearer JWT (`graph.read` permission)
+- **Request Body**:
+```json
+{
+  "start_entity_id": "e_1",
+  "max_depth": 2,
+  "allowed_relation_types": ["APPLIES_TO", "LEADS", "WORKS_IN"],
+  "allowed_entity_types": ["EMPLOYEE", "DEPARTMENT", "PROJECT"]
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "nodes": [
+      {"id": "e_1", "name": "AI Migration Project", "entity_type": "PROJECT", "depth": 0},
+      {"id": "e_3", "name": "Engineering", "entity_type": "DEPARTMENT", "depth": 1},
+      {"id": "e_2", "name": "Alice", "entity_type": "EMPLOYEE", "depth": 1}
+    ],
+    "edges": [
+      {"source": "e_1", "target": "e_3", "relation_type": "APPLIES_TO", "weight": 1.0},
+      {"source": "e_2", "target": "e_1", "relation_type": "LEADS", "weight": 0.95}
+    ],
+    "total_paths": 2,
+    "max_depth_reached": 1
+  }
+}
+```
+
+#### 11.2.6 Knowledge Explorer Visualization Data
+- **Method**: `GET`
+- **Path**: `/api/v1/graph/explorer`
+- **Auth**: Bearer JWT (`graph.read` permission)
+- **Query Parameters**:
+  - `entity_type` (optional, string): Filter nodes by type
+  - `limit` (optional, int, default 100)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "nodes": [
+      {"id": "e_1", "label": "AI Migration Project", "type": "PROJECT", "val": 15},
+      {"id": "e_2", "label": "Alice", "type": "EMPLOYEE", "val": 25},
+      {"id": "e_3", "label": "Engineering", "type": "DEPARTMENT", "val": 40}
+    ],
+    "links": [
+      {"source": "e_1", "target": "e_3", "label": "APPLIES_TO", "weight": 1.0},
+      {"source": "e_2", "target": "e_1", "label": "LEADS", "weight": 0.95}
+    ],
+    "metrics": {
+      "total_entities": 45,
+      "total_relationships": 72,
+      "density": 0.036,
+      "top_hub": "Engineering"
+    }
+  }
+}
+```
+
+#### 11.2.7 Subject-Matter Expertise Discovery
+- **Method**: `GET`
+- **Path**: `/api/v1/graph/expertise`
+- **Auth**: Bearer JWT (`graph.intelligence` permission)
+- **Query Parameters**:
+  - `topic`: string (e.g. "Cybersecurity", "Cloud Architecture")
+  - `limit`: int (optional, default 5)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "topic": "Cybersecurity",
+    "experts": [
+      {
+        "user_id": "u_1",
+        "full_name": "Alice Alpha",
+        "department": "Engineering",
+        "score": 8.5,
+        "authored_documents_count": 3,
+        "contributed_projects": ["Security Audit", "Key Rotation"],
+        "evidence_citations": ["Information Security Guidelines v2.0"]
+      }
+    ]
+  }
+}
+```
+
+#### 11.2.8 Recursive Impact Analysis
+- **Method**: `GET`
+- **Path**: `/api/v1/graph/impact/{entity_id}`
+- **Auth**: Bearer JWT (`graph.intelligence` permission)
+- **Path Parameters**:
+  - `entity_id`: UUID
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "root_entity": {
+      "id": "e_policy_1",
+      "name": "Access Control Standard 2026",
+      "entity_type": "POLICY"
+    },
+    "affected_departments": ["Engineering", "Operations"],
+    "dependent_projects": ["AI Migration Project"],
+    "impacted_tasks_count": 8,
+    "severity_score": 0.85,
+    "dependency_tree": [
+      {
+        "id": "e_proj_1",
+        "name": "AI Migration Project",
+        "entity_type": "PROJECT",
+        "depth": 1,
+        "relation": "GOVERNED_BY"
+      }
+    ]
+  }
+}
+```

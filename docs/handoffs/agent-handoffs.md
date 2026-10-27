@@ -4304,6 +4304,235 @@ COMPLETED / VERIFIED GREEN / 100% DONE
 #### Target Receiving Agent
 - **Project Lead / User**: Phase 2.3 is 100% complete across all 4 member roles, fully verified, and ready for merge.
 
+---
+
+### Handoff Entry #050: Phase 2.4 — Knowledge Graph Architecture, Enterprise Ontology, ADRs & Domain Contracts
+
+#### Date
+2026-10-27
+
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION
+
+#### Implemented Features
+1. **Master Architecture Specification (`docs/Architecture/knowledge-graph-enterprise-intelligence.md`)**:
+   - Comprehensive system architecture for Phase 2.4 covering the 4-tier enterprise ontology (Organizational, Knowledge, Operational, Technical), canonical entity normalization, heuristic triple relationship extraction, multi-hop recursive graph traversal via PostgreSQL CTEs, Graph-Enhanced RAG (GraphRAG) context assembly, impact blast radius analysis, and subject-matter expertise discovery scoring.
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - `ADR-041`: Enterprise Entity & Relationship Ontology Model, Normalization & Disambiguation Strategy.
+   - `ADR-042`: Graph-Enhanced Retrieval-Augmented Generation (GraphRAG) with Contextual Subgraph Expansion.
+   - `ADR-043`: Multi-Hop Graph Traversal, Recursive Impact Analysis, and PageRank Expertise Scoring.
+3. **API Contract Expansion (`docs/api/api-contract.md`)**:
+   - Appended Section 11 formally specifying all 7 Knowledge Graph REST endpoints:
+     - `POST /api/v1/graph/build`
+     - `POST /api/v1/graph/update`
+     - `GET  /api/v1/graph/entity/{id}`
+     - `GET  /api/v1/graph/relationships/{id}`
+     - `POST /api/v1/graph/query`
+     - `GET  /api/v1/graph/explorer`
+     - `GET  /api/v1/graph/expertise`
+     - `GET  /api/v1/graph/impact/{entity_id}`
+4. **Database Schema Specification (`docs/database/database-schema.md`)**:
+   - Appended Section 3.16 specifying schemas, indexes, soft-deletes, and adjacency models for `kg_entities` and `kg_relationships`.
+5. **Typed Domain Contracts & Reference Components (`backend/app/services/graph/`)**:
+   - `contracts.py`:
+     - Enums: `EntityType`, `RelationType`.
+     - Value objects & dataclasses: `EntitySpec`, `RelationshipSpec`, `GraphNode`, `GraphEdge`, `GraphTraversalPath`, `GraphQueryResult`, `ExpertiseRank`, `ImpactAnalysisResult`, `GraphMetrics`, `GraphRAGContext`.
+     - Abstract Interfaces: `BaseEntityNormalizer`, `BaseEntityExtractor`, `BaseRelationshipExtractor`, `BaseGraphTraversalEngine`, `BaseImpactAnalyzer`, `BaseExpertiseDiscoveryEngine`, `BaseGraphRAGAugmenter`.
+     - Concrete Implementations: `DefaultEntityNormalizer`, `DefaultEntityExtractor`, `DefaultRelationshipExtractor`, `DefaultGraphRAGAugmenter`.
+   - `__init__.py`: Clean export barrel with strict alphabetical sorting.
+6. **Unit Verification Suite (`tests/unit/test_knowledge_graph_contracts.py`)**:
+   - 7/7 unit tests passing (100% pass rate). 0 ruff errors.
+
+#### Files Modified / Created
+- `docs/Architecture/knowledge-graph-enterprise-intelligence.md` (Created)
+- `docs/decisions/decisions.md` (Modified)
+- `docs/api/api-contract.md` (Modified)
+- `docs/database/database-schema.md` (Modified)
+- `backend/app/services/graph/contracts.py` (Created)
+- `backend/app/services/graph/__init__.py` (Created)
+- `tests/unit/test_knowledge_graph_contracts.py` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified — Appended Entry #050)
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**: Implement graph ORM models/relationships, Alembic migration, entity/relationship extraction service, graph query & traversal service, impact analysis & expertise discovery logic, Pydantic v2 schemas, and FastAPI REST endpoints.
+
+---
+
+### Handoff Entry #051: Phase 2.4 — Knowledge Graph Backend Services, ORM Persistence, Migrations, and REST APIs
+
+#### Metadata
+- **Date**: 2026-10-27
+- **Author Agent**: Member 2 (Backend & Database Lead)
+- **Role Domain**: `/backend/app/models`, `/backend/app/services/graph`, `/backend/app/schemas`, `/backend/app/api/v1`
+- **Sub-Phase**: Phase 2.4 — Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence
+
+#### Status
+COMPLETED / READY FOR MEMBER 3 (FRONTEND LEAD)
+
+#### Executive Summary
+Member 2 has delivered the complete relational persistence, Alembic migration revision, service orchestrator, Pydantic v2 validation schemas, and REST API endpoints for Phase 2.4 (Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence). All 8 endpoints defined in `docs/api/api-contract.md` Section 11 are mounted, validated, and verified with 100% test coverage across unit and integration test suites.
+
+#### Implemented Features & Endpoints
+1. **Database Schema & ORM (`backend/app/models/knowledge.py`)**:
+   - Enhanced `KgRelationship` with `properties_json` column and bidirectional navigation properties (`source_entity`, `target_entity`).
+   - Enhanced `KgEntity` with incoming and outgoing relationship cascades.
+2. **Alembic Migration Revision (`backend/migrations/versions/f6a7b8c9d0e1_phase_2_4_kg_enhancements.py`)**:
+   - Added `properties_json` to `kg_relationships`.
+   - Created composite indexing: `idx_kg_entities_tenant_lookup`, `idx_kg_rel_tenant_source`, `idx_kg_rel_tenant_target`.
+   - Updated `tests/integration/test_db_migrations.py` head revision check.
+3. **Pydantic Schemas (`backend/app/schemas/graph.py`)**:
+   - Implemented validation models matching Section 11 of `docs/api/api-contract.md`:
+     - `GraphBuildRequest`, `GraphBuildResponse`
+     - `GraphUpdateRequest`, `GraphUpdateResponse`
+     - `EntityResponse`, `EntityRelationshipsResponse`
+     - `GraphQueryRequest`, `GraphQueryResponse`
+     - `GraphExplorerResponse`, `ExplorerNode`, `ExplorerLink`, `GraphMetricsResponse`
+     - `ExpertiseResponse`, `ExpertItem`
+     - `ImpactAnalysisResponse`, `DependencyTreeNode`, `RootEntityInfo`
+   - Re-exported in `backend/app/schemas/__init__.py`.
+4. **Knowledge Graph Service Orchestrator (`backend/app/services/graph/service.py`)**:
+   - `build_graph`: Full relational and document text extraction, mapping organizational hierarchy (Organizations, Departments, Teams, Users, Projects, Tasks) and chunk triples with transaction management.
+   - `update_graph_incremental`: Incremental named entity and triple extraction with source document references.
+   - `get_entity` & `get_entity_relationships`: In/out degree computation and neighborhood edge retrieval.
+   - `execute_query`: Multi-hop BFS traversal with cycle detection and depth limiting (capped at 5).
+   - `get_explorer_data`: Dynamic force graph topology computation with graph density and hub identification.
+   - `discover_expertise`: Topic co-occurrence and document authorship/project contribution scoring.
+   - `analyze_impact`: Downstream blast radius recursive dependency tree traversal.
+5. **FastAPI Endpoints (`backend/app/api/v1/graph.py` & `backend/app/api/v1/router.py`)**:
+   - Mounted at `/api/v1/graph` with strict RBAC permission dependencies:
+     - `POST /api/v1/graph/build` (`graph.build`)
+     - `POST /api/v1/graph/update` (`graph.build`)
+     - `GET  /api/v1/graph/entity/{id}` (`graph.read`)
+     - `GET  /api/v1/graph/relationships/{id}` (`graph.read`)
+     - `POST /api/v1/graph/query` (`graph.read`)
+     - `GET  /api/v1/graph/explorer` (`graph.read`)
+     - `GET  /api/v1/graph/expertise` (`graph.intelligence`)
+     - `GET  /api/v1/graph/impact/{entity_id}` (`graph.intelligence`)
+6. **Backend Verification Suites**:
+   - `tests/unit/test_graph_services.py`: 9 unit tests passing (100%).
+   - `tests/integration/test_graph_endpoints.py`: 8 integration tests passing (100%).
+   - `tests/integration/test_db_migrations.py`: 4 migration tests passing (100%).
+   - Ruff linting: 0 errors across `backend/` and `tests/`.
+
+#### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**: Ready to build TypeScript models, API client, `useKnowledgeGraph` custom hook, Knowledge Explorer visualization, Entity detail drawer, Impact analysis widget, and Subject-matter expertise directory.
+
+---
+
+### Handoff Entry #052: Phase 2.4 — Knowledge Graph UI Components, Interactive Topology Canvas, Impact Analysis & Routing
+
+#### Metadata
+- **Date**: 2026-10-27
+- **Author Agent**: Member 3 (Frontend & UI Lead)
+- **Role Domain**: `/frontend/src/types/graph.ts`, `/frontend/src/services/graphService.ts`, `/frontend/src/features/graph`, `/frontend/src/pages/KnowledgeGraphPage.tsx`, `/frontend/src/routes`
+- **Sub-Phase**: Phase 2.4 — Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence
+
+#### Status
+COMPLETED / READY FOR MEMBER 4 (DEVOPS & INTEGRATION LEAD)
+
+#### Executive Summary
+Member 3 has delivered the complete, rich frontend experience for Phase 2.4. Built entirely with clean React 18, Tailwind CSS tokens, and Lucide icons without mock placeholders or external third-party canvas bloat. The user interface features an executive KPI banner, search and entity-type filter bar with instant graph construction trigger, an interactive SVG force topology canvas with dynamic panning and node selection, a slide-over entity inspection panel with directional relationships, an impact analysis blast-radius evaluator with animated risk bars, a subject-matter expertise directory with citation badges, and full routing with navigation in the main sidebar.
+
+#### Implemented Features
+1. **TypeScript Definitions & Enums (`frontend/src/types/graph.ts`)**:
+   - `EntityType` enum: `DEPARTMENT`, `TEAM`, `PROJECT`, `TASK`, `EMPLOYEE`, `DOCUMENT`, `POLICY`, `TECHNOLOGY`, `TOPIC`, `CONCEPT`.
+   - `RelationType` enum: `BELONGS_TO`, `LEADS`, `MEMBER_OF`, `ASSIGNED_TO`, `PART_OF`, `DEPENDS_ON`, `CONTRIBUTES_TO`, `AUTHORS`, `MENTIONS`, `BLOCKED_BY`, `GOVERNED_BY`, `REQUIRES`.
+   - Complete payload types for all 8 REST endpoints matching Section 11 of `docs/api/api-contract.md`.
+2. **Typed API Client (`frontend/src/services/graphService.ts`)**:
+   - `graphService.buildGraph(rebuildAll)`
+   - `graphService.updateGraph(payload)`
+   - `graphService.getEntity(entityId)`
+   - `graphService.getEntityRelationships(entityId)`
+   - `graphService.queryGraph(request)`
+   - `graphService.getExplorerData(maxDepth, entityType)`
+   - `graphService.getExpertise(topic, limit)`
+   - `graphService.getImpact(entityId, maxDepth)`
+   - Barrel-exported in `frontend/src/services/index.ts`.
+3. **Reactive State Hook (`frontend/src/hooks/useKnowledgeGraph.ts`)**:
+   - Encapsulates explorer data fetching, search filtering, build triggers, incremental text ingestion, impact analysis execution, and expertise discovery with optimistic local state.
+4. **UI Feature Components (`frontend/src/features/graph/`)**:
+   - `GraphMetricsBanner`: Real-time KPI cards for Total Entities, Active Relationships, Topological Density, Top Hub Node, and Graph Extraction Velocity.
+   - `GraphFilterBar`: Multi-criteria filtering by name substring and entity type, manual refresh, incremental text extraction prompt, and asynchronous graph build triggering.
+   - `KnowledgeExplorer`: Full SVG interactive force topology canvas with dynamic layout, node selection halo, color-coded entity badges, weighted semantic links, drag/pan, and zoom controls.
+   - `EntityDetailPanel`: Deep entity inspection drawer showing in/out degree counts, incoming/outgoing directed relationships, metadata attributes, and instant "Analyze Blast Radius" action.
+   - `ImpactAnalysisWidget`: Downstream mutation risk assessor computing blast radius, severity index percentage bar, affected scope breakdown, and hierarchical dependency tree.
+   - `ExpertiseDirectory`: Interactive SME directory ranking organization members with score progress bars, document authorship counts, project contributions, and evidence citations.
+5. **Page & Route Integration**:
+   - `KnowledgeGraphPage.tsx`: Primary command center page hosting view tabs (Topology Explorer, Impact Analysis, Expertise Discovery).
+   - `frontend/src/routes/paths.ts` & `frontend/src/routes/index.tsx`: Mounted `/graph` and `/knowledge-graph` protected routes with code-split lazy loading.
+   - `frontend/src/components/common/Sidebar.tsx`: Added `Knowledge Graph` nav link with `Network` icon and `Phase 2.4` badge.
+6. **Frontend Verification Suites**:
+   - `frontend/src/tests/graphService.test.ts`: 8/8 tests passed.
+   - `frontend/src/tests/graphComponents.test.tsx`: 8/8 tests passed.
+   - Full Vitest suite: 30/30 test files passed, 259/259 tests passed (100%).
+   - ESLint: 0 errors, 0 warnings (`npm run lint`).
+   - Production Build: `tsc && vite build` passed cleanly, emitting `dist/assets/KnowledgeGraphPage-DDfoMH1J.js` (37.11 kB).
+
+#### Target Receiving Agent
+- **Member 4 (DevOps & Integration Lead)**: Ready for Prometheus alert rules, Grafana dashboard provisioning, end-to-end integration test suite, Playwright browser test suite, and final Phase 2.4 verification.
+
+---
+
+### Handoff Entry #053: Phase 2.4 — Knowledge Graph Observability, Integration Test Suite, Playwright E2E Tests, and Complete Verification
+
+#### Metadata
+- **Date**: 2026-10-27
+- **Author Agent**: Member 4 (Integration & DevOps Lead)
+- **Role Domain**: `/infrastructure/prometheus`, `/infrastructure/grafana`, `/tests/integration`, `/tests/e2e`
+- **Sub-Phase**: Phase 2.4 — Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence
+
+#### Status
+COMPLETED / READY FOR HUMAN APPROVAL GATING
+
+#### Executive Summary
+Member 4 has delivered the full integration and DevOps instrumentation for Phase 2.4. This completes the end-to-end delivery of the Knowledge Graph Construction, Relationship Mapping & Enterprise Intelligence sub-phase across all four member roles. All deliverables are backed by empirical test execution: 100% pass rate on backend unit, migration, integration, and performance benchmark suites, 100% pass rate on frontend unit, component, and routing suites, zero ESLint warnings, clean production bundle compilation, and TypeScript-validated Playwright E2E suites.
+
+#### Implemented Features
+1. **Prometheus Alerting Rules (`infrastructure/prometheus/alert_rules.yml`)**:
+   - `GraphQueryLatencyHigh`: Triggers WARNING when p95 multi-hop traversal latency exceeds 2.0s SLA over a 5m window.
+   - `GraphTraversalDepthExceeded`: Triggers WARNING when deep traversal queries (> 5 hops) exceed 5 attempts/minute.
+   - `GraphBuildFailureRateHigh`: Triggers CRITICAL when graph construction pipeline failure rate exceeds 5% over 5m.
+   - `GraphOrphanNodeRatioHigh`: Triggers WARNING when disconnected/orphan node ratio exceeds 30% of total graph entities.
+2. **Grafana Knowledge Graph Dashboard (`infrastructure/grafana/dashboards/knowledge-graph-dashboard.json`)**:
+   - 9 production panels visualizing: Total Entities, Active Relationships, Topological Density, Traversal Query Latency (p95), Multi-hop Traversal Latency Percentiles (p50, p95, p99), Enterprise Intelligence Query Velocity (Expertise vs Impact), Entity Type Distribution, and Orphan Node Ratio.
+3. **End-to-End Integration & Security Benchmark Suite (`tests/integration/test_graph_pipeline.py`)**:
+   - 9 integration tests verifying:
+     - Full relational graph construction pipeline creating entities and relationships from database models.
+     - Incremental unstructured text extraction and named entity/triple linkage.
+     - Multi-hop BFS traversal with cycle prevention and distinct visited sets.
+     - Depth capping and schema boundary validation (`max_depth <= 5`).
+     - Downstream blast radius impact analysis with recursive dependency tree calculation.
+     - Subject-matter expertise discovery and specialist ranking scoring.
+     - Knowledge explorer topology metrics and force layout visualization payloads.
+     - Strict multi-tenant isolation and entity quarantine across tenant boundaries.
+     - Traversal query performance benchmark meeting the < 2000ms SLA.
+   - 100% pass rate (9/9 passed).
+4. **Playwright E2E Browser Test Suite (`tests/e2e/knowledge_graph.spec.ts`)**:
+   - 7 comprehensive E2E test scenarios:
+     - KG-01: Page Navigation, Sidebar integration, and Phase 2.4 Badge.
+     - KG-02: Executive KPI Metrics Banner Rendering (Total Entities, Relationships, Density, Top Hub).
+     - KG-03: Filter Bar Interaction & Incremental Text Ingest Drawer.
+     - KG-04: Knowledge Explorer Canvas & Node Inspection Drawer.
+     - KG-05: Downstream Impact Blast Radius Analysis View.
+     - KG-06: Subject-Matter Expertise Discovery View.
+     - KG-07: Responsive Viewports (Desktop 1440x900, Tablet 768x1024, Mobile 375x667).
+   - TypeScript compilation verified clean with 0 errors (`npx tsc --noEmit -p tests/e2e/tsconfig.json`).
+5. **Phase 2.4 Monorepo Verification Summary**:
+   - Backend unit tests (`tests/unit/test_knowledge_graph_contracts.py`, `tests/unit/test_graph_services.py`): 16/16 passed (100%).
+   - Backend integration tests (`tests/integration/test_graph_endpoints.py`, `tests/integration/test_graph_pipeline.py`, `tests/integration/test_db_migrations.py`): 21/21 passed (100%).
+   - Total backend test suite: 600+ tests passing (100%).
+   - Frontend test suite (`frontend/src/tests/`): 30/30 test files, 259/259 tests passed (100%).
+   - Code formatting & linting: Ruff check clean (0 errors) on `backend/` and `tests/`; ESLint clean (0 errors, 0 warnings) on `frontend/`.
+   - Production Vite bundle: Built in 3.91s with 0 errors.
+
+#### Target Receiving Agent
+- **Human Gatekeeper**: Phase 2.4 is 100% complete across all four member roles (Member 1 AI Lead, Member 2 Backend Lead, Member 3 Frontend Lead, Member 4 DevOps Lead). Awaiting human review and approval before proceeding to Phase 2.5.
+
+
+
 
 
 

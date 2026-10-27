@@ -47,6 +47,18 @@ class KgEntity(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
     )
 
     organization = relationship("Organization", back_populates="kg_entities")
+    outgoing_relationships = relationship(
+        "KgRelationship",
+        foreign_keys="KgRelationship.source_entity_id",
+        back_populates="source_entity",
+        cascade="all, delete-orphan",
+    )
+    incoming_relationships = relationship(
+        "KgRelationship",
+        foreign_keys="KgRelationship.target_entity_id",
+        back_populates="target_entity",
+        cascade="all, delete-orphan",
+    )
 
 
 class KgRelationship(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -63,5 +75,10 @@ class KgRelationship(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
     relation_type: Mapped[str] = mapped_column(String(100), nullable=False)
     weight: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    properties_json: Mapped[dict | None] = mapped_column(
+        JSONB, server_default="{}", nullable=True
+    )
 
     organization = relationship("Organization", back_populates="kg_relationships")
+    source_entity = relationship("KgEntity", foreign_keys=[source_entity_id], back_populates="outgoing_relationships")
+    target_entity = relationship("KgEntity", foreign_keys=[target_entity_id], back_populates="incoming_relationships")

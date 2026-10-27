@@ -256,3 +256,51 @@ groups:
           summary: "CRITICAL: Assistant tool invocation error rate exceeds 5%"
           description: "Tool execution failure rate across registered plugins is {{ $value | printf \"%.2f\" }}% over 5m."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#assistanttoolerrorratehigh"
+
+      # ------------------------------------------------------------------------
+      # Knowledge Graph & Enterprise Intelligence Alerts (Phase 2.4)
+      # ------------------------------------------------------------------------
+      - alert: GraphQueryLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(graph_query_duration_seconds_bucket[5m])) by (le)) > 2.0
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: knowledge-graph
+        annotations:
+          summary: "Knowledge graph query p95 latency exceeds 2.0s SLA"
+          description: "Multi-hop graph query traversal duration is {{ $value | printf \"%.2f\" }}s (SLA: 2.0s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#graphquerylatencyhigh"
+
+      - alert: GraphTraversalDepthExceeded
+        expr: sum(rate(graph_traversal_depth_exceeded_total[5m])) * 60 > 5
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: knowledge-graph
+        annotations:
+          summary: "Excessive deep traversal query requests detected (>5/min)"
+          description: "Graph queries exceeding maximum depth limit (5 hops) rate is {{ $value | printf \"%.0f\" }}/min."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#graphtraversaldepthexceeded"
+
+      - alert: GraphBuildFailureRateHigh
+        expr: (sum(rate(graph_build_operations_total{status="FAILED"}[5m])) / sum(rate(graph_build_operations_total[5m]))) * 100 > 5.0
+        for: 5m
+        labels:
+          severity: CRITICAL
+          tier: knowledge-graph
+        annotations:
+          summary: "CRITICAL: Knowledge graph construction failure rate exceeds 5%"
+          description: "Graph construction pipeline failure rate is {{ $value | printf \"%.2f\" }}% over a 5-minute rolling window."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#graphbuildfailureratehigh"
+
+      - alert: GraphOrphanNodeRatioHigh
+        expr: (graph_orphan_entities_total / graph_entities_total) * 100 > 30.0
+        for: 15m
+        labels:
+          severity: WARNING
+          tier: knowledge-graph
+        annotations:
+          summary: "High ratio of disconnected/orphan graph entities (>30%)"
+          description: "Over 30% of entities in the knowledge graph have degree 0, indicating potential linking degradation."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#graphorphannoderatiohigh"
+

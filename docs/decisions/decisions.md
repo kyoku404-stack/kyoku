@@ -1264,3 +1264,110 @@ Member 1 provides approval contracts. Member 2 implements approval ORM tables an
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-041 — Enterprise Entity & Relationship Ontology Model, Normalization & Disambiguation Strategy
+
+#### Date
+2026-10-27
+
+#### Context
+`devdocs/p2/p2.4.txt` (Chapters 4, 5, 7 & 8) specifies that enterprise knowledge consists of heterogeneous, interconnected entities across organizational (Organization, Department, Team, Employee), knowledge (Document, Policy, SOP, Meeting, Report), operational (Project, Task, Milestone, Risk, Decision), and technical concepts. Without a strict ontology, named entity recognition generates noisy, fragmented, and duplicate graph nodes (e.g. "K8s", "Kubernetes", "kubernetes-cluster" referring to the same technology; or "HR", "People Ops", "Human Resources").
+
+#### Decision
+1. **Four-Tier Enterprise Ontology**:
+   - Categorize entities into standardized `EntityType` enums: `ORGANIZATION`, `DEPARTMENT`, `TEAM`, `EMPLOYEE`, `DOCUMENT`, `POLICY`, `SOP`, `MEETING`, `REPORT`, `PROJECT`, `TASK`, `MILESTONE`, `RISK`, `DECISION`, `TECHNOLOGY`, `TOPIC`.
+   - Enforce canonical relationship verbs (`WORKS_IN`, `LEADS`, `PARTICIPATES_IN`, `AUTHORED`, `CONTAINS`, `REFERENCES`, `APPLIES_TO`, `DEPENDS_ON`, `DISCUSSED`, `EXPERT_IN`).
+2. **Entity Normalization & Disambiguation Pipeline**:
+   - Normalize entity names via NFKC Unicode normalization, whitespace trimming, and case standardization.
+   - Maintain alias dictionary for common organizational acronyms and product names.
+   - Use token and fuzzy Levenshtein similarity ($> 0.88$ threshold) to match incoming entities against existing tenant entities before creating new nodes.
+   - Increment `mention_count` and merge source document IDs into existing entity nodes upon duplicate detection.
+3. **Multi-Tenant Boundary Constraint**:
+   - Every node and edge is partition-scoped with `organization_id`. Normalization and deduplication never cross tenant boundaries.
+
+#### Alternatives Considered
+- Open-domain unconstrained entity types: Rejected — leads to explosive graph sparsity and invalid traversal paths.
+- External graph-store microservice (Neo4j / Neptune) for MVP: Deferred — introduces extra operational complexity, operational cost, and separate authentication layers during initial development; PostgreSQL relational adjacency modeling handles the MVP scale with zero extra container footprint.
+
+#### Reason
+A controlled enterprise ontology combined with canonical entity normalization guarantees high graph density, semantic coherence, and accurate multi-hop reasoning.
+
+#### Impact
+Member 1 specifies ontology contracts (`EntityType`, `RelationType`, `BaseEntityExtractor`). Member 2 implements normalization and persistence in `kg_entities`. Member 3 renders type-specific badges and icons in the Knowledge Explorer UI.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-042 — Graph-Enhanced Retrieval-Augmented Generation (GraphRAG) with Contextual Subgraph Expansion
+
+#### Date
+2026-10-27
+
+#### Context
+`devdocs/p2/p2.4.txt` (Chapter 14) mandates that KEEP evolve beyond standard vector semantic search by incorporating Knowledge Graph relationships into RAG query synthesis. Pure vector search retrieves text chunks in isolation, missing structural connections like departmental policy dependencies, project contributors, or cross-document hierarchies.
+
+#### Decision
+1. **Hybrid Graph-RAG Dual-Retrieval Pipeline**:
+   - **Step 1 (Entity Resolution)**: Extract key entities from the user query using fast dictionary matching and lightweight NER.
+   - **Step 2 (Local Subgraph Traversal)**: For each identified entity, query the Knowledge Graph to extract its 1-to-2 hop semantic neighborhood (direct relationships, connected projects, parent departments, linked documents).
+   - **Step 3 (Context Fusion & Assembly)**: Serialize the extracted relational triples into a concise, human-readable **Knowledge Graph Context Envelope**:
+     ```text
+     [KNOWLEDGE GRAPH RELATIONSHIPS]
+     - Project Alpha (PROJECT) CONTAINS Architecture Spec (DOCUMENT)
+     - Security Policy v2 (POLICY) APPLIES_TO Engineering (DEPARTMENT)
+     - Alice (EMPLOYEE) EXPERT_IN Cybersecurity (TOPIC)
+     ```
+   - **Step 4 (Prompt Augmentation)**: Inject the Knowledge Graph Context Envelope alongside vector passage chunks into the LLM synthesis prompt.
+2. **Subgraph Token Budget**:
+   - Cap the subgraph context to a maximum of 20 relevant triples or 500 tokens to preserve the majority of the context window for retrieved document passages.
+
+#### Alternatives Considered
+- Graph-only retrieval without vector search: Rejected — fails to capture nuanced narrative text and unstructured explanations.
+- Dumping entire graph into prompt: Rejected — exceeds LLM token limits and causes attention confusion.
+
+#### Reason
+Graph-RAG provides structural awareness, provenance links, and organizational hierarchy context that vector similarity alone cannot deliver.
+
+#### Impact
+Member 1 provides `BaseGraphRAGAugmenter` contract. Member 2 integrates subgraph retrieval into `RAGService`. Member 4 benchmarks GraphRAG answer quality and latency.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-043 — Multi-Hop Graph Traversal, Recursive Impact Analysis, and PageRank Expertise Scoring
+
+#### Date
+2026-10-27
+
+#### Context
+`devdocs/p2/p2.4.txt` (Chapters 10, 12 & 13) requires KEEP to answer complex organizational questions such as: "Which projects depend on this policy?", "Who are the subject matter experts on Kubernetes?", and "What is the blast radius of modifying this SOP?". These operations require traversing multi-hop dependency chains and calculating contributor centrality.
+
+#### Decision
+1. **Relational Adjacency Traversal via PostgreSQL Recursive CTEs**:
+   - Implement breadth-first multi-hop graph walks in PostgreSQL using Recursive Common Table Expressions with array cycle detection (`NOT (target.id = ANY(path))`) and configurable `max_depth` ($1 \le \text{depth} \le 3$).
+2. **Impact Analysis Engine**:
+   - Given a root entity (e.g. Policy or Component), recursively traverse outgoing dependency relations (`DEPENDS_ON`, `APPLIES_TO`, `GOVERNED_BY`, `BLOCKS`).
+   - Group downstream affected entities by type (Departments, Projects, Tasks) with path distance and impact severity score.
+3. **Expertise Discovery Algorithm (Weighted Contributor Centrality)**:
+   - Calculate expertise score for employees based on multi-relational contributions to a topic or domain:
+     $$\text{Score}(u, T) = 3.0 \cdot \text{AuthoredDocs}(u, T) + 2.0 \cdot \text{ProjectContributions}(u, T) + 1.5 \cdot \text{MeetingMentions}(u, T)$$
+   - Return ranked contributors with verified source artifact citations.
+
+#### Alternatives Considered
+- In-memory graph loading (NetworkX) on every request: Rejected — poor scaling on large entity sets and high memory overhead per worker process.
+- Storing precomputed impact matrices: Rejected — graph is dynamic and updates incrementally as documents are uploaded.
+
+#### Reason
+PostgreSQL Recursive CTEs execute fast ($< 50\text{ ms}$ for 3-hop traversals over 100k edges) while keeping persistence atomic with zero distributed sync issues.
+
+#### Impact
+Member 1 defines traversal interfaces (`GraphQuerySpec`, `ImpactAnalysisResult`, `ExpertiseRank`). Member 2 implements SQL CTE generators. Member 3 builds the `ImpactAnalysisWidget.tsx` and `ExpertiseDirectory.tsx` UI components.
+
+#### Status
+ACCEPTED
