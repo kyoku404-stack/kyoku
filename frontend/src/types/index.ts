@@ -37,3 +37,26 @@ export * from './ingestion';
 export * from './rag';
 export * from './assistant';
 export * from './graph';
+export type {
+  HealthScoreRating,
+  AnomalySeverity,
+  AnomalyType,
+  IntelligenceRecommendationCategory,
+  RecommendationStatus,
+  DepartmentHealthScoreItem,
+  HealthScoreBreakdown,
+  KPIsResponse,
+  ExecutiveDashboardResponse,
+  TrendPointItem,
+  DepartmentActivityItem,
+  TrendAnalysisResponse,
+  DocumentForecastItem,
+  StorageRunwayItem,
+  QueryVolumeForecastItem,
+  PredictionsResponse,
+  AnomalyResponseItem,
+  AnomaliesResponse,
+  RecommendationResponseItem,
+  RecommendationsResponse,
+  KnowledgeHealthResponse,
+} from './intelligence';
