@@ -31,7 +31,6 @@ from backend.app.services.connectors.contracts import (
 from backend.app.services.connectors.service import EnterpriseConnectorService
 
 __all__ = [
-    "EnterpriseConnectorService",
     "AuthCredentials",
     "AuthType",
     "BaseChangeDetector",
@@ -45,6 +44,7 @@ __all__ = [
     "DefaultChangeDetector",
     "DefaultDocumentNormalizer",
     "DefaultSyncScheduler",
+    "EnterpriseConnectorService",
     "ExternalResourceItem",
     "MockExternalPlatformAdapter",
     "NormalizedDocument",
