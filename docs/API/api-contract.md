@@ -4090,6 +4090,268 @@ Base Path: `/api/v1`
 }
 ```
 
+---
+
+## 17. Plugin SDK & Extension Framework
+
+### 17.1 Plugin Lifecycle Management
+
+#### 17.1.1 Install Plugin
+- **Method**: `POST`
+- **Path**: `/api/v1/plugins/install`
+- **Auth**: Bearer JWT (`plugin.install` or `plugin.manage` permission)
+- **Request Body**:
+```json
+{
+  "plugin_id": "sap-s4hana-connector",
+  "version": "1.2.0",
+  "marketplace_package_url": "https://marketplace.keep.enterprise.io/packages/sap-s4hana-1.2.0.tar.gz",
+  "configuration": {
+    "endpoint_url": "https://sap.internal.acme.com",
+    "client_id": "acme-sap-client"
+  },
+  "approved_permissions": [
+    "Documents.Read",
+    "Documents.Write",
+    "Notifications.Send"
+  ]
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Plugin installed successfully.",
+  "data": {
+    "id": "plg-001-sap",
+    "plugin_id": "sap-s4hana-connector",
+    "name": "SAP S/4HANA Enterprise Connector",
+    "version": "1.2.0",
+    "category": "INTEGRATION",
+    "status": "ACTIVE",
+    "is_enabled": true,
+    "installed_at": "2026-10-29T12:00:00Z"
+  }
+}
+```
+
+#### 17.1.2 List Installed Plugins
+- **Method**: `GET`
+- **Path**: `/api/v1/plugins/list`
+- **Auth**: Bearer JWT (`plugin.view` permission)
+- **Query Parameters**:
+  - `category`: string (optional: `AI`, `INTEGRATION`, `WORKFLOW`, `UI`, `ANALYTICS`)
+  - `status`: string (optional: `ACTIVE`, `INACTIVE`, `ERROR`, `PAUSED`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "plg-001-sap",
+      "plugin_id": "sap-s4hana-connector",
+      "name": "SAP S/4HANA Enterprise Connector",
+      "version": "1.2.0",
+      "category": "INTEGRATION",
+      "status": "ACTIVE",
+      "is_enabled": true,
+      "developer": "Acme Integrations Inc.",
+      "permissions": ["Documents.Read", "Documents.Write", "Notifications.Send"],
+      "event_hooks": ["document.uploaded"],
+      "installed_at": "2026-10-29T12:00:00Z"
+    }
+  ]
+}
+```
+
+#### 17.1.3 Enable / Activate Plugin
+- **Method**: `POST`
+- **Path**: `/api/v1/plugins/enable`
+- **Auth**: Bearer JWT (`plugin.manage` permission)
+- **Request Body**:
+```json
+{
+  "plugin_id": "sap-s4hana-connector"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Plugin activated successfully.",
+  "data": {
+    "plugin_id": "sap-s4hana-connector",
+    "status": "ACTIVE",
+    "is_enabled": true
+  }
+}
+```
+
+#### 17.1.4 Disable / Deactivate Plugin
+- **Method**: `POST`
+- **Path**: `/api/v1/plugins/disable`
+- **Auth**: Bearer JWT (`plugin.manage` permission)
+- **Request Body**:
+```json
+{
+  "plugin_id": "sap-s4hana-connector"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Plugin deactivated successfully.",
+  "data": {
+    "plugin_id": "sap-s4hana-connector",
+    "status": "INACTIVE",
+    "is_enabled": false
+  }
+}
+```
+
+#### 17.1.5 Update Plugin Version
+- **Method**: `POST`
+- **Path**: `/api/v1/plugins/update`
+- **Auth**: Bearer JWT (`plugin.manage` permission)
+- **Request Body**:
+```json
+{
+  "plugin_id": "sap-s4hana-connector",
+  "target_version": "1.3.0"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Plugin updated successfully.",
+  "data": {
+    "plugin_id": "sap-s4hana-connector",
+    "previous_version": "1.2.0",
+    "version": "1.3.0",
+    "status": "ACTIVE"
+  }
+}
+```
+
+#### 17.1.6 Uninstall Plugin
+- **Method**: `POST`
+- **Path**: `/api/v1/plugins/uninstall`
+- **Auth**: Bearer JWT (`plugin.manage` permission)
+- **Request Body**:
+```json
+{
+  "plugin_id": "sap-s4hana-connector",
+  "purge_data": false
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Plugin uninstalled successfully.",
+  "data": {
+    "plugin_id": "sap-s4hana-connector",
+    "uninstalled": true
+  }
+}
+```
+
+### 17.2 Configuration & Execution
+
+#### 17.2.1 Execute Sandboxed Plugin Action
+- **Method**: `POST`
+- **Path**: `/api/v1/plugins/{id}/execute`
+- **Auth**: Bearer JWT (`plugin.execute` permission)
+- **Request Body**:
+```json
+{
+  "action": "sync_invoices",
+  "parameters": {
+    "since": "2026-10-28T00:00:00Z",
+    "limit": 50
+  }
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "execution_id": "exec-plg-898",
+    "status": "COMPLETED",
+    "duration_ms": 84.5,
+    "result": {
+      "synced_count": 42,
+      "skipped_count": 8
+    }
+  }
+}
+```
+
+#### 17.2.2 Query Plugin Execution Logs
+- **Method**: `GET`
+- **Path**: `/api/v1/plugins/logs`
+- **Auth**: Bearer JWT (`plugin.view` permission)
+- **Query Parameters**:
+  - `plugin_id`: string (optional)
+  - `status`: string (optional: `SUCCESS`, `ERROR`, `TIMEOUT`)
+  - `limit`: int (default: 50)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "log-001",
+      "plugin_id": "sap-s4hana-connector",
+      "action": "document.uploaded",
+      "status": "SUCCESS",
+      "duration_ms": 48.2,
+      "triggered_by": "event_hook",
+      "timestamp": "2026-10-29T12:05:00Z"
+    }
+  ]
+}
+```
+
+### 17.3 Plugin Marketplace
+
+#### 17.3.1 Browse Marketplace Catalog
+- **Method**: `GET`
+- **Path**: `/api/v1/plugins/marketplace`
+- **Auth**: Bearer JWT (`plugin.view` permission)
+- **Query Parameters**:
+  - `search`: string (optional)
+  - `category`: string (optional)
+  - `verified_only`: bool (default: false)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "tpl-ai-anthropic-claude",
+      "plugin_id": "ai-anthropic-claude",
+      "name": "Anthropic Claude 3.5 Sonnet Provider",
+      "description": "Drop-in LLM adapter for Claude 3.5 Sonnet and Haiku inference.",
+      "category": "AI",
+      "developer": "Anthropic Community Partner",
+      "version": "2.1.0",
+      "verification_tier": "VERIFIED",
+      "rating": 4.9,
+      "installs_count": 1820,
+      "min_keep_version": "3.0.0",
+      "max_keep_version": "3.9.9",
+      "permissions": ["AI.Query"],
+      "event_hooks": ["ai.query.generated"]
+    }
+  ]
+}
+```
+
+
 
 
 

@@ -142,6 +142,12 @@ class AIPermission(str, Enum):
     NOTIFICATION_VIEW = "notification.view"
     NOTIFICATION_MANAGE = "notification.manage"
 
+    # Phase 3.5 Plugin SDK, Extension Framework & Developer Ecosystem
+    PLUGIN_VIEW = "plugin.view"
+    PLUGIN_MANAGE = "plugin.manage"
+    PLUGIN_INSTALL = "plugin.install"
+    PLUGIN_EXECUTE = "plugin.execute"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -176,6 +182,8 @@ VIEWER_PERMISSIONS: set[str] = {
     # Phase 3.4 workflow permissions
     AIPermission.WORKFLOW_VIEW.value,
     AIPermission.NOTIFICATION_VIEW.value,
+    # Phase 3.5 plugin permissions
+    AIPermission.PLUGIN_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -204,6 +212,8 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     # Phase 3.4 workflow permissions
     AIPermission.NOTIFICATION_MANAGE.value,
     AIPermission.WORKFLOW_EXECUTE.value,
+    # Phase 3.5 plugin permissions
+    AIPermission.PLUGIN_EXECUTE.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -228,6 +238,8 @@ PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.COMMENT_RESOLVE.value,
     # Phase 3.4 workflow permissions
     AIPermission.WORKFLOW_APPROVE.value,
+    # Phase 3.5 plugin permissions
+    AIPermission.PLUGIN_INSTALL.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
@@ -263,6 +275,8 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.SECURITY_COMPLIANCE.value,
     # Phase 3.4 workflow permissions
     AIPermission.WORKFLOW_MANAGE.value,
+    # Phase 3.5 plugin permissions
+    AIPermission.PLUGIN_MANAGE.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {

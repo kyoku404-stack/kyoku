@@ -5658,6 +5658,56 @@ COMPLETED / PHASE 3.4 100% VERIFIED
 #### Target Receiving Agent
 - **Human Team Member & Team Reviewers**: Phase 3.4 is 100% complete across all 4 roles. Awaiting approval to begin Phase 3.5.
 
+---
+
+### Handoff Entry #074: Phase 3.5 — Plugin Architecture, SDK Standards, Event System & Domain Contracts
+
+#### Date
+2026-10-29
+
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION (MEMBER 2)
+
+#### Implemented Features
+1. **Master Architecture Specification (`docs/Architecture/plugin-sdk-extension-framework.md`)**:
+   - High-level system architecture isolating plugin management from KEEP core.
+   - 5 plugin categories: AI, Integration, Workflow, UI, Analytics.
+   - Deterministic 8-stage plugin lifecycle (Install -> Validate -> Initialize -> Activate -> Execute -> Update -> Deactivate -> Uninstall).
+   - JSON Schema Draft 7 manifest specifications and capability-based security.
+   - Asynchronous event hook subscription model.
+   - Decentralized marketplace discovery and verification tiers (`VERIFIED`, `COMMUNITY`, `INTERNAL`).
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - `ADR-059`: Isolated Plugin Sandboxing, Capability-Based Security & Resource Quotas.
+   - `ADR-060`: Manifest-Driven Semantic Versioning, Compatibility Verification & Hot-Reload Lifecycle.
+   - `ADR-061`: Event Hook Subscription Engine & Decentralized Marketplace Distribution.
+3. **REST API Contract (`docs/api/api-contract.md`)**:
+   - Added Section 17 defining endpoints: `/api/v1/plugins/install`, `/plugins/list`, `/plugins/enable`, `/plugins/disable`, `/plugins/update`, `/plugins/uninstall`, `/plugins/{id}/execute`, `/plugins/logs`, and `/plugins/marketplace`.
+4. **Database Schema Specification (`docs/database/database-schema.md`)**:
+   - Added Section 3.22 defining tables `plugins`, `plugin_manifests`, `plugin_installations`, `plugin_permissions`, `plugin_event_hooks`, and `plugin_execution_logs`.
+5. **Typed Domain Contracts & Reference Engines (`backend/app/services/plugins/contracts.py`)**:
+   - Enums: `PluginCategory`, `PluginStatus`, `PluginVerificationTier`, `PluginCapability`, `PluginLogStatus`, `HookTriggerType`.
+   - Dataclasses: `PluginManifest`, `PluginExecutionInput`, `PluginExecutionOutput`, `MarketplaceCatalogItem`.
+   - Abstract Base Classes: `BasePlugin`, `BaseAIPlugin`, `BaseIntegrationPlugin`, `BaseWorkflowActionPlugin`.
+   - Reference Engines: `SemanticVersionValidator`, `PluginManifestValidator`, `CapabilityPermissionGuard`, `PluginSandboxRunner`, `PluginHookBroker`, `SampleClaudeAIPlugin`, `SampleSAPInvoicePlugin`.
+   - RBAC Permissions in `backend/app/services/ai/interfaces.py`: `PLUGIN_VIEW`, `PLUGIN_MANAGE`, `PLUGIN_INSTALL`, `PLUGIN_EXECUTE`.
+6. **Unit Tests (`tests/unit/test_plugin_contracts.py`)**:
+   - 10 unit tests covering SemVer parsing, manifest validation, version gating, capability permission guard, sandbox timeouts, event hook dispatch, and reference plugins (100% pass rate).
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**
+
+#### Required Action for Receiving Agent
+1. Implement SQLAlchemy ORM models matching schema Section 3.22 in `backend/app/models/plugin.py` and re-export in `backend/app/models/__init__.py`.
+2. Author and verify clean Alembic schema migration revision in `backend/migrations/versions/`.
+3. Implement Pydantic v2 validation schemas in `backend/app/schemas/plugin.py`.
+4. Implement `EnterprisePluginService` in `backend/app/services/plugins/service.py` providing lifecycle execution, sandboxing, hook routing, and marketplace querying.
+5. Implement FastAPI router in `backend/app/api/v1/plugins.py` and mount in `backend/app/api/v1/router.py`.
+6. Author unit and integration test suites in `tests/unit/test_plugin_services.py` and `tests/integration/test_plugin_endpoints.py`.
+
+
 
 
 
