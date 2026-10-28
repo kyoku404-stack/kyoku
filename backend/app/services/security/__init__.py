@@ -24,6 +24,7 @@ from backend.app.services.security.contracts import (
     SecurityAlertType,
     TOTPSetupData,
 )
+from backend.app.services.security.service import EnterpriseSecurityService
 
 __all__ = [
     "AIGovernanceRecord",
@@ -43,9 +44,11 @@ __all__ = [
     "DefaultComplianceEvaluator",
     "DefaultDeterministicPIIScanner",
     "DetectedPIIEntity",
+    "EnterpriseSecurityService",
     "GuardrailStatus",
     "PIIEntityType",
     "RFC6238TOTPEngine",
     "SecurityAlertType",
     "TOTPSetupData",
 ]
+

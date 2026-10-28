@@ -26,6 +26,7 @@ from backend.app.api.v1.organizations import router as organizations_router
 from backend.app.api.v1.projects import router as projects_router
 from backend.app.api.v1.rag import router as rag_router
 from backend.app.api.v1.search import router as search_router
+from backend.app.api.v1.security import router as security_router
 from backend.app.api.v1.teams import router as teams_router
 from backend.app.api.v1.users import router as users_router
 from fastapi import APIRouter
@@ -55,6 +56,7 @@ api_v1_router.include_router(ai_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(connectors_router)
 api_v1_router.include_router(collaboration_router)
+api_v1_router.include_router(security_router)
 api_v1_router.include_router(health_router)
 api_v1_router.include_router(metrics_router)
 

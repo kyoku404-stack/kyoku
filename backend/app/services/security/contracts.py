@@ -253,7 +253,7 @@ class DefaultDeterministicPIIScanner(BasePIIScanner):
         r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
     )
     PHONE_PATTERN: ClassVar[re.Pattern] = re.compile(
-        r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+        r"(?<![a-zA-Z0-9_-])(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
     )
     SSN_PATTERN: ClassVar[re.Pattern] = re.compile(
         r"\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b"
@@ -295,6 +295,39 @@ class DefaultDeterministicPIIScanner(BasePIIScanner):
         entities: list[DetectedPIIEntity] = []
         redacted = content
 
+        # API Keys & Secrets first
+        api_keys = self.API_KEY_PATTERN.findall(content)
+        if api_keys:
+            sample = api_keys[0]
+            masked = sample[:4] + "***"
+            entities.append(DetectedPIIEntity(PIIEntityType.API_KEY, len(api_keys), masked))
+            redacted = self.API_KEY_PATTERN.sub("[REDACTED_API_KEY]", redacted)
+
+        # Confidential Project Codenames
+        codenames = self.CODENAME_PATTERN.findall(content)
+        if codenames:
+            sample = codenames[0]
+            entities.append(DetectedPIIEntity(PIIEntityType.CONFIDENTIAL_CODENAME, len(codenames), sample))
+            redacted = self.CODENAME_PATTERN.sub("[REDACTED_CODENAME]", redacted)
+
+        # Credit Cards
+        raw_cards = self.CREDIT_CARD_PATTERN.findall(content)
+        valid_cards = [c for c in raw_cards if self._luhn_check(c)]
+        if valid_cards:
+            sample = valid_cards[0].replace("-", "").replace(" ", "")
+            masked = "****-****-****-" + sample[-4:]
+            entities.append(DetectedPIIEntity(PIIEntityType.CREDIT_CARD, len(valid_cards), masked))
+            for c in valid_cards:
+                redacted = redacted.replace(c, "[REDACTED_CREDIT_CARD]")
+
+        # SSN
+        ssns = self.SSN_PATTERN.findall(content)
+        if ssns:
+            sample = ssns[0]
+            masked = "***-**-" + sample[-4:]
+            entities.append(DetectedPIIEntity(PIIEntityType.SSN, len(ssns), masked))
+            redacted = self.SSN_PATTERN.sub("[REDACTED_SSN]", redacted)
+
         # Emails
         emails = self.EMAIL_PATTERN.findall(content)
         if emails:
@@ -310,32 +343,6 @@ class DefaultDeterministicPIIScanner(BasePIIScanner):
             masked = "***-***-" + sample[-4:] if len(sample) >= 4 else "***"
             entities.append(DetectedPIIEntity(PIIEntityType.PHONE, len(phones), masked))
             redacted = self.PHONE_PATTERN.sub("[REDACTED_PHONE]", redacted)
-
-        # SSN
-        ssns = self.SSN_PATTERN.findall(content)
-        if ssns:
-            sample = ssns[0]
-            masked = "***-**-" + sample[-4:]
-            entities.append(DetectedPIIEntity(PIIEntityType.SSN, len(ssns), masked))
-            redacted = self.SSN_PATTERN.sub("[REDACTED_SSN]", redacted)
-
-        # Credit Cards
-        raw_cards = self.CREDIT_CARD_PATTERN.findall(content)
-        valid_cards = [c for c in raw_cards if self._luhn_check(c)]
-        if valid_cards:
-            sample = valid_cards[0].replace("-", "").replace(" ", "")
-            masked = "****-****-****-" + sample[-4:]
-            entities.append(DetectedPIIEntity(PIIEntityType.CREDIT_CARD, len(valid_cards), masked))
-            for c in valid_cards:
-                redacted = redacted.replace(c, "[REDACTED_CREDIT_CARD]")
-
-        # API Keys & Secrets
-        api_keys = self.API_KEY_PATTERN.findall(content)
-        if api_keys:
-            sample = api_keys[0]
-            masked = sample[:4] + "***"
-            entities.append(DetectedPIIEntity(PIIEntityType.API_KEY, len(api_keys), masked))
-            redacted = self.API_KEY_PATTERN.sub("[REDACTED_API_KEY]", redacted)
 
         # Confidential Project Codenames
         codenames = self.CODENAME_PATTERN.findall(content)
