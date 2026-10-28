@@ -1560,3 +1560,110 @@ Member 1 specifies `BaseAuthenticator` and `AuthCredentials` contracts. Member 2
 #### Status
 ACCEPTED
 
+---
+
+### ADR-050 — Team Workspaces, Member Roles & Granular Permission Scoping
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.2.txt` (Chapters 1, 4, 18) mandates multi-department team workspaces (e.g., HR, Engineering, Marketing, Finance) within enterprise organizations where administrators manage memberships, permissions, and departmental asset boundaries independently.
+
+#### Decision
+1. **Hierarchical Scoping**:
+   - Organization (`organizations.id`) -> Team Workspace (`workspaces.id`) -> Projects & Documents.
+   - Workspaces enforce organizational multi-tenancy (`organization_id`) and independent workspace roles (`ADMIN`, `MEMBER`, `VIEWER`, `GUEST`).
+2. **Independent Access Control Matrix**:
+   - `ADMIN`: Manage workspace settings, invite/remove members, resolve or archive any discussion thread, delete projects.
+   - `MEMBER`: Full read/write within workspace (create projects, upload/edit documents, author comments, mention teammates).
+   - `VIEWER`: Read-only access to documents, discussions, version history, and dashboards.
+   - `GUEST`: Limited access restricted to explicitly shared resources with read-only discussion rights.
+3. **Auditability**:
+   - Membership changes (join, leave, role update) log immutable activity events to the workspace activity timeline.
+
+#### Alternatives Considered
+- Organization-wide flat permissions: Rejected — prevents departmental privacy (e.g. HR salary discussions visible to all employees).
+- Separate PostgreSQL databases per workspace: Rejected — excessive overhead and inability to run cross-workspace knowledge queries.
+
+#### Reason
+Workspace-level member bindings provide clean isolation while supporting cross-department knowledge discovery through explicit sharing collections.
+
+#### Impact
+Member 1 establishes domain contracts. Member 2 creates `workspaces` and `workspace_members` tables. Member 3 builds workspace management UI.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-051 — Threaded Document Discussions, Mention Parsing & Event Propagation
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.2.txt` (Chapters 6, 7, 8, 9) requires threaded document conversations (comments, replies, resolution states, archiving) combined with user mentions (`@user`) and real-time activity feed timeline updates.
+
+#### Decision
+1. **Threaded Comment Topology**:
+   - Use an adjacency list with parent reference (`parent_comment_id`) in `document_comments`.
+   - Root comments have `parent_comment_id = NULL`. Replies point to their immediate parent comment.
+   - Comments maintain status (`OPEN`, `RESOLVED`, `ARCHIVED`) and resolution metadata (`resolved_by_id`, `resolved_at`).
+2. **Regex Mention Extraction & Push Routing**:
+   - Comment content is parsed with pattern `(?<!\w)@([a-zA-Z0-9_.+-]+)` to identify tagged usernames or email handles.
+   - Extracted mentions resolve user IDs within the workspace and automatically trigger in-app notification events via the Phase 1.7 notification engine.
+3. **Unified Activity Stream & Presence**:
+   - All mutations (document upload/edit, comment creation, reply, resolution, mention, version change) append a typed event to `collaboration_activities`.
+   - Presence tracking (`ONLINE`, `OFFLINE`, `AWAY`, `EDITING`, `VIEWING`) records ephemeral collaborator states with automated timeout degradation.
+
+#### Alternatives Considered
+- Storing discussions in external systems (e.g., Slack): Rejected — disconnects knowledge context from actual enterprise documentation.
+- Nested set model for comments: Overkill and costly for write-heavy discussion feeds; adjacency list with indexing handles recursive tree construction in < 5ms.
+
+#### Reason
+Adjacency list comments with event-driven notifications deliver instantaneous team collaboration directly in line with enterprise knowledge documents.
+
+#### Impact
+Member 1 provides discussion summarizer interfaces and contracts. Member 2 creates comment models and notification hooks. Member 3 renders threaded discussion drawers.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-052 — AI Collaboration Assistant, Discussion Summaries, Action Item Extraction & Knowledge Sharing
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.2.txt` (Chapters 12, 13) mandates an AI Collaboration Assistant that summarizes lengthy discussion threads, extracts actionable tasks and key decisions, identifies duplicate inquiries, and suggests relevant cross-department knowledge assets.
+
+#### Decision
+1. **Autonomous Thread Summarization**:
+   - Given a document ID and its conversation tree, the assistant generates structured briefs containing:
+     - `executive_summary`: Concise paragraph summarizing the debate.
+     - `key_decisions`: Formally recorded conclusions agreed upon by participants.
+     - `action_items`: Assigned tasks with identified assignees, descriptions, and suggested deadlines.
+     - `unresolved_questions`: Open concerns requiring further review.
+2. **Knowledge Recommendation Heuristics**:
+   - Synthesizes document tags, comments, and workspace taxonomy to query semantic vector embeddings for related enterprise documentation and canonical SOPs.
+   - Computes popularity and relevance scores to promote organizational knowledge reuse across team boundaries.
+3. **Pluggable Architecture**:
+   - Provide abstract interfaces `BaseDiscussionSummarizer`, `BaseActionItemExtractor`, and `BaseKnowledgeSharingRecommender` with high-performance heuristic fallbacks and LLM-ready pipelines.
+
+#### Alternatives Considered
+- Manual note-taking and manual task creation: High friction, leads to dropped action items and repeated work.
+- Calling LLM unconditionally for every single single-line comment: Unsustainable cost and latency; batch/trigger summarization on thread completion or user request.
+
+#### Reason
+Automated extraction of action items and decisions turns unstructured discussion into structured, accountable enterprise knowledge.
+
+#### Impact
+Member 1 implements typed contracts and unit tests. Member 2 adds REST endpoints `/api/v1/collaboration/discussions/{id}/summary`. Member 3 surfaces the AI Assistant card in the discussion drawer.
+
+#### Status
+ACCEPTED
+
+

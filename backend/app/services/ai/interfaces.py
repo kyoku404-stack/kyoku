@@ -118,6 +118,15 @@ class AIPermission(str, Enum):
     CONNECTOR_MANAGE = "connector.manage"
     CONNECTOR_SYNC = "connector.sync"
 
+    # Phase 3.2 Real-Time Collaboration, Team Workspaces & Knowledge Sharing
+    WORKSPACE_VIEW = "workspace.view"
+    WORKSPACE_MANAGE = "workspace.manage"
+    WORKSPACE_CREATE = "workspace.create"
+    COMMENT_CREATE = "comment.create"
+    COMMENT_RESOLVE = "comment.resolve"
+    VERSION_HISTORY_VIEW = "version.view"
+    PRESENCE_UPDATE = "presence.update"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -143,6 +152,10 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.GRAPH_READ.value,
     # Phase 3.1 connector permissions
     AIPermission.CONNECTOR_VIEW.value,
+    # Phase 3.2 collaboration permissions
+    AIPermission.WORKSPACE_VIEW.value,
+    AIPermission.VERSION_HISTORY_VIEW.value,
+    AIPermission.PRESENCE_UPDATE.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -163,6 +176,9 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     AIPermission.DOCUMENT_VERSION.value,
     # Phase 2.4 graph permissions
     AIPermission.GRAPH_INTELLIGENCE.value,
+    # Phase 3.2 collaboration permissions
+    AIPermission.WORKSPACE_CREATE.value,
+    AIPermission.COMMENT_CREATE.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -183,6 +199,8 @@ PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.GRAPH_BUILD.value,
     # Phase 3.1 connector permissions
     AIPermission.CONNECTOR_SYNC.value,
+    # Phase 3.2 collaboration permissions
+    AIPermission.COMMENT_RESOLVE.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
@@ -210,6 +228,8 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.AUDIT_READ.value,
     # Phase 3.1 connector permissions
     AIPermission.CONNECTOR_MANAGE.value,
+    # Phase 3.2 collaboration permissions
+    AIPermission.WORKSPACE_MANAGE.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
