@@ -32,6 +32,9 @@ const EnterpriseIntelligencePage = lazy(() =>
 const IntegrationsPage = lazy(() =>
   import('@/pages/IntegrationsPage').then((m) => ({ default: m.IntegrationsPage }))
 );
+const CollaborationPage = lazy(() =>
+  import('@/pages/CollaborationPage').then((m) => ({ default: m.CollaborationPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -336,6 +339,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <IntegrationsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'collaboration',
+        element: (
+          <SuspenseWrapper>
+            <CollaborationPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workspaces',
+        element: (
+          <SuspenseWrapper>
+            <CollaborationPage />
           </SuspenseWrapper>
         ),
       },

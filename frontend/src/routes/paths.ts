@@ -37,6 +37,8 @@ export const ROUTES = {
   ENTERPRISE_INTELLIGENCE: '/enterprise-intelligence',
   INTEGRATIONS: '/integrations',
   CONNECTORS: '/connectors',
+  COLLABORATION: '/collaboration',
+  WORKSPACES: '/workspaces',
   NOT_FOUND: '*',
 } as const;
 
