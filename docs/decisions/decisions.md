@@ -1666,4 +1666,120 @@ Member 1 implements typed contracts and unit tests. Member 2 adds REST endpoints
 #### Status
 ACCEPTED
 
+---
+
+### ADR-053 — Enterprise Identity Federation, Multi-Factor Authentication (MFA/TOTP) & Zero-Trust Session Lifecycle
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.3.txt` (Chapters 3, 4, 5, 8, 16) mandates enterprise-grade identity authentication, SSO readiness (OAuth2, OpenID Connect, Microsoft Entra ID, Okta), Time-based One-Time Password (TOTP) Multi-Factor Authentication, and zero-trust session lifecycle enforcement.
+
+#### Decision
+1. **Adaptive Multi-Factor Authentication (MFA / TOTP)**:
+   - Implement RFC 6238 compliant TOTP generator and validator (HMAC-SHA1/SHA256, 30s step, 6-digit passcode with +-1 time-step drift tolerance).
+   - Secret keys are stored securely using symmetric encryption (AES-256 or Fernet-derived).
+   - Generate single-use, cryptographically hashed 10-character backup recovery codes for out-of-band account restoration.
+   - Enforce mandatory MFA for privileged roles (`SUPER_ADMIN`, `ORG_ADMIN`) and optional toggle for employees.
+2. **Zero-Trust Session Invalidation**:
+   - Issue JWTs containing claims `sub`, `org_id`, `role`, and `mfa_verified`.
+   - Provide explicit logout `/api/v1/security/logout` endpoint that invalidates active sessions and emits immutable security audit entries.
+3. **Pluggable Identity Provider Federation**:
+   - Provide an extensible `EnterpriseIdentityProviderAdapter` architecture ready to ingest standard OIDC/SAML tokens alongside local credentials.
+
+#### Alternatives Considered
+- SMS OTP: Insecure against SIM swapping and requires expensive third-party carrier gateways; TOTP authenticator apps provide zero-cost, offline, cryptographic security.
+- Stateless-only tokens without revocation: Inadequate for enterprise compliance; token blacklisting or active session tracking guarantees immediate termination upon compromise.
+
+#### Reason
+Standardized TOTP and zero-trust session management elevate KEEP to enterprise compliance standards while remaining lightweight and reliable.
+
+#### Impact
+Member 1 specifies TOTP interfaces and verification contracts. Member 2 creates `security_mfa_credentials` table, authentication router `/api/v1/security/*`. Member 3 develops MFA Setup & Verification modals.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-054 — Immutable Cryptographic Audit Trails & Automated PII/Sensitive Data Classification
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.3.txt` (Chapters 8, 9, 12, 14, 16) requires immutable enterprise audit trails for all critical operations and automated sensitive data scanning (PII, financial info, secrets) with four-tier classification (`Public`, `Internal`, `Confidential`, `Restricted`).
+
+#### Decision
+1. **Immutable Audit Trail Architecture**:
+   - Dedicated `security_audit_logs` persistence with write-once append-only semantics.
+   - Captures `timestamp`, `org_id`, `user_id`, `ip_address`, `user_agent`, `action`, `resource`, `resource_id`, `status` (`SUCCESS`, `FAILURE`, `DENIED`), and structured JSON `details`.
+   - Optimized querying with B-Tree indexes on `(organization_id, created_at)` and `(action, created_at)`.
+2. **Deterministic & Heuristic Sensitive Data Scanner**:
+   - Comprehensive pattern scanners for:
+     - Email addresses (`RFC 5322`)
+     - Phone numbers (E.164 and international notations)
+     - Social Security Numbers / Government IDs
+     - Credit Card Numbers (with Luhn checksum validation)
+     - API Keys & Tokens (Bearer tokens, AWS keys `AKIA...`, OpenAI `sk-...`, GitHub tokens `ghp_...`)
+     - Confidential Project Codenames
+   - Classifies documents into 4 tiers:
+     - `PUBLIC`: 0 sensitive items detected.
+     - `INTERNAL`: Standard business documentation without high-risk PII.
+     - `CONFIDENTIAL`: Contains PII or internal credentials.
+     - `RESTRICTED`: High concentration of financial, health, or critical security secrets.
+3. **Automated Masking Suggestions**:
+   - Generate redacted text previews replacing matched tokens with cryptographic masks (e.g., `****-****-****-1234` or `[REDACTED-EMAIL]`).
+
+#### Alternatives Considered
+- Cloud-only DLP APIs (e.g. Google Cloud DLP): Rejected for local development and self-hosted deployments; built-in regex/heuristic engine runs with zero external dependencies and sub-millisecond latency.
+- In-place mutation of audit logs: Prohibited by compliance regulations; records are strictly immutable.
+
+#### Reason
+Local, deterministic PII scanning and immutable audit logging guarantee GDPR and SOC 2 data protection compliance out of the box.
+
+#### Impact
+Member 1 provides scanner contracts and pattern tests. Member 2 creates classification tables and scanner services. Member 3 builds the classification drawer and audit log viewer.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-055 — AI Safety Guardrails, Prompt/Response Governance & Automated Regulatory Compliance Scoring
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.3.txt` (Chapters 10, 11, 13, 15, 16) mandates comprehensive AI governance (prompt history, model safety, token accountability, prompt injection defense) and multi-framework regulatory compliance scoring (GDPR, ISO 27001, SOC 2, HIPAA).
+
+#### Decision
+1. **AI Safety & Prompt Injection Guardrails**:
+   - Inspect incoming AI prompts for prompt injection patterns (`ignore previous instructions`, `system prompt override`, `jailbreak`, `DAN`, `leak instructions`).
+   - Flag unsafe prompts, prevent execution, and emit `PROMPT_INJECTION_ATTEMPT` security alert.
+2. **AI Inference Governance & Traceability**:
+   - Log prompt, completion, model identifier, retrieved source document IDs, token count, processing latency, and user feedback in `security_ai_governance_logs`.
+3. **Multi-Standard Compliance Evaluator**:
+   - Evaluator engine for `GDPR`, `ISO_27001`, `SOC_2`, and `HIPAA`.
+   - Computes weighted readiness scores (0–100%) across control domains: Identity & Access Management, Encryption, Audit Logging, Data Retention, and Incident Response.
+4. **Data Retention & Right to Erasure (GDPR Art. 17)**:
+   - Configurable retention policies per resource type (`audit_logs`, `chat_sessions`, `temporary_uploads`) with automated expiration triggers.
+   - Certified GDPR erasure workflow that anonymizes user profile, cascades soft-delete to user assets, and records an immutable erasure certificate.
+
+#### Alternatives Considered
+- Manual compliance audits: Slow, error-prone, and reactive; automated score calculation provides continuous compliance observability.
+- Hard-deleting user data directly via raw SQL: Violates audit trail integrity; GDPR Art. 17 is fulfilled via cryptographic anonymization of personal identifiers while retaining anonymized transaction integrity.
+
+#### Reason
+Proactive AI governance and automated regulatory scoring give enterprise CISOs total confidence in deploying KEEP.
+
+#### Impact
+Member 1 implements compliance evaluation algorithms and AI guardrails. Member 2 implements compliance APIs and GDPR erasure service. Member 3 builds the compliance report card and AI governance inspector. Member 4 configures Prometheus alerts and Grafana security dashboard.
+
+#### Status
+ACCEPTED
+
+
 

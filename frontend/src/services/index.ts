@@ -31,4 +31,5 @@ export * from './graphService';
 export * from './intelligenceService';
 export * from './connectorService';
 export * from './collaborationService';
+export * from './securityService';
 

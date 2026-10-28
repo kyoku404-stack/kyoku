@@ -39,6 +39,8 @@ export const ROUTES = {
   CONNECTORS: '/connectors',
   COLLABORATION: '/collaboration',
   WORKSPACES: '/workspaces',
+  SECURITY: '/security',
+  COMPLIANCE: '/compliance',
   NOT_FOUND: '*',
 } as const;
 

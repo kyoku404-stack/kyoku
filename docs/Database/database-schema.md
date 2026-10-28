@@ -1118,6 +1118,171 @@ CREATE INDEX idx_activities_workspace ON collaboration_activities(workspace_id, 
 CREATE INDEX idx_activities_actor ON collaboration_activities(actor_id, created_at DESC);
 ```
 
+---
+
+### 3.20 Phase 3.3 — Enterprise Security, Compliance, Governance & Data Protection Schema
+
+#### 3.20.1 `security_mfa_credentials` Table
+Maintains encrypted TOTP shared secrets and backup recovery codes:
+```sql
+CREATE TABLE security_mfa_credentials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    secret_key VARCHAR(255) NOT NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    backup_codes JSONB NOT NULL DEFAULT '[]',
+    failed_attempts INT NOT NULL DEFAULT 0,
+    last_verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_mfa_user UNIQUE (user_id)
+);
+
+CREATE INDEX idx_mfa_user ON security_mfa_credentials(user_id);
+```
+
+#### 3.20.2 `security_audit_logs` Table
+Immutable enterprise audit log trail recording all security, authorization, and data access events:
+```sql
+CREATE TABLE security_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    action VARCHAR(80) NOT NULL,
+    resource VARCHAR(80) NOT NULL,
+    resource_id VARCHAR(255),
+    ip_address VARCHAR(45) NOT NULL DEFAULT '127.0.0.1',
+    user_agent VARCHAR(512),
+    status VARCHAR(30) NOT NULL DEFAULT 'SUCCESS',
+    details JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_audit_status CHECK (status IN ('SUCCESS', 'FAILURE', 'DENIED'))
+);
+
+CREATE INDEX idx_sec_audit_org_created ON security_audit_logs(organization_id, created_at DESC);
+CREATE INDEX idx_sec_audit_action ON security_audit_logs(action, created_at DESC);
+CREATE INDEX idx_sec_audit_user ON security_audit_logs(user_id, created_at DESC);
+```
+
+#### 3.20.3 `security_data_classifications` Table
+Document data classification metadata, detected PII entities, and protection policies:
+```sql
+CREATE TABLE security_data_classifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    classification_level VARCHAR(30) NOT NULL DEFAULT 'INTERNAL',
+    detected_pii_entities JSONB NOT NULL DEFAULT '[]',
+    pii_count INT NOT NULL DEFAULT 0,
+    confidence_score FLOAT NOT NULL DEFAULT 1.0,
+    scan_status VARCHAR(30) NOT NULL DEFAULT 'COMPLETED',
+    scanned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_data_classification_doc UNIQUE (document_id),
+    CONSTRAINT chk_classification_level CHECK (classification_level IN ('PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED'))
+);
+
+CREATE INDEX idx_data_class_org ON security_data_classifications(organization_id, classification_level);
+```
+
+#### 3.20.4 `security_ai_governance_logs` Table
+Inference auditing, prompt safety evaluations, token accountability, and guardrail flags:
+```sql
+CREATE TABLE security_ai_governance_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    session_id VARCHAR(255),
+    prompt_text TEXT NOT NULL,
+    response_text TEXT,
+    model_name VARCHAR(100) NOT NULL,
+    retrieved_sources JSONB NOT NULL DEFAULT '[]',
+    guardrail_status VARCHAR(30) NOT NULL DEFAULT 'PASSED',
+    guardrail_flags JSONB NOT NULL DEFAULT '[]',
+    token_usage INT NOT NULL DEFAULT 0,
+    latency_ms FLOAT NOT NULL DEFAULT 0.0,
+    user_feedback VARCHAR(30),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_ai_gov_org ON security_ai_governance_logs(organization_id, created_at DESC);
+CREATE INDEX idx_ai_gov_guardrail ON security_ai_governance_logs(guardrail_status);
+```
+
+#### 3.20.5 `security_compliance_policies` Table
+Regulatory framework readiness controls and status (GDPR, ISO 27001, SOC 2, HIPAA):
+```sql
+CREATE TABLE security_compliance_policies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    standard VARCHAR(40) NOT NULL,
+    control_key VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'COMPLIANT',
+    score INT NOT NULL DEFAULT 100,
+    last_evaluated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_compliance_control UNIQUE (organization_id, standard, control_key),
+    CONSTRAINT chk_compliance_standard CHECK (standard IN ('GDPR', 'ISO_27001', 'SOC_2', 'HIPAA'))
+);
+
+CREATE INDEX idx_compliance_org_standard ON security_compliance_policies(organization_id, standard);
+```
+
+#### 3.20.6 `security_data_retention_rules` Table
+Automated asset retention and purging policies per organizational resource type:
+```sql
+CREATE TABLE security_data_retention_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    resource_type VARCHAR(60) NOT NULL,
+    retention_days INT NOT NULL DEFAULT 365,
+    action_on_expiry VARCHAR(30) NOT NULL DEFAULT 'ARCHIVE',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_retention_resource UNIQUE (organization_id, resource_type)
+);
+```
+
+#### 3.20.7 `security_erasure_requests` Table
+GDPR Article 17 "Right to Erasure" tracking and immutable certificate generation:
+```sql
+CREATE TABLE security_erasure_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    requester_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    target_user_id UUID NOT NULL,
+    target_email VARCHAR(255) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'COMPLETED',
+    reason TEXT,
+    anonymized_assets_count INT NOT NULL DEFAULT 0,
+    certificate_hash VARCHAR(64) NOT NULL,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_erasure_org ON security_erasure_requests(organization_id, created_at DESC);
+```
+
+#### 3.20.8 `security_threat_alerts` Table
+Automated security anomaly and threat monitoring alerts:
+```sql
+CREATE TABLE security_threat_alerts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    alert_type VARCHAR(80) NOT NULL,
+    severity VARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
+    description TEXT NOT NULL,
+    source_ip VARCHAR(45) NOT NULL DEFAULT '127.0.0.1',
+    resolved BOOLEAN NOT NULL DEFAULT FALSE,
+    triggered_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_alert_severity CHECK (severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'))
+);
+
+CREATE INDEX idx_threat_alerts_org ON security_threat_alerts(organization_id, resolved, triggered_at DESC);
+```
+
+
 
 
 

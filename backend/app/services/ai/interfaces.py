@@ -127,6 +127,13 @@ class AIPermission(str, Enum):
     VERSION_HISTORY_VIEW = "version.view"
     PRESENCE_UPDATE = "presence.update"
 
+    # Phase 3.3 Enterprise Security, Compliance, Governance & Data Protection
+    SECURITY_VIEW = "security.view"
+    SECURITY_MANAGE = "security.manage"
+    SECURITY_AUDIT = "security.audit"
+    SECURITY_COMPLIANCE = "security.compliance"
+    DATA_CLASSIFY = "data.classify"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -156,6 +163,8 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.WORKSPACE_VIEW.value,
     AIPermission.VERSION_HISTORY_VIEW.value,
     AIPermission.PRESENCE_UPDATE.value,
+    # Phase 3.3 security permissions
+    AIPermission.SECURITY_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -179,6 +188,8 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     # Phase 3.2 collaboration permissions
     AIPermission.WORKSPACE_CREATE.value,
     AIPermission.COMMENT_CREATE.value,
+    # Phase 3.3 security permissions
+    AIPermission.DATA_CLASSIFY.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -230,6 +241,10 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.CONNECTOR_MANAGE.value,
     # Phase 3.2 collaboration permissions
     AIPermission.WORKSPACE_MANAGE.value,
+    # Phase 3.3 security permissions
+    AIPermission.SECURITY_MANAGE.value,
+    AIPermission.SECURITY_AUDIT.value,
+    AIPermission.SECURITY_COMPLIANCE.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
