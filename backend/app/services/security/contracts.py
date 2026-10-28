@@ -261,22 +261,22 @@ class BasePIIScanner(ABC):
 class DefaultDeterministicPIIScanner(BasePIIScanner):
     """Deterministic regex and heuristic PII / Secret scanner."""
 
-    EMAIL_PATTERN: ClassVar[re.Pattern] = re.compile(
+    EMAIL_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
     )
-    PHONE_PATTERN: ClassVar[re.Pattern] = re.compile(
+    PHONE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"(?<![a-zA-Z0-9_-])(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
     )
-    SSN_PATTERN: ClassVar[re.Pattern] = re.compile(
+    SSN_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b"
     )
-    CREDIT_CARD_PATTERN: ClassVar[re.Pattern] = re.compile(
+    CREDIT_CARD_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"\b(?:\d{4}[-\s]?){3}\d{4}\b"
     )
-    API_KEY_PATTERN: ClassVar[re.Pattern] = re.compile(
+    API_KEY_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"\b(?:sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:ak|sk|pk)_(?:live|test)_[a-zA-Z0-9]{16,})\b"
     )
-    CODENAME_PATTERN: ClassVar[re.Pattern] = re.compile(
+    CODENAME_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"\bProject\s+[A-Z][a-zA-Z0-9_-]{2,}\b"
     )
 
@@ -406,7 +406,7 @@ class BaseAIGuardrailEngine(ABC):
 class DefaultAIGuardrailEngine(BaseAIGuardrailEngine):
     """Rule-based AI safety and prompt injection guardrail engine."""
 
-    INJECTION_SIGNATURES: ClassVar[list[tuple[str, re.Pattern]]] = [
+    INJECTION_SIGNATURES: ClassVar[list[tuple[str, re.Pattern[str]]]] = [
         ("INSTRUCTION_OVERRIDE", re.compile(r"(?:ignore|disregard|forget)\s+(?:all\s+)?(?:previous|prior)\s+(?:instructions|rules|prompts)", re.IGNORECASE)),
         ("SYSTEM_PROMPT_LEAK", re.compile(r"(?:reveal|print|leak|show|output)\s+(?:the\s+)?system\s+(?:prompt|instructions)", re.IGNORECASE)),
         ("JAILBREAK_ROLEPLAY", re.compile(r"\b(?:DAN|Do\s+Anything\s+Now|jailbreak|jailbroken)\b", re.IGNORECASE)),
