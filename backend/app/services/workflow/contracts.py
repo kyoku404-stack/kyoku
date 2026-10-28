@@ -10,6 +10,7 @@ import asyncio
 import fnmatch
 import logging
 import re
+import uuid
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -209,6 +210,9 @@ class PredicateConditionEvaluator:
         if not condition_rules:
             return True
 
+        if isinstance(condition_rules, list):
+            return all(PredicateConditionEvaluator.evaluate(rule, payload) for rule in condition_rules)
+
         field_name = condition_rules.get("field")
         operator = condition_rules.get("operator", "equals").lower()
         target_value = condition_rules.get("value")
@@ -407,6 +411,49 @@ class AIWorkflowActionsEngine:
 
 class NotificationChannelDispatcher:
     """Formats and dispatches notifications across in-app, email, Slack, and Teams channels."""
+
+    @staticmethod
+    def format_payload(
+        channel: str,
+        title: str,
+        message: str,
+        metadata: dict[str, Any] | None = None,
+        priority: NotificationPriority = NotificationPriority.NORMAL,
+        category: NotificationCategory = NotificationCategory.SYSTEM,
+    ) -> dict[str, Any]:
+        """Generic payload formatter routing to channel-specific formatting engine."""
+        channel_enum = NotificationChannel.IN_APP
+        try:
+            channel_enum = NotificationChannel(channel.lower())
+        except (ValueError, AttributeError):
+            pass
+
+        payload = NotificationPayload(
+            id=str(uuid.uuid4()),
+            user_id="default-user",
+            organization_id="default-org",
+            title=title,
+            message=message,
+            channel=channel_enum,
+            priority=priority,
+            category=category,
+            link_url=(metadata or {}).get("link_url"),
+            metadata=metadata or {},
+        )
+        if channel.lower() == "email":
+            return NotificationChannelDispatcher.format_email_payload(payload)
+        elif channel.lower() == "slack":
+            return NotificationChannelDispatcher.format_slack_webhook_payload(payload)
+        elif channel.lower() == "teams":
+            return NotificationChannelDispatcher.format_teams_adaptive_card(payload)
+        else:
+            return {
+                "title": title,
+                "message": message,
+                "channel": channel,
+                "priority": priority.value,
+                "category": category.value,
+            }
 
     @staticmethod
     def format_email_payload(payload: NotificationPayload) -> dict[str, Any]:

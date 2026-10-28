@@ -4,6 +4,7 @@ Serves user-scoped notification inbox, single read acknowledgement, and batch re
 Derived from devdocs/p1/p1.7.txt and docs/API/api-contract.md Section 5.5.
 """
 
+from typing import Any
 from uuid import UUID
 
 from backend.app.api.dependencies.auth import (
@@ -176,9 +177,15 @@ async def update_notification_preferences(
         user_id=current_user.id,
         preferences=payload.preferences,
     )
+    resp_data: dict[str, Any] = {"updated": True}
+    if payload.category:
+        resp_data["category"] = payload.category
+    for p in payload.preferences:
+        resp_data[p.channel.lower()] = p.is_enabled
+
     return ApiResponse(
         success=True,
         message="Notification preferences updated successfully.",
-        data={"updated": True},
+        data=resp_data,
     )
 

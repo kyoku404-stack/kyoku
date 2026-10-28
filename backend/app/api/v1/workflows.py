@@ -31,10 +31,17 @@ router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 
 # =============================================================================
-# 16.2 Workflow Management
+# 16.2 Workflow Creation & Listing
 # =============================================================================
 
 
+@router.post(
+    "",
+    response_model=ApiResponse[WorkflowItemResponse],
+    status_code=status.HTTP_201_CREATED,
+    summary="Create workflow (REST alias)",
+    include_in_schema=False,
+)
 @router.post(
     "/create",
     response_model=ApiResponse[WorkflowItemResponse],
@@ -62,6 +69,13 @@ async def create_workflow(
 
 
 @router.get(
+    "",
+    response_model=ApiResponse[list[WorkflowItemResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="List workflows (REST alias)",
+    include_in_schema=False,
+)
+@router.get(
     "/list",
     response_model=ApiResponse[list[WorkflowItemResponse]],
     status_code=status.HTTP_200_OK,
@@ -88,34 +102,9 @@ async def list_workflows(
     )
 
 
-@router.get(
-    "/status/{id}",
-    response_model=ApiResponse[dict],
-    status_code=status.HTTP_200_OK,
-    summary="Get workflow status",
-    description="Retrieves a workflow's configuration and recent execution runs.",
-)
-async def get_workflow_status(
-    id: UUID,
-    current_user: AuthenticatedUser = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db),
-) -> ApiResponse[dict]:
-    """Retrieves workflow status by ID."""
-    status_data = await EnterpriseWorkflowService.get_workflow_status(
-        db=db,
-        organization_id=current_user.organization_id,
-        workflow_id=id,
-    )
-    if not status_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Workflow '{id}' not found.",
-        )
-    return ApiResponse(
-        success=True,
-        message="Workflow status retrieved successfully.",
-        data=status_data,
-    )
+# =============================================================================
+# Execution, Executions History, Templates, Approvals, Analytics (Static Routes)
+# =============================================================================
 
 
 @router.post(
@@ -141,36 +130,6 @@ async def execute_workflow(
         success=True,
         message="Workflow execution triggered successfully.",
         data=execution,
-    )
-
-
-@router.delete(
-    "/{id}",
-    response_model=ApiResponse[dict],
-    status_code=status.HTTP_200_OK,
-    summary="Delete workflow",
-    description="Deletes or archives a workflow definition.",
-)
-async def delete_workflow(
-    id: UUID,
-    current_user: AuthenticatedUser = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db),
-) -> ApiResponse[dict]:
-    """Deletes a workflow."""
-    deleted = await EnterpriseWorkflowService.delete_workflow(
-        db=db,
-        organization_id=current_user.organization_id,
-        workflow_id=id,
-    )
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Workflow '{id}' not found or already deleted.",
-        )
-    return ApiResponse(
-        success=True,
-        message="Workflow deleted successfully.",
-        data={"deleted": True},
     )
 
 
@@ -224,9 +183,50 @@ async def list_workflow_templates(
     )
 
 
-# =============================================================================
-# 16.3 Approval Workflows
-# =============================================================================
+@router.get(
+    "/approvals/pending",
+    response_model=ApiResponse[list[WorkflowApprovalItemResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="List pending approvals",
+    description="Lists all pending approval tickets awaiting decision in the organization.",
+)
+async def list_pending_approvals(
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[list[WorkflowApprovalItemResponse]]:
+    """Lists pending approvals."""
+    approvals = await EnterpriseWorkflowService.list_pending_approvals(
+        db=db,
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+    )
+    return ApiResponse(
+        success=True,
+        message="Pending approvals retrieved successfully.",
+        data=approvals,
+    )
+
+
+@router.post(
+    "/approvals/{id}/decide",
+    response_model=ApiResponse[WorkflowApprovalItemResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Decide workflow approval by ID (REST alias)",
+    include_in_schema=False,
+)
+async def decide_approval_by_id(
+    id: UUID,
+    payload: dict,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[WorkflowApprovalItemResponse]:
+    """Decides a pending approval by path ID."""
+    req = WorkflowApprovalRequest(
+        approval_id=str(id),
+        decision=payload.get("decision", "approved"),
+        comments=payload.get("comments"),
+    )
+    return await approve_workflow(payload=req, current_user=current_user, db=db)
 
 
 @router.post(
@@ -256,35 +256,6 @@ async def approve_workflow(
 
 
 @router.get(
-    "/approvals/pending",
-    response_model=ApiResponse[list[WorkflowApprovalItemResponse]],
-    status_code=status.HTTP_200_OK,
-    summary="List pending approvals",
-    description="Lists all pending approval tickets awaiting decision in the organization.",
-)
-async def list_pending_approvals(
-    current_user: AuthenticatedUser = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db),
-) -> ApiResponse[list[WorkflowApprovalItemResponse]]:
-    """Lists pending approvals."""
-    approvals = await EnterpriseWorkflowService.list_pending_approvals(
-        db=db,
-        organization_id=current_user.organization_id,
-        user_id=current_user.id,
-    )
-    return ApiResponse(
-        success=True,
-        message="Pending approvals retrieved successfully.",
-        data=approvals,
-    )
-
-
-# =============================================================================
-# 16.5 Workflow Analytics
-# =============================================================================
-
-
-@router.get(
     "/analytics",
     response_model=ApiResponse[WorkflowAnalyticsResponse],
     status_code=status.HTTP_200_OK,
@@ -306,4 +277,98 @@ async def get_workflow_analytics(
         success=True,
         message="Workflow analytics retrieved successfully.",
         data=analytics,
+    )
+
+
+# =============================================================================
+# Parameterized ID Routes (Declared after static routes to avoid path collisions)
+# =============================================================================
+
+
+@router.post(
+    "/{id}/execute",
+    response_model=ApiResponse[WorkflowExecuteResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Execute workflow by ID (REST alias)",
+    include_in_schema=False,
+)
+async def execute_workflow_by_id(
+    id: UUID,
+    payload: dict | None = None,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[WorkflowExecuteResponse]:
+    """Triggers execution of a workflow by path ID."""
+    req = WorkflowExecuteRequest(
+        workflow_id=str(id),
+        context_data=(payload or {}).get("context_data", {}),
+        trigger_metadata=(payload or {}).get("trigger_metadata", {}),
+    )
+    return await execute_workflow(payload=req, current_user=current_user, db=db)
+
+
+@router.get(
+    "/{id}",
+    response_model=ApiResponse[dict],
+    status_code=status.HTTP_200_OK,
+    summary="Get workflow status (REST alias)",
+    include_in_schema=False,
+)
+@router.get(
+    "/status/{id}",
+    response_model=ApiResponse[dict],
+    status_code=status.HTTP_200_OK,
+    summary="Get workflow status",
+    description="Retrieves a workflow's configuration and recent execution runs.",
+)
+async def get_workflow_status(
+    id: UUID,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[dict]:
+    """Retrieves workflow status by ID."""
+    status_data = await EnterpriseWorkflowService.get_workflow_status(
+        db=db,
+        organization_id=current_user.organization_id,
+        workflow_id=id,
+    )
+    if not status_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow '{id}' not found.",
+        )
+    return ApiResponse(
+        success=True,
+        message="Workflow status retrieved successfully.",
+        data=status_data,
+    )
+
+
+@router.delete(
+    "/{id}",
+    response_model=ApiResponse[dict],
+    status_code=status.HTTP_200_OK,
+    summary="Delete workflow",
+    description="Deletes or archives a workflow definition.",
+)
+async def delete_workflow(
+    id: UUID,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[dict]:
+    """Deletes a workflow."""
+    deleted = await EnterpriseWorkflowService.delete_workflow(
+        db=db,
+        organization_id=current_user.organization_id,
+        workflow_id=id,
+    )
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow '{id}' not found or already deleted.",
+        )
+    return ApiResponse(
+        success=True,
+        message="Workflow deleted successfully.",
+        data={"deleted": True},
     )

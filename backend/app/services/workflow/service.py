@@ -31,6 +31,7 @@ from backend.app.schemas.workflow import (
     WorkflowExecuteResponse,
     WorkflowExecutionItemResponse,
     WorkflowItemResponse,
+    WorkflowStepResponse,
     WorkflowTemplateItemResponse,
 )
 from backend.app.services.workflow.contracts import (
@@ -42,6 +43,7 @@ from backend.app.services.workflow.contracts import (
     WorkflowStepAction,
     WorkflowTemplateRegistry,
 )
+from fastapi import HTTPException, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -100,6 +102,18 @@ class EnterpriseWorkflowService:
 
         await db.commit()
 
+        steps_resp = [
+            WorkflowStepResponse(
+                id=str(uuid.uuid4()),
+                name=s.name,
+                step_order=s.step_order,
+                action_type=s.action_type,
+                configuration=s.configuration,
+                timeout_seconds=s.timeout_seconds,
+            )
+            for s in payload.steps
+        ]
+
         return WorkflowItemResponse(
             id=str(workflow.id),
             name=workflow.name,
@@ -110,6 +124,7 @@ class EnterpriseWorkflowService:
             condition_rules=workflow.condition_rules,
             is_active=workflow.is_active,
             step_count=len(payload.steps),
+            steps=steps_resp,
             created_at=workflow.created_at.isoformat(),
         )
 
@@ -222,12 +237,18 @@ class EnterpriseWorkflowService:
         result = await db.execute(wf_query)
         wf = result.scalar_one_or_none()
 
+        if not wf:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow '{payload.workflow_id}' not found.",
+            )
+
         execution_id = uuid.uuid4()
         now = datetime.now(UTC)
 
         execution = WorkflowExecution(
             id=execution_id,
-            workflow_id=wf.id if wf else wf_uuid,
+            workflow_id=wf.id,
             organization_id=organization_id,
             triggered_by_event_id=str(uuid.uuid4()),
             status=WorkflowExecutionStatus.RUNNING.value,
@@ -268,19 +289,20 @@ class EnterpriseWorkflowService:
             )
             db.add(step_run)
 
-            if step.action_type == WorkflowStepAction.AI_SUMMARIZE.value:
+            act_type = (step.action_type or "").upper()
+            if act_type in (WorkflowStepAction.AI_SUMMARIZE.value, "INVOKE_LLM"):
                 content = payload.input_payload.get("content", payload.input_payload.get("title", "Corporate Policy Document"))
                 summary_out = AIWorkflowActionsEngine.execute_ai_summarize(content, max_sentences=3)
                 step_run.output_payload = summary_out
                 step_run.status = "COMPLETED"
 
-            elif step.action_type == WorkflowStepAction.AI_SUGGEST_REVIEWER.value:
+            elif act_type in (WorkflowStepAction.AI_SUGGEST_REVIEWER.value, "SUGGEST_REVIEWER"):
                 doc_type = payload.input_payload.get("document_type", "POLICY")
                 reviewer_out = AIWorkflowActionsEngine.execute_ai_suggest_reviewer(doc_type, "")
                 step_run.output_payload = reviewer_out
                 step_run.status = "COMPLETED"
 
-            elif step.action_type == WorkflowStepAction.REQUIRE_APPROVAL.value:
+            elif act_type in (WorkflowStepAction.REQUIRE_APPROVAL.value, "REQUEST_APPROVAL"):
                 # Halt execution in WAITING_APPROVAL
                 is_waiting_approval = True
                 step_run.status = "WAITING_APPROVAL"
@@ -297,7 +319,7 @@ class EnterpriseWorkflowService:
                 db.add(approval)
                 break
 
-            elif step.action_type == WorkflowStepAction.NOTIFY.value:
+            elif act_type in (WorkflowStepAction.NOTIFY.value, "SEND_NOTIFICATION"):
                 notif = Notification(
                     id=uuid.uuid4(),
                     organization_id=organization_id,
@@ -421,7 +443,7 @@ class EnterpriseWorkflowService:
             approval.approver_id = approver_id
             approval.status = (
                 ApprovalStatus.APPROVED.value
-                if payload.decision.upper() == "APPROVE"
+                if payload.decision.upper() in ("APPROVE", "APPROVED")
                 else ApprovalStatus.REJECTED.value
             )
             approval.decision_comments = payload.comments
@@ -434,7 +456,7 @@ class EnterpriseWorkflowService:
             if execution:
                 execution.status = (
                     WorkflowExecutionStatus.COMPLETED.value
-                    if payload.decision.upper() == "APPROVE"
+                    if payload.decision.upper() in ("APPROVE", "APPROVED")
                     else WorkflowExecutionStatus.FAILED.value
                 )
                 execution.completed_at = now
@@ -448,16 +470,19 @@ class EnterpriseWorkflowService:
                 requester_name="Team Contributor",
                 step_description="Manager review and sign-off",
                 status=approval.status,
+                decision=approval.status,
                 requested_at=approval.requested_at.isoformat(),
                 responded_at=approval.responded_at.isoformat() if approval.responded_at else None,
             )
 
         # Fallback simulation if not persisted
+        fallback_status = payload.decision.upper()
         return WorkflowApprovalItemResponse(
             id=payload.approval_id,
             execution_id=str(uuid.uuid4()),
             workflow_name="Document Review Pipeline",
-            status=payload.decision.upper(),
+            status=fallback_status,
+            decision=fallback_status,
             requested_at=now.isoformat(),
             responded_at=now.isoformat(),
         )

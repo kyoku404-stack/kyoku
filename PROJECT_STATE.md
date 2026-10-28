@@ -4,7 +4,7 @@
 Phase 3 — Enterprise Intelligence & Advanced Integration
 
 ## Current Sub-Phase
-Phase 3.3 — Enterprise Security, Compliance, Governance & Data Protection
+Phase 3.4 — Notifications, Workflow Automation & Event-Driven Intelligence
 
 ## Repository Health
 GREEN
@@ -15,6 +15,57 @@ Phase 2 (Phase 2.1 through Phase 2.5) is 100% COMPLETE across all four member ro
 Phase 3.1 (Enterprise Integrations & Connector Framework) is 100% COMPLETE across all four member roles.
 Phase 3.2 (Real-Time Collaboration, Team Workspaces & Knowledge Sharing) is 100% COMPLETE across all four member roles.
 Phase 3.3 (Enterprise Security, Compliance, Governance & Data Protection) is 100% COMPLETE across all four member roles.
+Phase 3.4 (Notifications, Workflow Automation & Event-Driven Intelligence) is 100% COMPLETE across all four member roles.
+
+Phase 3.4 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/workflow-automation-event-driven-intelligence.md`) detailing the enterprise event broker architecture, directed acyclic graph (DAG) workflow orchestrator, human-in-the-loop (HITL) approval gates, predicate condition evaluator, AI-powered automation actions (document summarization, sentiment extraction, intelligent reviewer suggestion), and multi-channel notification dispatcher (In-App, Email, Slack, Teams).
+- Authored Architecture Decision Records ADR-056, ADR-057, and ADR-058 in `docs/decisions/decisions.md`:
+  - `ADR-056`: Event-Driven Broker Architecture, In-Memory Observer Pattern & Wildcard Routing.
+  - `ADR-057`: Directed Acyclic Graph (DAG) Step Orchestrator & Human-in-the-Loop Gateways.
+  - `ADR-058`: Multi-Channel Notification Dispatcher & User Preference Matrix.
+- Updated official REST API Contract (`docs/api/api-contract.md`) with Section 16 defining all 16 Phase 3.4 endpoints: `/api/v1/workflows`, `/workflows/list`, `/workflows/create`, `/workflows/{id}`, `/workflows/status/{id}`, `/workflows/execute`, `/workflows/{id}/execute`, `/workflows/executions`, `/workflows/executions/{id}`, `/workflows/approvals/pending`, `/workflows/approve`, `/workflows/approvals/{id}/decide`, `/workflows/templates`, `/workflows/analytics`, `/api/v1/notifications`, `/notifications/read-all`, `/notifications/{id}/read`, and `/notifications/preferences`.
+- Updated Database Schema Specification (`docs/database/database-schema.md`) with Section 3.21 defining tables `workflows`, `workflow_steps`, `workflow_executions`, `workflow_execution_steps`, `workflow_approvals`, `notifications`, and `notification_preferences` with composite indexes, foreign keys, and cascading delete constraints.
+- Implemented typed domain contracts and reference algorithms in `backend/app/services/workflow/contracts.py`:
+  - Enums: `WorkflowTriggerType`, `WorkflowStepAction`, `WorkflowExecutionStatus`, `ApprovalStatus`, `ApprovalDecision`, `NotificationChannel`, `NotificationPriority`, `NotificationCategory`.
+  - Concrete Reference Engines: `PredicateConditionEvaluator`, `EnterpriseEventBus`, `AIWorkflowActionsEngine`, `NotificationChannelDispatcher`, `WorkflowTemplateRegistry`.
+- Added RBAC permissions in `backend/app/services/ai/interfaces.py`: `WORKFLOW_VIEW`, `WORKFLOW_MANAGE`, `WORKFLOW_EXECUTE`, `WORKFLOW_APPROVE`, `NOTIFICATION_MANAGE`.
+- Authored dedicated unit test suite `tests/unit/test_workflow_contracts.py` (11 tests, 100% pass rate).
+
+Phase 3.4 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models `Workflow`, `WorkflowStep`, `WorkflowExecution`, `WorkflowExecutionStep`, `WorkflowApproval`, and `NotificationPreference` in `backend/app/models/workflow.py`, and `Notification` in `backend/app/models/notification.py` matching schema 3.21; re-exported in `backend/app/models/__init__.py`.
+- Authored and verified clean Alembic schema migration revision `e3f4a5b6c7d8_phase_3_4_workflow_automation_notifications.py` chained from `d2e3f4a5b6c7` to `e3f4a5b6c7d8 (head)`.
+- Implemented Pydantic v2 validation schemas in `backend/app/schemas/workflow.py` validating requests and responses for all Phase 3.4 endpoints; re-exported in `backend/app/schemas/__init__.py`.
+- Implemented `EnterpriseWorkflowService` (`backend/app/services/workflow/service.py`) supporting workflow registration, sequential DAG step execution, predicate condition filtering, automated AI step execution, human-in-the-loop gating, multi-channel notification dispatching, notification preference persistence, pre-configured template retrieval, and operational analytics KPIs.
+- Implemented FastAPI REST endpoints in `backend/app/api/v1/workflows.py` and `backend/app/api/v1/notifications.py` and mounted in `backend/app/api/v1/router.py`.
+- Authored backend unit test suite `tests/unit/test_workflow_services.py` (7 tests) and integration test suite `tests/integration/test_workflow_endpoints.py` (6 tests) and migration suite `tests/integration/test_db_migrations.py` (4 tests) (100% pass rate).
+
+Phase 3.4 Member 3 (Frontend & UI Lead) deliverables are COMPLETED:
+- Authored TypeScript interfaces and enums in `frontend/src/types/workflow.ts` and updated `frontend/src/types/permission.ts` and `frontend/src/types/index.ts`.
+- Implemented `workflowService` (`frontend/src/services/workflowService.ts`) covering all 16 workflow, execution, approval, template, notification, and preferences REST endpoints; re-exported in `frontend/src/services/index.ts`.
+- Developed `useWorkflow` custom React hook (`frontend/src/hooks/useWorkflow.ts`) managing workflow listings, execution triggering, pending approvals, notifications drawer, channel preferences modal, templates gallery, and operational analytics KPI polling.
+- Built modular UI feature components in `frontend/src/features/workflow/`:
+  - `WorkflowMetricsBanner.tsx`: KPI stat cards for Total Executions, Success Rate, Avg Latency, Pending Approvals, and Dispatched Notifications.
+  - `WorkflowListTable.tsx`: Tabular overview of active workflows with trigger badges, step counts, execution history, and manual run trigger buttons.
+  - `CreateWorkflowModal.tsx`: Multi-step DAG builder dialog with name, description, trigger type selector, event topic/cron input, and dynamic step list builder.
+  - `WorkflowApprovalQueue.tsx`: Review queue for human-in-the-loop gating with requester info, expiration warnings, and Approve/Reject decision dialog.
+  - `NotificationCenterDrawer.tsx`: Slide-over notification inbox with priority filters, unread badge, and mark-all-read actions.
+  - `NotificationPreferencesModal.tsx`: Channel delivery matrix toggles (In-App, Email, Slack, Teams) per notification category.
+  - `WorkflowTemplateGallery.tsx`: Pre-configured enterprise workflow cards with complexity chips, step preview, and one-click deployment.
+  - `WorkflowAnalyticsDashboard.tsx`: Operational charts, success rate trends, and weekly execution volume bar chart.
+- Built master `WorkflowAutomationPage` (`frontend/src/pages/WorkflowAutomationPage.tsx`) assembling the unified workflows command center.
+- Configured routes `/workflows` and `/automations` in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+- Updated navigation in `frontend/src/components/common/Sidebar.tsx` with `Workflows & Automation` link, `Zap` icon, and `Phase 3.4` badge.
+- Authored frontend test suites:
+  - `frontend/src/tests/workflowService.test.ts` (12 tests, 100% pass rate).
+  - `frontend/src/tests/workflowComponents.test.tsx` (8 tests, 100% pass rate).
+- Full Vitest suite: 40/40 test files passed, 332/332 tests passed (100%). ESLint clean (0 errors, 0 warnings). Clean production Vite build (`tsc && vite build`).
+
+Phase 3.4 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
+- Configured Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml`: `WorkflowExecutionFailureRateHigh` (rate > 5%), `WorkflowExecutionDurationHigh` (p95 > 5.0s), `WorkflowPendingApprovalsStalled` (count > 10 for > 30m), and `NotificationDeliveryFailureRateHigh` (errors > 2%).
+- Provisioned dedicated Grafana Workflow Automation Dashboard (`infrastructure/grafana/dashboards/workflow-automation-dashboard.json`) visualizing Total Workflow Executions, Execution Success Rate gauge, Pending Approval Backlog gauge, Avg Execution Duration, Executions by Status timeseries, Notification Delivery Throughput by channel, and AI Action Latency timeseries.
+- Authored backend integration pipeline test suite (`tests/integration/test_workflow_pipeline.py`) validating end-to-end DAG workflow creation & execution, predicate rule condition evaluation, human-in-the-loop approval lifecycle, multi-channel notification formatting and preference persistence, cross-tenant quarantine isolation, and analytics KPI aggregation (6 tests, 100% pass rate).
+- Authored Playwright E2E browser test suite (`tests/e2e/workflow_automation.spec.ts`) covering navigation, workflow metrics banner, active workflow listing & execution triggering, Create Workflow modal DAG creation, pending approvals review & decision, notification center inbox, multi-channel preferences modal, pre-configured template gallery deployment, and responsive viewports (Desktop, Tablet, Mobile) (27 tests discovered across Chromium, Firefox, WebKit).
+- Total monorepo tests passing: 757 backend tests (100%) + 332 frontend Vitest tests (100%) + 27 Playwright tests discovered with zero lint, typescript, or build errors. Phase 3.4 is 100% complete across all 4 member roles.
 
 Phase 3.3 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/enterprise-security-compliance-governance.md`) detailing the zero-trust enterprise security model, cryptographic envelope encryption (AES-256-GCM / KMS envelope hierarchy), RFC 6238 TOTP Multi-Factor Authentication lifecycle, SHA-256 tamper-evident immutable audit log hash chains, automated four-tier data classification engine (Public, Internal, Confidential, Restricted) with deterministic regex and Luhn PII detection, AI safety guardrails (prompt injection mitigation, jailbreak heuristic filters, content safety scanning), and regulatory compliance evaluation engine (GDPR Article 17 Right to Erasure, ISO 27001, SOC 2 Type II, HIPAA).

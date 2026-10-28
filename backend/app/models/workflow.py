@@ -46,6 +46,19 @@ class Workflow(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 
+    def __init__(self, **kwargs: Any) -> None:
+        if "created_by_id" in kwargs:
+            kwargs["created_by"] = kwargs.pop("created_by_id")
+        super().__init__(**kwargs)
+
+    @property
+    def created_by_id(self) -> uuid.UUID | None:
+        return self.created_by
+
+    @created_by_id.setter
+    def created_by_id(self, val: uuid.UUID | None) -> None:
+        self.created_by = val
+
     steps = relationship(
         "WorkflowStep",
         back_populates="workflow",
@@ -73,6 +86,22 @@ class WorkflowStep(Base, UUIDPrimaryKeyMixin):
     step_order: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     action_type: Mapped[str] = mapped_column(String(60), nullable=False)
     configuration: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}", nullable=False)
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "action_config" in kwargs:
+            kwargs["configuration"] = kwargs.pop("action_config")
+        name_val = kwargs.pop("name", None)
+        if name_val and "configuration" in kwargs and isinstance(kwargs["configuration"], dict):
+            kwargs["configuration"].setdefault("name", name_val)
+        super().__init__(**kwargs)
+
+    @property
+    def action_config(self) -> dict[str, Any]:
+        return self.configuration
+
+    @action_config.setter
+    def action_config(self, val: dict[str, Any]) -> None:
+        self.configuration = val
     depends_on_step_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("workflow_steps.id", ondelete="SET NULL"), nullable=True
     )
