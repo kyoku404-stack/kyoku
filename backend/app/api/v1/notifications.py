@@ -4,6 +4,7 @@ Serves user-scoped notification inbox, single read acknowledgement, and batch re
 Derived from devdocs/p1/p1.7.txt and docs/API/api-contract.md Section 5.5.
 """
 
+from typing import Any
 from uuid import UUID
 
 from backend.app.api.dependencies.auth import (
@@ -16,7 +17,12 @@ from backend.app.schemas.dashboard import (
     NotificationResponse,
 )
 from backend.app.schemas.envelope import ApiResponse, PaginatedData
+from backend.app.schemas.workflow import (
+    NotificationPreferenceItem,
+    NotificationPreferencesUpdateRequest,
+)
 from backend.app.services.notification_service import NotificationService
+from backend.app.services.workflow.service import EnterpriseWorkflowService
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -102,3 +108,84 @@ async def mark_all_notifications_read(
         message="All notifications marked as read.",
         data=res,
     )
+
+
+@router.post(
+    "/{id}/read",
+    response_model=ApiResponse[NotificationResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Mark notification as read (POST)",
+    description="Marks a single notification as read for the authenticated user via POST.",
+)
+async def mark_notification_read_post(
+    id: UUID,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[NotificationResponse]:
+    """Marks single notification as read via POST."""
+    notification = await notification_service.mark_as_read(
+        db=db,
+        org_id=current_user.organization_id,
+        user_id=current_user.id,
+        notification_id=id,
+    )
+    return ApiResponse(
+        success=True,
+        message="Notification marked as read.",
+        data=notification,
+    )
+
+
+@router.get(
+    "/preferences",
+    response_model=ApiResponse[list[NotificationPreferenceItem]],
+    status_code=status.HTTP_200_OK,
+    summary="Get notification preferences",
+    description="Retrieves the current user's multi-channel notification preferences.",
+)
+async def get_notification_preferences(
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[list[NotificationPreferenceItem]]:
+    """Retrieves user notification channel preferences."""
+    prefs = await EnterpriseWorkflowService.get_notification_preferences(
+        db=db,
+        user_id=current_user.id,
+    )
+    return ApiResponse(
+        success=True,
+        message="Notification preferences retrieved successfully.",
+        data=prefs,
+    )
+
+
+@router.post(
+    "/preferences",
+    response_model=ApiResponse[dict],
+    status_code=status.HTTP_200_OK,
+    summary="Update notification preferences",
+    description="Updates the user's multi-channel notification opt-in/opt-out preferences.",
+)
+async def update_notification_preferences(
+    payload: NotificationPreferencesUpdateRequest,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[dict]:
+    """Updates user notification preferences."""
+    await EnterpriseWorkflowService.update_notification_preferences(
+        db=db,
+        user_id=current_user.id,
+        preferences=payload.preferences,
+    )
+    resp_data: dict[str, Any] = {"updated": True}
+    if payload.category:
+        resp_data["category"] = payload.category
+    for p in payload.preferences:
+        resp_data[p.channel.lower()] = p.is_enabled
+
+    return ApiResponse(
+        success=True,
+        message="Notification preferences updated successfully.",
+        data=resp_data,
+    )
+

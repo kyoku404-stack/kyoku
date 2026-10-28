@@ -503,5 +503,52 @@ groups:
           description: "Deterministic PII regex scan latency is {{ $value | printf \"%.3f\" }}s (threshold: 0.100s)."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#securitypiiscanlatencyhigh"
 
+      # ------------------------------------------------------------------------
+      # Phase 3.4: Workflow Automation, Approvals & Notifications Alerts
+      # ------------------------------------------------------------------------
+      - alert: WorkflowExecutionFailureRateHigh
+        expr: (sum(rate(workflow_executions_total{status="failed"}[5m])) / sum(rate(workflow_executions_total[5m]))) * 100 > 5.0
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: workflow
+        annotations:
+          summary: "Workflow DAG execution failure rate exceeds 5%"
+          description: "Current workflow failure rate is {{ $value | printf \"%.2f\" }}% over a 5-minute rolling window."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#workflowexecutionfailureratehigh"
+
+      - alert: WorkflowExecutionDurationHigh
+        expr: histogram_quantile(0.95, sum(rate(workflow_execution_duration_seconds_bucket[5m])) by (le)) > 2.0
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: workflow
+        annotations:
+          summary: "Workflow execution p95 duration exceeds 2.0s SLA"
+          description: "P95 workflow execution latency is {{ $value | printf \"%.2f\" }}s (SLA threshold: 2.0s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#workflowexecutiondurationhigh"
+
+      - alert: WorkflowPendingApprovalsStalled
+        expr: workflow_pending_approvals_count > 10
+        for: 15m
+        labels:
+          severity: WARNING
+          tier: workflow
+        annotations:
+          summary: "Human-in-the-loop workflow approvals queue stalled"
+          description: "There are currently {{ $value }} pending approvals waiting for reviewer sign-off."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#workflowpendingapprovalsstalled"
+
+      - alert: NotificationDeliveryFailureRateHigh
+        expr: (sum(rate(notification_dispatches_total{status="failed"}[5m])) / sum(rate(notification_dispatches_total[5m]))) * 100 > 2.0
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: notification
+        annotations:
+          summary: "Multi-channel notification delivery failure rate exceeds 2%"
+          description: "Failure rate across Email, Slack, Teams, or In-App dispatch is {{ $value | printf \"%.2f\" }}%."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#notificationdeliveryfailureratehigh"
+
 
 

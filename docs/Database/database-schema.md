@@ -1282,6 +1282,170 @@ CREATE TABLE security_threat_alerts (
 CREATE INDEX idx_threat_alerts_org ON security_threat_alerts(organization_id, resolved, triggered_at DESC);
 ```
 
+---
+
+## 3.21 Phase 3.4 — Workflow Automation, Notifications & Event-Driven Intelligence Tables
+
+### 3.21.1 `workflows` Table
+Core workflow definitions and event trigger bindings:
+```sql
+CREATE TABLE workflows (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    trigger_type VARCHAR(50) NOT NULL DEFAULT 'EVENT', -- 'EVENT', 'SCHEDULE', 'MANUAL'
+    event_pattern VARCHAR(120),                       -- e.g. 'document.uploaded', 'user.registered'
+    cron_expression VARCHAR(60),                      -- e.g. '0 9 * * 1'
+    condition_rules JSONB DEFAULT '{}'::jsonb,        -- predicate filter rules
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_workflow_trigger CHECK (trigger_type IN ('EVENT', 'SCHEDULE', 'MANUAL'))
+);
+
+CREATE INDEX idx_workflows_org_active ON workflows(organization_id, is_active);
+CREATE INDEX idx_workflows_event_pattern ON workflows(organization_id, event_pattern) WHERE is_active = TRUE;
+```
+
+### 3.21.2 `workflow_steps` Table
+Ordered DAG action steps comprising a workflow:
+```sql
+CREATE TABLE workflow_steps (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workflow_id UUID NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+    step_order INT NOT NULL DEFAULT 1,
+    action_type VARCHAR(60) NOT NULL,                 -- 'AI_SUMMARIZE', 'AI_SUGGEST_REVIEWER', 'REQUIRE_APPROVAL', 'NOTIFY', 'DOCUMENT_ACTION'
+    configuration JSONB NOT NULL DEFAULT '{}'::jsonb, -- Action specific parameters
+    depends_on_step_id UUID REFERENCES workflow_steps(id) ON DELETE SET NULL,
+    timeout_seconds INT NOT NULL DEFAULT 300,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_workflow_step_order UNIQUE (workflow_id, step_order)
+);
+
+CREATE INDEX idx_workflow_steps_order ON workflow_steps(workflow_id, step_order);
+```
+
+### 3.21.3 `workflow_executions` Table
+Historical execution runs of workflows triggered by events, schedules, or manual invocations:
+```sql
+CREATE TABLE workflow_executions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workflow_id UUID NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    triggered_by_event_id VARCHAR(100),
+    status VARCHAR(40) NOT NULL DEFAULT 'RUNNING',    -- 'RUNNING', 'WAITING_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED'
+    current_step_order INT NOT NULL DEFAULT 1,
+    input_payload JSONB DEFAULT '{}'::jsonb,
+    output_payload JSONB DEFAULT '{}'::jsonb,
+    error_details TEXT,
+    duration_ms FLOAT DEFAULT 0.0,
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT chk_execution_status CHECK (status IN ('RUNNING', 'WAITING_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED'))
+);
+
+CREATE INDEX idx_executions_org_status ON workflow_executions(organization_id, status, started_at DESC);
+CREATE INDEX idx_executions_workflow ON workflow_executions(workflow_id, started_at DESC);
+```
+
+### 3.21.4 `workflow_execution_steps` Table
+Detailed execution telemetry per individual action step in a run:
+```sql
+CREATE TABLE workflow_execution_steps (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    execution_id UUID NOT NULL REFERENCES workflow_executions(id) ON DELETE CASCADE,
+    step_id UUID NOT NULL REFERENCES workflow_steps(id) ON DELETE CASCADE,
+    status VARCHAR(40) NOT NULL DEFAULT 'PENDING',    -- 'PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'SKIPPED'
+    input_payload JSONB DEFAULT '{}'::jsonb,
+    output_payload JSONB DEFAULT '{}'::jsonb,
+    error_message TEXT,
+    duration_ms FLOAT DEFAULT 0.0,
+    executed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_exec_steps_execution ON workflow_execution_steps(execution_id);
+```
+
+### 3.21.5 `workflow_approvals` Table
+Human-in-the-loop approval tickets gating sensitive workflow transitions:
+```sql
+CREATE TABLE workflow_approvals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    execution_id UUID NOT NULL REFERENCES workflow_executions(id) ON DELETE CASCADE,
+    step_id UUID REFERENCES workflow_steps(id) ON DELETE SET NULL,
+    requester_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    approver_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    approver_role VARCHAR(50) DEFAULT 'OrgAdmin',
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',    -- 'PENDING', 'APPROVED', 'REJECTED', 'EXPIRED'
+    decision_comments TEXT,
+    requested_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    responded_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT chk_approval_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED'))
+);
+
+CREATE INDEX idx_approvals_user_status ON workflow_approvals(approver_id, status);
+CREATE INDEX idx_approvals_execution ON workflow_approvals(execution_id);
+```
+
+### 3.21.6 `notifications` Table
+Multi-channel notification delivery records and user inbox items:
+```sql
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    channel VARCHAR(30) NOT NULL DEFAULT 'IN_APP',    -- 'IN_APP', 'EMAIL', 'SLACK', 'TEAMS'
+    priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL',   -- 'LOW', 'NORMAL', 'HIGH', 'CRITICAL'
+    category VARCHAR(40) NOT NULL DEFAULT 'WORKFLOW', -- 'WORKFLOW', 'APPROVAL', 'DOCUMENT', 'AI', 'SECURITY', 'SYSTEM'
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP WITH TIME ZONE,
+    link_url VARCHAR(500),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read, created_at DESC);
+CREATE INDEX idx_notifications_org ON notifications(organization_id, created_at DESC);
+```
+
+### 3.21.7 `notification_preferences` Table
+Granular user opt-in/opt-out matrix per channel and category:
+```sql
+CREATE TABLE notification_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    channel VARCHAR(30) NOT NULL,                     -- 'IN_APP', 'EMAIL', 'SLACK', 'TEAMS'
+    category VARCHAR(40) NOT NULL,                    -- 'WORKFLOW', 'APPROVAL', 'DOCUMENT', 'AI', 'SECURITY', 'SYSTEM'
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_user_channel_category UNIQUE (user_id, channel, category)
+);
+
+CREATE INDEX idx_notification_prefs_user ON notification_preferences(user_id);
+```
+
+### 3.21.8 `workflow_templates` Table
+Pre-configured reusable enterprise automation patterns:
+```sql
+CREATE TABLE workflow_templates (
+    id VARCHAR(80) PRIMARY KEY,                       -- e.g. 'tpl-doc-approval'
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL,                    -- 'GOVERNANCE', 'AI', 'REPORTING', 'SECURITY'
+    trigger_type VARCHAR(50) NOT NULL DEFAULT 'EVENT',
+    event_pattern VARCHAR(120),
+    steps_definition JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_system_template BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+```
+
+
 
 
 

@@ -38,6 +38,9 @@ const CollaborationPage = lazy(() =>
 const SecurityGovernancePage = lazy(() =>
   import('@/pages/SecurityGovernancePage').then((m) => ({ default: m.SecurityGovernancePage }))
 );
+const WorkflowAutomationPage = lazy(() =>
+  import('@/pages/WorkflowAutomationPage').then((m) => ({ default: m.WorkflowAutomationPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -374,6 +377,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <SecurityGovernancePage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workflows',
+        element: (
+          <SuspenseWrapper>
+            <WorkflowAutomationPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'notifications',
+        element: (
+          <SuspenseWrapper>
+            <WorkflowAutomationPage />
           </SuspenseWrapper>
         ),
       },

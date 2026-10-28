@@ -5420,6 +5420,247 @@ Member 4 has completed all Phase 3.3 integration, infrastructure, observability,
 #### Required Action for Receiving Agent
 - Await human approval before initiating Phase 3.4.
 
+---
+
+### Handoff Entry #070: Phase 3.4 — Stage 1 Complete: Workflow Automation & Event-Driven Intelligence Architecture
+
+- **Date**: 2026-10-29
+- **Author**: Member 1 (Project Lead & AI Architect)
+- **Role Domain**: `/backend/app/services/workflow/`, `docs/Architecture/`, `docs/decisions/`
+- **Feature Branch**: `agent/ai-lead/feature/phase-3.4-workflow-automation-event-driven-intelligence`
+
+#### Executive Summary
+Member 1 has completed all Phase 3.4 AI Architecture and domain contract deliverables for Workflow Automation, Notifications, and Event-Driven Intelligence. This includes the Master Architecture Specification, ADR-056, ADR-057, and ADR-058, Section 16 of the REST API Contract (15 endpoints), Section 3.21 of the Database Schema Specification (8 tables), typed AI/workflow domain contracts (`backend/app/services/workflow/contracts.py`), RBAC permissions in `interfaces.py`, and a dedicated 11-test unit suite with 100% pass rate.
+
+#### Completed Deliverables
+1. **Master Architecture Specification**:
+   - `docs/Architecture/workflow-automation-event-driven-intelligence.md` detailing the decoupled event bus, DAG workflow orchestration, AI step integration, multi-channel notification dispatcher, human-in-the-loop approvals, cron scheduling, and SLA targets.
+2. **Architecture Decision Records (ADRs)** in `docs/decisions/decisions.md`:
+   - `ADR-056`: Event-Driven Automation Architecture, Pub/Sub In-Memory / Async Event Bus & Decoupled Dispatch.
+   - `ADR-057`: Multi-Step Workflow Orchestration State Machine, Condition Evaluation & Human-in-the-Loop Approvals.
+   - `ADR-058`: Multi-Channel Notification Dispatcher, Template Formatting & User Channel Preferences.
+3. **REST API Contract**:
+   - Section 16 in `docs/api/api-contract.md` defining 15 endpoints covering workflows, executions, approvals, notification center, preferences, templates, and analytics.
+4. **Database Schema Specification**:
+   - Section 3.21 in `docs/database/database-schema.md` defining 8 relational tables: `workflows`, `workflow_steps`, `workflow_executions`, `workflow_execution_steps`, `workflow_approvals`, `notifications`, `notification_preferences`, `workflow_templates`.
+5. **Typed Domain Contracts & Concrete Reference Engines**:
+   - `backend/app/services/workflow/contracts.py` & `__init__.py`:
+     - Enums: `WorkflowTriggerType`, `WorkflowStatus`, `WorkflowExecutionStatus`, `WorkflowStepAction`, `ApprovalStatus`, `ApprovalDecision`, `NotificationChannel`, `NotificationPriority`, `NotificationCategory`.
+     - Reference Engines: `PredicateConditionEvaluator`, `EnterpriseEventBus` (with wildcard matching & error containment), `AIWorkflowActionsEngine` (summarizer & reviewer suggester), `NotificationChannelDispatcher` (Email HTML, Slack Block Kit, Teams Adaptive Card), `WorkflowTemplateRegistry`.
+   - Updated `backend/app/services/ai/interfaces.py` with Phase 3.4 permissions: `WORKFLOW_VIEW`, `WORKFLOW_MANAGE`, `WORKFLOW_EXECUTE`, `WORKFLOW_APPROVE`, `NOTIFICATION_VIEW`, `NOTIFICATION_MANAGE` mapped across `VIEWER`, `EMPLOYEE`, `PROJECT_MANAGER`, and `ORG_ADMIN`.
+6. **Dedicated Unit Test Suite**:
+   - `tests/unit/test_workflow_contracts.py` (11 tests, 100% pass rate).
+
+#### Verification & Test Execution Results
+- [x] Ruff Linter: `ruff check backend/app/services/workflow/ tests/unit/test_workflow_contracts.py` (0 errors, 0 warnings).
+- [x] Pytest Suite: `pytest tests/unit/test_workflow_contracts.py` (11/11 passed in 0.20s).
+- [x] Full Unit Suite: `pytest tests/unit/` (375 passed, 100% pass rate).
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**
+
+#### Required Action for Receiving Agent
+1. Implement SQLAlchemy ORM models in `backend/app/models/workflow.py` matching Schema 3.21 and export in `backend/app/models/__init__.py`.
+2. Author and verify Alembic schema migration revision in `backend/migrations/versions/`.
+3. Implement Pydantic v2 validation schemas in `backend/app/schemas/workflow.py` and export in `backend/app/schemas/__init__.py`.
+4. Implement business logic orchestrator in `backend/app/services/workflow/service.py` (`EnterpriseWorkflowService`).
+5. Implement FastAPI REST endpoints in `backend/app/api/v1/workflow.py` and mount in `backend/app/api/v1/router.py`.
+6. Author unit and integration tests in `tests/unit/test_workflow_services.py` and `tests/integration/test_workflow_endpoints.py`.
+
+---
+
+### Handoff #071: Phase 3.4 — Notifications, Workflow Automation & Event-Driven Intelligence (Stage 2: Backend & Database Lead -> Stage 3: Frontend & UI Lead)
+- **Date**: 2026-10-29
+- **Author**: Member 2 (Backend & Database Lead)
+- **Recipient**: Member 3 (Frontend & UI Lead)
+- **Status**: Completed & Verified
+
+#### Executive Summary
+Stage 2 of Phase 3.4 is 100% complete. Implemented the complete relational persistence layer, Alembic migration, business logic service, Pydantic schemas, and FastAPI REST endpoints across all 15 routes specified in Section 16 of `docs/api/api-contract.md`.
+
+#### Key Deliverables Implemented
+1. **SQLAlchemy Models (`backend/app/models/workflow.py`, `backend/app/models/notification.py`)**:
+   - `Workflow`: Workflow definition with name, description, trigger_type, trigger_config, condition_rules, is_active, execution_count, success_count.
+   - `WorkflowStep`: Ordered sequence steps with step_order, action_type, action_config, retry_policy, timeout_seconds.
+   - `WorkflowExecution`: Execution instances with trigger_event, status, context_data, trigger_metadata, error_message, started_at, completed_at, duration_ms.
+   - `WorkflowExecutionStep`: Step run records with status, input_payload, output_payload, error_details, attempts, execution_time_ms.
+   - `WorkflowApproval`: Human-in-the-loop approvals with status, decision, comments, requested_approver_id, approved_by_id, decided_at, expires_at.
+   - `NotificationPreference`: User channel preferences matrix (`in_app`, `email`, `slack`, `teams`) keyed by category (`workflow`, `security`, `system`, `task`).
+   - `WorkflowTemplate`: Reusable workflow templates with category, complexity, is_built_in, trigger_type, condition_rules, steps_template.
+   - `Notification`: Enhanced with `channel`, `priority`, `category`, `read_at`, `metadata_json`, backwards-compatible property aliases.
+2. **Alembic Migration (`backend/migrations/versions/e3f4a5b6c7d8_phase_3_4_workflow_automation_notifications.py`)**:
+   - Revision `e3f4a5b6c7d8` -> depends on `d2e3f4a5b6c7`.
+   - Verified across migration test suite with both upgrade and downgrade paths.
+3. **Pydantic v2 Schemas (`backend/app/schemas/workflow.py`)**:
+   - `WorkflowCreate`, `WorkflowUpdate`, `WorkflowStepSchema`, `WorkflowResponse`, `WorkflowListResponse`
+   - `WorkflowExecuteRequest`, `WorkflowExecutionResponse`, `WorkflowExecutionListResponse`, `WorkflowExecutionStepResponse`
+   - `ApprovalDecisionRequest`, `ApprovalResponse`, `ApprovalListResponse`
+   - `NotificationPreferenceUpdate`, `NotificationPreferenceResponse`, `NotificationPreferencesListResponse`
+   - `WorkflowTemplateResponse`, `WorkflowTemplateListResponse`
+   - `WorkflowAnalyticsResponse`
+4. **Business Logic Orchestrator (`backend/app/services/workflow/service.py`)**:
+   - `EnterpriseWorkflowService`: Complete orchestration supporting DAG/sequential step execution, predicate condition rule evaluation, retry loops with exponential backoff, human-in-the-loop approval pause/resume, multi-channel notification dispatching, template instantiation, and analytics aggregation.
+5. **FastAPI Endpoints (`backend/app/api/v1/workflows.py`, `backend/app/api/v1/notifications.py`)**:
+   - `POST /api/v1/workflows`: Create workflow with steps
+   - `GET /api/v1/workflows`: List workflows with filtering (is_active, trigger_type)
+   - `GET /api/v1/workflows/{id}`: Get workflow details and step list
+   - `POST /api/v1/workflows/{id}/execute`: Trigger manual workflow execution
+   - `DELETE /api/v1/workflows/{id}`: Delete workflow
+   - `GET /api/v1/workflows/{id}/executions`: List workflow executions
+   - `GET /api/v1/workflows/executions/{execution_id}`: Get execution details with step runs
+   - `GET /api/v1/workflows/approvals/pending`: List pending approvals
+   - `POST /api/v1/workflows/approvals/{id}/decide`: Approve or reject pending workflow execution
+   - `GET /api/v1/workflows/templates`: List workflow templates
+   - `GET /api/v1/workflows/analytics`: Get aggregated workflow execution metrics
+   - `GET /api/v1/notifications`: List notifications with filter (is_read, category)
+   - `POST /api/v1/notifications/{id}/read`: Mark notification as read
+   - `POST /api/v1/notifications/read-all`: Mark all notifications as read
+   - `GET /api/v1/notifications/preferences`: Get user notification preferences
+   - `POST /api/v1/notifications/preferences`: Update user notification preferences
+6. **Backend Test Suites**:
+   - `tests/unit/test_workflow_services.py` (7 tests, 100% pass)
+   - `tests/integration/test_workflow_endpoints.py` (6 tests, 100% pass)
+   - `tests/integration/test_db_migrations.py` (4 tests, 100% pass)
+
+#### Verification Results
+- Ruff: Clean (0 errors, 0 warnings).
+- Pytest: 28/28 workflow & migration tests passing.
+
+#### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**
+
+#### Required Action for Receiving Agent
+1. Create TypeScript types in `frontend/src/types/workflow.ts` and re-export in `frontend/src/types/index.ts`.
+2. Implement API client service methods in `frontend/src/services/workflowService.ts` and re-export in `frontend/src/services/index.ts`.
+3. Create custom hook `frontend/src/hooks/useWorkflow.ts`.
+4. Build modular UI feature components in `frontend/src/features/workflow/`:
+   - `WorkflowMetricsBanner.tsx`
+   - `WorkflowListTable.tsx`
+   - `CreateWorkflowModal.tsx`
+   - `WorkflowApprovalQueue.tsx`
+   - `NotificationCenterDrawer.tsx`
+   - `NotificationPreferencesModal.tsx`
+   - `WorkflowTemplateGallery.tsx`
+   - `WorkflowAnalyticsDashboard.tsx`
+   - `index.ts`
+5. Create master page `frontend/src/pages/WorkflowAutomationPage.tsx`.
+6. Configure routes in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+7. Update `Sidebar.tsx` navigation with Workflow / Notifications entry.
+8. Author frontend tests in `frontend/src/tests/workflowService.test.ts` and `frontend/src/tests/workflowComponents.test.tsx`.
+9. Verify with `npm test`, `npm run lint`, `npm run build`.
+
+---
+
+### Handoff #072: Phase 3.4 — Notifications, Workflow Automation & Event-Driven Intelligence (Stage 3: Frontend & UI Lead -> Stage 4: Integration & DevOps Lead)
+- **Date**: 2026-10-29
+- **Author**: Member 3 (Frontend & UI Lead)
+- **Recipient**: Member 4 (Integration & DevOps Lead)
+- **Status**: Completed & Verified
+
+#### Executive Summary
+Stage 3 of Phase 3.4 is 100% complete. Implemented typed domain contracts, API client service methods for all 15 endpoints, the `useWorkflow` custom React hook, 8 modular feature components in `frontend/src/features/workflow/`, the master page `WorkflowAutomationPage.tsx`, routes `/workflows` and `/notifications`, and sidebar navigation. Validated with 20 newly authored frontend tests (100% pass across all 332 tests in the project), 0 ESLint warnings, and a clean production build.
+
+#### Key Deliverables Implemented
+1. **TypeScript Domain Models (`frontend/src/types/workflow.ts`, `frontend/src/types/index.ts`, `frontend/src/types/permission.ts`)**:
+   - Types: `WorkflowTriggerType`, `WorkflowStatus`, `WorkflowExecutionStatus`, `WorkflowStepAction`, `ApprovalStatus`, `ApprovalDecision`, `NotificationChannel`, `NotificationPriority`, `NotificationCategory`.
+   - Interfaces: `WorkflowConditionRule`, `WorkflowRetryPolicy`, `WorkflowStepItem`, `WorkflowItem`, `WorkflowCreatePayload`, `WorkflowUpdatePayload`, `WorkflowExecutionStepItem`, `WorkflowExecutionItem`, `WorkflowApprovalItem`, `WorkflowApprovalDecisionPayload`, `NotificationItem`, `NotificationPreferenceItem`, `NotificationPreferenceUpdatePayload`, `WorkflowTemplateItem`, `WorkflowAnalyticsData`.
+   - Permissions added to `Permission`, `VIEWER_PERMISSIONS`, `MEMBER_PERMISSIONS`, `MANAGER_PERMISSIONS`, `ORG_ADMIN_PERMISSIONS`: `WORKFLOW_VIEW`, `WORKFLOW_MANAGE`, `WORKFLOW_EXECUTE`, `WORKFLOW_APPROVE`, `NOTIFICATION_VIEW`, `NOTIFICATION_MANAGE`.
+2. **API Client Service (`frontend/src/services/workflowService.ts`, `frontend/src/services/index.ts`)**:
+   - `workflowService`: All 15 endpoints (`createWorkflow`, `getWorkflows`, `getWorkflow`, `updateWorkflow`, `deleteWorkflow`, `executeWorkflow`, `getWorkflowExecutions`, `getExecutionDetails`, `getPendingApprovals`, `decideApproval`, `getWorkflowTemplates`, `getWorkflowAnalytics`, `getNotifications`, `markNotificationRead`, `markAllNotificationsRead`, `getNotificationPreferences`, `updateNotificationPreferences`).
+3. **Custom React Hook (`frontend/src/hooks/useWorkflow.ts`)**:
+   - Unified state management for workflow definitions, execution tracking, human approval gates, notification drawer, channel preferences, and analytics telemetry.
+4. **Modular UI Feature Components (`frontend/src/features/workflow/`)**:
+   - `WorkflowMetricsBanner.tsx`: Top KPI cards (Active Workflows, Total Executions, Success Rate SLA, Pending Approvals) and quick actions.
+   - `WorkflowListTable.tsx`: Tabular overview of workflows with trigger pills, expandable DAG pipeline step view, active toggle, run action, and delete.
+   - `CreateWorkflowModal.tsx`: Visual dialog for configuring triggers, predicate condition rules, and ordered action steps.
+   - `WorkflowApprovalQueue.tsx`: Cards for paused workflows requiring human approval with Approve/Reject actions and audit justification comment modal.
+   - `NotificationCenterDrawer.tsx`: Flyout inbox drawer with unread counters, category filtering, and mark read actions.
+   - `NotificationPreferencesModal.tsx`: Multi-channel matrix editor (In-App, Email, Slack, Teams) per category.
+   - `WorkflowTemplateGallery.tsx`: Pre-built blueprint cards with 1-click Deploy Template action.
+   - `WorkflowAnalyticsDashboard.tsx`: Telemetry charts for success SLA meter, latency p95 distribution, and throughput volume.
+   - `index.ts`: Barrel export.
+5. **Master Page & Routing (`frontend/src/pages/WorkflowAutomationPage.tsx`, `frontend/src/routes/paths.ts`, `frontend/src/routes/index.tsx`, `frontend/src/components/common/Sidebar.tsx`)**:
+   - Master page with Workflows, Approvals, Templates, and Analytics tabs.
+   - Paths registered: `ROUTES.WORKFLOWS = '/workflows'`, `ROUTES.NOTIFICATIONS = '/notifications'`.
+   - Sidebar navigation item added with `Zap` icon and "Phase 3.4" badge.
+6. **Frontend Test Suites**:
+   - `frontend/src/tests/workflowService.test.ts` (12 unit tests, 100% pass).
+   - `frontend/src/tests/workflowComponents.test.tsx` (8 component tests, 100% pass).
+
+#### Verification Results
+- [x] ESLint: `npm run lint` (0 errors, 0 warnings).
+- [x] Vitest: `npm test` (332/332 tests passing across 40 test files, 100% pass rate).
+- [x] Production Build: `npm run build` (Clean Vite production bundle in 4.54s).
+
+#### Target Receiving Agent
+- **Member 4 (Integration & DevOps Lead)**
+
+#### Required Action for Receiving Agent
+1. Inspect Member 1, 2, and 3 codebases, services, and handoff entries.
+2. Update Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml` for workflow execution failure rates, duration p95 SLA, pending approvals stalled, and notification dispatch failures.
+3. Provision Grafana dashboard in `infrastructure/grafana/dashboards/workflow-automation-dashboard.json`.
+4. Authored comprehensive backend integration & performance test suite in `tests/integration/test_workflow_pipeline.py`.
+5. Authored Playwright E2E automated test suite in `tests/e2e/workflow_automation.spec.ts` covering complete user workflows across desktop, tablet, and mobile breakpoints.
+6. Run full verification: Ruff linter, pytest, vitest, npm build, and playwright discovery.
+7. Update `PROJECT_STATE.md` marking Phase 3.4 100% complete across all 4 roles.
+8. Append Handoff Entry #073 in `docs/handoffs/agent-handoffs.md` summarizing DevOps completion.
+9. Commit Stage 4 deliverables, push branch to central repo, and stop execution awaiting human review.
+
+---
+
+### Handoff Entry #073: Phase 3.4 — Monitoring, Containerization, Integration Pipeline & Playwright E2E Verification
+
+#### Date
+2026-10-29
+
+#### Author Agent
+Member 4 — Integration & DevOps Lead
+
+#### Status
+COMPLETED / PHASE 3.4 100% VERIFIED
+
+#### Implemented Features
+1. **Prometheus Alerting Rules (`infrastructure/prometheus/alert_rules.yml`)**:
+   - `WorkflowExecutionFailureRateHigh`: Triggered if workflow failure rate exceeds 5% over 5m window.
+   - `WorkflowExecutionDurationHigh`: Triggered if workflow execution duration p95 exceeds 5.0s over 5m window.
+   - `WorkflowPendingApprovalsStalled`: Triggered if pending human approvals backlog exceeds 10 tickets for more than 30m.
+   - `NotificationDeliveryFailureRateHigh`: Triggered if notification delivery error rate exceeds 2% over 5m window.
+2. **Grafana Operations Dashboard (`infrastructure/grafana/dashboards/workflow-automation-dashboard.json`)**:
+   - Primary KPI stat cards: Total Workflow Executions, Execution Success Rate gauge, Pending Approval Backlog gauge, Avg Execution Duration.
+   - Timeseries panels: Executions by Status over time, Notification Delivery Throughput by channel (in_app, email, slack, teams), and AI Action Latency timeseries.
+3. **Backend Integration Pipeline Test Suite (`tests/integration/test_workflow_pipeline.py`)**:
+   - `test_01_create_and_execute_dag_workflow`: End-to-end DAG workflow registration and sequential execution SLA verification (< 2.0s).
+   - `test_02_predicate_condition_evaluation_filtering`: Rule-based predicate filtering (equals, not_equals, contains, greater_than, less_than).
+   - `test_03_human_in_the_loop_approval_lifecycle`: Approval gate pausing, pending ticket querying, review decision submission (Approve/Reject), and workflow resumption.
+   - `test_04_multi_channel_notification_dispatch_and_preferences`: Dispatch formatting for email, slack, teams, and user notification preference persistence.
+   - `test_05_multi_tenant_quarantine_isolation`: Cross-tenant execution blocking and query isolation (404 Not Found on cross-tenant workflows).
+   - `test_06_workflow_analytics_aggregation`: Operational analytics aggregation, success rate calculation, and volume metrics.
+   - 6/6 tests passed (100% pass rate).
+4. **Playwright E2E Automated Test Suite (`tests/e2e/workflow_automation.spec.ts`)**:
+   - `01. Navigation: Route reachability and sidebar integration` (/workflows).
+   - `02. KPI Metrics Banner: Displays enterprise performance indicators`.
+   - `03. Workflow List: Views workflows and triggers manual execution`.
+   - `04. Create Workflow: Opens modal and submits new workflow DAG`.
+   - `05. Human-in-the-Loop Approvals: Reviews and resolves pending ticket`.
+   - `06. Notification Center: Opens drawer and views notifications`.
+   - `07. Notification Preferences: Updates multi-channel delivery configuration`.
+   - `08. Workflow Template Gallery: Explores and deploys pre-configured blueprint`.
+   - `09. Responsive Viewports: Desktop, Tablet and Mobile sanity checks`.
+   - 27 Playwright tests discovered across Chromium, Firefox, and WebKit.
+5. **Full Repository Verification**:
+   - Ruff Linter: `ruff check backend/ tests/ docker/` (0 errors, 0 warnings).
+   - Backend Unit & Integration Tests: `pytest` (757/757 tests passed, 100% pass rate).
+   - Frontend ESLint: `npm run lint` (0 errors, 0 warnings).
+   - Frontend Vitest: `npm test` (332/332 tests passed across 40 test files, 100% pass rate).
+   - Frontend Production Build: `npm run build` (Clean Vite production bundle).
+   - Playwright E2E Discovery: 27 tests discovered.
+
+#### Target Receiving Agent
+- **Human Team Member & Team Reviewers**: Phase 3.4 is 100% complete across all 4 roles. Awaiting approval to begin Phase 3.5.
+
+
+
+
 
 
 

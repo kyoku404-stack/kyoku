@@ -1781,5 +1781,121 @@ Member 1 implements compliance evaluation algorithms and AI guardrails. Member 2
 #### Status
 ACCEPTED
 
+---
+
+### ADR-056 — Event-Driven Automation Architecture, Pub/Sub In-Memory / Async Event Bus & Decoupled Dispatch
+
+#### Date
+2026-10-29
+
+#### Context
+`devdocs/p3/p3.4.txt` (Chapters 3, 4, 16) requires KEEP to detect hundreds of daily enterprise operational events (user logins, document uploads/classifications, project updates, AI inferences, connector syncs, security alerts) and trigger automated workflows with sub-100ms detection latency without blocking synchronous request pipelines.
+
+#### Decision
+1. **Decoupled Event Bus & Standardized Event Envelope**:
+   - Introduce an asynchronous, in-memory publish-subscribe event bus (`EnterpriseEventBus`) capable of receiving structured event envelopes.
+   - Enforce typed `EnterpriseEvent` contract containing `event_id`, `event_type` (dot-notated taxonomy, e.g. `document.uploaded`, `user.login`, `ai.summary_generated`), `source`, `organization_id`, `actor_id`, `payload`, and `timestamp`.
+2. **Wildcard & Prefix Topic Subscription**:
+   - Event handlers subscribe using exact topic keys (`document.uploaded`) or wildcards (`document.*`, `ai.*`, `system.*`).
+3. **Non-Blocking Fire-and-Forget Dispatch**:
+   - Events are published asynchronously through non-blocking worker queues (`asyncio.create_task` / background task pool) ensuring zero overhead on primary REST API request threads.
+4. **Resilient Error Containment**:
+   - Handler exceptions are caught, logged, and isolated to prevent catastrophic bus crashes from degrading core API responsiveness.
+
+#### Alternatives Considered
+- Direct synchronous calls between modules: Rejected — introduces tight coupling and makes adding new automation workflows fragile and error-prone.
+- Heavy external message broker (e.g. Apache Kafka / RabbitMQ) for core local execution: Rejected — excessive infrastructure footprint for single-instance or containerized team deployments; the in-memory pub/sub engine satisfies throughput requirements with zero additional container overhead.
+
+#### Reason
+A lightweight, typed asynchronous event bus decouples event producers from workflow consumers, ensuring clean architectural boundaries and sub-millisecond dispatch performance.
+
+#### Impact
+Member 1 provides event dataclasses and bus contracts. Member 2 integrates the event bus with FastAPI request lifecycles. Member 4 configures background workers and monitoring.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-057 — Multi-Step Workflow Orchestration State Machine, Condition Evaluation & Human-in-the-Loop Approvals
+
+#### Date
+2026-10-29
+
+#### Context
+`devdocs/p3/p3.4.txt` (Chapters 5, 6, 7, 9, 13) specifies that workflows must support multi-step sequential and DAG execution, rule-based predicate conditions, native AI task steps (auto-summarization, reviewer suggestions), and mandatory human-in-the-loop approvals for sensitive organizational operations.
+
+#### Decision
+1. **Deterministic Workflow Lifecycle State Machine**:
+   - Workflows transition through explicit states: `DRAFT` $\rightarrow$ `ACTIVE` $\rightarrow$ `RUNNING` $\rightarrow$ `WAITING_APPROVAL` $\rightarrow$ `COMPLETED` / `FAILED` / `CANCELLED`.
+2. **Predicate Rule Engine**:
+   - Support JSON condition rules (`equals`, `contains`, `in`, `greater_than`, `less_than`) evaluating event payload fields before initiating action steps.
+3. **Native Action Registry**:
+   - Support pluggable action step executors:
+     - `AI_SUMMARIZE`: Autonomous document summarization.
+     - `AI_SUGGEST_REVIEWER`: Topic-based reviewer recommendation.
+     - `NOTIFY`: Dispatch notifications to users or channels.
+     - `DOCUMENT_ACTION`: Archive, tag, or assign document owners.
+     - `REQUIRE_APPROVAL`: Pause execution and request manager approval.
+4. **Human-in-the-Loop (HITL) Approval Gating**:
+   - When a step specifies `requires_approval`, execution pauses in `WAITING_APPROVAL`.
+   - Generates a `WorkflowApproval` ticket with assigned approver role or user.
+   - Resumes downstream steps upon `APPROVE` or halts with `REJECTED` status upon rejection.
+5. **Pre-Built Reusable Templates**:
+   - Seed out-of-the-box workflow templates for Document Approval, AI Processing, Meeting Summarization, and Knowledge Review.
+
+#### Alternatives Considered
+- External workflow engines (e.g. Temporal / Airflow): Rejected — disproportionate operational complexity for internal enterprise knowledge workflows; an embedded state machine provides sub-second execution with unified database persistence.
+- Hardcoded automation scripts: Rejected — unmaintainable and prevents future no-code UI workflow builders.
+
+#### Reason
+An embedded deterministic state machine with condition evaluation and HITL approvals gives organizations total visibility, safety, and governance over autonomous processes.
+
+#### Impact
+Member 1 provides workflow contracts and state machine specifications. Member 2 implements ORM models, migration, and execution service. Member 3 builds the workflow builder and approval dashboard.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-058 — Multi-Channel Notification Dispatcher, Template Formatting & User Channel Preferences
+
+#### Date
+2026-10-29
+
+#### Context
+`devdocs/p3/p3.4.txt` (Chapters 8, 12, 15) requires delivering contextual notifications across multiple enterprise channels (In-App, Email, Slack, Microsoft Teams) with priority labels, real-time unread badges, and customizable user notification preferences.
+
+#### Decision
+1. **Multi-Channel Notification Adapter Architecture**:
+   - Define a unified `NotificationDispatcher` supporting multiple channel adapters:
+     - `IN_APP`: Persistent relational records stored in `notifications` table for the Notification Center.
+     - `EMAIL`: Formatted transactional email templates with call-to-action buttons.
+     - `SLACK`: Block Kit JSON webhooks dispatched to Slack incoming webhooks.
+     - `TEAMS`: Adaptive Card JSON webhooks dispatched to Microsoft Teams connectors.
+2. **Notification Priority & Categorization**:
+   - Priority levels: `LOW`, `NORMAL`, `HIGH`, `CRITICAL`.
+   - Categories: `WORKFLOW`, `APPROVAL`, `DOCUMENT`, `AI`, `SECURITY`, `SYSTEM`.
+3. **User Channel Preference Matrix**:
+   - Per-user configurable preference records (`notification_preferences`) allowing granular enablement/suppression per channel and category.
+   - Critical security and approval notifications bypass opt-out flags to ensure organizational integrity.
+4. **Read State Tracking & Real-Time Counter**:
+   - Track `is_read` and `read_at` timestamps with fast pagination and bulk "mark all as read" endpoints.
+
+#### Alternatives Considered
+- In-app only notifications: Rejected — users miss time-sensitive approval requests when away from the browser.
+- External SaaS notification platforms (e.g. Courier / Novu): Rejected — introduces external vendor lock-in and potential data egress compliance violations for self-hosted instances.
+
+#### Reason
+A modular multi-channel dispatcher with granular user preference enforcement balances proactive communication with notification fatigue mitigation.
+
+#### Impact
+Member 1 defines notification models and dispatcher interfaces. Member 2 implements notification storage, preference endpoints, and webhook adapters. Member 3 builds the Notification Center UI and preference settings page. Member 4 provisions monitoring for delivery latency.
+
+#### Status
+ACCEPTED
+
+
 
 

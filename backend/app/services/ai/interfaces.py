@@ -134,6 +134,14 @@ class AIPermission(str, Enum):
     SECURITY_COMPLIANCE = "security.compliance"
     DATA_CLASSIFY = "data.classify"
 
+    # Phase 3.4 Workflow Automation, Notifications & Event-Driven Intelligence
+    WORKFLOW_VIEW = "workflow.view"
+    WORKFLOW_MANAGE = "workflow.manage"
+    WORKFLOW_EXECUTE = "workflow.execute"
+    WORKFLOW_APPROVE = "workflow.approve"
+    NOTIFICATION_VIEW = "notification.view"
+    NOTIFICATION_MANAGE = "notification.manage"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -165,6 +173,9 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.PRESENCE_UPDATE.value,
     # Phase 3.3 security permissions
     AIPermission.SECURITY_VIEW.value,
+    # Phase 3.4 workflow permissions
+    AIPermission.WORKFLOW_VIEW.value,
+    AIPermission.NOTIFICATION_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -190,6 +201,9 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     AIPermission.COMMENT_CREATE.value,
     # Phase 3.3 security permissions
     AIPermission.DATA_CLASSIFY.value,
+    # Phase 3.4 workflow permissions
+    AIPermission.NOTIFICATION_MANAGE.value,
+    AIPermission.WORKFLOW_EXECUTE.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -212,6 +226,8 @@ PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.CONNECTOR_SYNC.value,
     # Phase 3.2 collaboration permissions
     AIPermission.COMMENT_RESOLVE.value,
+    # Phase 3.4 workflow permissions
+    AIPermission.WORKFLOW_APPROVE.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
@@ -245,6 +261,8 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.SECURITY_MANAGE.value,
     AIPermission.SECURITY_AUDIT.value,
     AIPermission.SECURITY_COMPLIANCE.value,
+    # Phase 3.4 workflow permissions
+    AIPermission.WORKFLOW_MANAGE.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
