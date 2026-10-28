@@ -1896,6 +1896,109 @@ Member 1 defines notification models and dispatcher interfaces. Member 2 impleme
 #### Status
 ACCEPTED
 
+---
+
+### ADR-059 — Isolated Plugin Sandboxing, Capability-Based Security & Resource Quotas
+
+#### Date
+2026-10-29
+
+#### Context
+`devdocs/p3/p3.5.txt` (Chapters 2, 7, 14, 16) requires executing custom third-party and enterprise plugins without endangering core database integrity, user privacy, or platform stability. A rogue or flawed plugin must not crash the API server, monopolize CPU/RAM, or perform unauthorized database reads or network egress.
+
+#### Decision
+1. **Capability-Based Permission Model**:
+   - Plugins declare exact required capabilities in their manifest (`Documents.Read`, `Documents.Write`, `AI.Query`, `Analytics.Read`, `Notifications.Send`, `Workflow.Execute`, `Graph.Read`, `Network.Outbound`).
+   - Tenant administrators must inspect and explicitly grant requested capabilities upon installation or update.
+   - At runtime, every platform API call originating from a plugin passes through a capability validation interceptor; ungranted calls are rejected with 403 Forbidden.
+2. **Process & Execution Isolation**:
+   - Plugins execute inside isolated runner boundaries with strict timeouts (default 30s, max 300s).
+   - Direct database access is strictly prohibited; all platform interactions occur through mediated, rate-limited service APIs using scoped ephemeral tokens.
+3. **Resource Quotas & Circuit Breakers**:
+   - Impose memory quotas (max 512MB per plugin worker) and execution latency limits.
+   - If a plugin exceeds failure thresholds (> 5 consecutive errors or timeouts), it is automatically tripped to `PAUSED` state with administrator notification.
+
+#### Alternatives Considered
+- Direct in-process execution without sandboxing: Rejected due to catastrophic security vulnerability where third-party code could inspect memory or corrupt the ORM session.
+- Heavyweight virtual machines (VMs) per plugin: Rejected due to extreme startup latency and memory overhead.
+
+#### Reason
+Capability-based security combined with mediated service APIs provides enterprise security and zero-trust isolation while maintaining sub-second execution performance.
+
+#### Impact
+Member 1 provides sandbox interfaces and capability enums. Member 2 implements capability interceptors and execution quotas. Member 3 builds the permission grant UI. Member 4 configures container limits and alert rules.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-060 — Manifest-Driven Semantic Versioning, Compatibility Verification & Hot-Reload Lifecycle
+
+#### Date
+2026-10-29
+
+#### Context
+`devdocs/p3/p3.5.txt` (Chapters 5, 6, 11, 13) mandates a deterministic plugin lifecycle (Install -> Validate -> Initialize -> Activate -> Execute -> Update -> Deactivate -> Uninstall) and strict semantic versioning compatibility checks across KEEP core releases.
+
+#### Decision
+1. **Strict Manifest Schema**:
+   - Every plugin package must contain a `plugin.json` manifest conforming to JSON Schema Draft 7, specifying: `id`, `name`, `version` (SemVer 2.0), `developer`, `category`, `entry_point`, `min_keep_version`, `max_keep_version`, `permissions`, and `configuration_schema`.
+2. **Compatibility Verification Engine**:
+   - The Plugin Manager validates SemVer compatibility (`min_keep_version <= PLATFORM_VERSION <= max_keep_version`) before permitting installation or upgrades. Incompatible plugins are rejected at validation stage.
+3. **Non-Disruptive Lifecycle State Transitions**:
+   - The plugin lifecycle supports atomic state transitions (`ACTIVE`, `INACTIVE`, `ERROR`, `PAUSED`).
+   - Dynamic activation and deactivation occur at runtime without requiring an API server reboot, cleanly attaching and detaching event listeners and service adapters.
+4. **Automated Rollback Safeguards**:
+   - In the event of an update failure or post-upgrade validation crash, the system automatically rolls back the plugin to its previously active version and restores its previous configuration state.
+
+#### Alternatives Considered
+- Unstructured python packages without manifest: Rejected due to inability to pre-validate permissions, dependencies, or version compatibility.
+- Requiring server restarts on plugin installation: Rejected due to high enterprise availability requirements (99.9% uptime SLA).
+
+#### Reason
+Manifest-driven semantic versioning guarantees backward compatibility, prevents dependency conflicts, and enables zero-downtime hot reloading.
+
+#### Impact
+Member 1 specifies the manifest schema and state machine. Member 2 implements validation routines, migrations, and database state persistence. Member 3 builds the installation wizard and update badges. Member 4 automates validation pipelines in CI.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-061 — Event Hook Subscription Engine & Decentralized Marketplace Distribution
+
+#### Date
+2026-10-29
+
+#### Context
+`devdocs/p3/p3.5.txt` (Chapters 4, 8, 10, 15) requires plugins to react to enterprise platform events (e.g. `document.uploaded`, `user.login`, `workflow.completed`, `ai.response.ready`) without tight coupling, alongside a marketplace catalog enabling internal and public plugin discovery.
+
+#### Decision
+1. **Event Hook Subscription Orchestrator**:
+   - Build an asynchronous `PluginHookDispatcher` that maps system event topics to active subscribed plugins.
+   - Subscriptions run concurrently via `asyncio.gather` bounded by individual timeout boundaries (`asyncio.wait_for`), preventing slow plugins from blocking core event publishing.
+   - Hook results and telemetry are asynchronously recorded in `plugin_execution_logs`.
+2. **Marketplace Catalog & Distribution**:
+   - Establish a centralized catalog model (`plugins` / `plugin_marketplace_items`) supporting multi-tier verification badges (`VERIFIED`, `COMMUNITY`, `INTERNAL`).
+   - Support category browsing (AI, Integration, Workflow, UI, Analytics), version history, ratings, reviews, and download metrics.
+   - Allow enterprise organizations to publish private internal plugins accessible only to their tenant.
+
+#### Alternatives Considered
+- Synchronous event listeners: Rejected — slow external webhook calls would degrade user request latency.
+- Hardcoded integrations without marketplace: Rejected — fails the primary business objective of enterprise modularity.
+
+#### Reason
+Asynchronous hook dispatch ensures platform performance isolation, while a categorized marketplace provides a friction-free discovery and deployment experience.
+
+#### Impact
+Member 1 authors event hook contracts and marketplace specifications. Member 2 implements hook routers and marketplace REST APIs. Member 3 builds the Marketplace UI and management dashboard. Member 4 creates Prometheus alerts for hook failure rates.
+
+#### Status
+ACCEPTED
+
+
 
 
 

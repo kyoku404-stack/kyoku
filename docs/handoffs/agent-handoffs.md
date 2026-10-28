@@ -5658,6 +5658,278 @@ COMPLETED / PHASE 3.4 100% VERIFIED
 #### Target Receiving Agent
 - **Human Team Member & Team Reviewers**: Phase 3.4 is 100% complete across all 4 roles. Awaiting approval to begin Phase 3.5.
 
+---
+
+### Handoff Entry #074: Phase 3.5 — Plugin Architecture, SDK Standards, Event System & Domain Contracts
+
+#### Date
+2026-10-29
+
+#### Author Agent
+Member 1 — Project Lead & AI Architect
+
+#### Status
+COMPLETED / READY FOR BACKEND IMPLEMENTATION (MEMBER 2)
+
+#### Implemented Features
+1. **Master Architecture Specification (`docs/Architecture/plugin-sdk-extension-framework.md`)**:
+   - High-level system architecture isolating plugin management from KEEP core.
+   - 5 plugin categories: AI, Integration, Workflow, UI, Analytics.
+   - Deterministic 8-stage plugin lifecycle (Install -> Validate -> Initialize -> Activate -> Execute -> Update -> Deactivate -> Uninstall).
+   - JSON Schema Draft 7 manifest specifications and capability-based security.
+   - Asynchronous event hook subscription model.
+   - Decentralized marketplace discovery and verification tiers (`VERIFIED`, `COMMUNITY`, `INTERNAL`).
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - `ADR-059`: Isolated Plugin Sandboxing, Capability-Based Security & Resource Quotas.
+   - `ADR-060`: Manifest-Driven Semantic Versioning, Compatibility Verification & Hot-Reload Lifecycle.
+   - `ADR-061`: Event Hook Subscription Engine & Decentralized Marketplace Distribution.
+3. **REST API Contract (`docs/api/api-contract.md`)**:
+   - Added Section 17 defining endpoints: `/api/v1/plugins/install`, `/plugins/list`, `/plugins/enable`, `/plugins/disable`, `/plugins/update`, `/plugins/uninstall`, `/plugins/{id}/execute`, `/plugins/logs`, and `/plugins/marketplace`.
+4. **Database Schema Specification (`docs/database/database-schema.md`)**:
+   - Added Section 3.22 defining tables `plugins`, `plugin_manifests`, `plugin_installations`, `plugin_permissions`, `plugin_event_hooks`, and `plugin_execution_logs`.
+5. **Typed Domain Contracts & Reference Engines (`backend/app/services/plugins/contracts.py`)**:
+   - Enums: `PluginCategory`, `PluginStatus`, `PluginVerificationTier`, `PluginCapability`, `PluginLogStatus`, `HookTriggerType`.
+   - Dataclasses: `PluginManifest`, `PluginExecutionInput`, `PluginExecutionOutput`, `MarketplaceCatalogItem`.
+   - Abstract Base Classes: `BasePlugin`, `BaseAIPlugin`, `BaseIntegrationPlugin`, `BaseWorkflowActionPlugin`.
+   - Reference Engines: `SemanticVersionValidator`, `PluginManifestValidator`, `CapabilityPermissionGuard`, `PluginSandboxRunner`, `PluginHookBroker`, `SampleClaudeAIPlugin`, `SampleSAPInvoicePlugin`.
+   - RBAC Permissions in `backend/app/services/ai/interfaces.py`: `PLUGIN_VIEW`, `PLUGIN_MANAGE`, `PLUGIN_INSTALL`, `PLUGIN_EXECUTE`.
+6. **Unit Tests (`tests/unit/test_plugin_contracts.py`)**:
+   - 10 unit tests covering SemVer parsing, manifest validation, version gating, capability permission guard, sandbox timeouts, event hook dispatch, and reference plugins (100% pass rate).
+
+#### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**
+
+#### Required Action for Receiving Agent
+1. Implement SQLAlchemy ORM models matching schema Section 3.22 in `backend/app/models/plugin.py` and re-export in `backend/app/models/__init__.py`.
+2. Author and verify clean Alembic schema migration revision in `backend/migrations/versions/`.
+3. Implement Pydantic v2 validation schemas in `backend/app/schemas/plugin.py`.
+4. Implement `EnterprisePluginService` in `backend/app/services/plugins/service.py` providing lifecycle execution, sandboxing, hook routing, and marketplace querying.
+5. Implement FastAPI router in `backend/app/api/v1/plugins.py` and mount in `backend/app/api/v1/router.py`.
+6. Author unit and integration test suites in `tests/unit/test_plugin_services.py` and `tests/integration/test_plugin_endpoints.py`.
+
+---
+
+## Entry #075: Phase 3.5 — Relational Persistence, Alembic Migrations, Plugin Service & REST APIs
+
+### Date
+2026-10-29
+
+### Author Agent
+Member 2 (Backend & Database Lead)
+
+### Status
+COMPLETED ✓
+
+### Implemented Features
+1. **SQLAlchemy ORM Models (`backend/app/models/plugin.py`)**:
+   - `Plugin`: Master catalog registry tracking `id`, `name`, `description`, `category`, `developer`, `current_version`, `verification_tier`, `rating`, `installs_count`, `is_public`, `icon_url`, `documentation_url`.
+   - `PluginManifestModel`: Versioned manifest definitions, checksum SHA-256, Keep SemVer limits (`min_keep_version`, `max_keep_version`), `entry_point`, `permissions`, `event_hooks`, `configuration_schema`.
+   - `PluginInstallation`: Tenant-scoped installation record with `organization_id`, `version`, `status`, `is_enabled`, `configuration` JSONB, audit timestamps.
+   - `PluginPermission`: Granular capability grants bound to installations.
+   - `PluginEventHook`: Active platform event subscriptions mapped to installed plugins.
+   - `PluginExecutionLog`: Execution telemetry audit records tracking `action`, `status`, `duration_ms`, `triggered_by`, `error_message`, and `payload_preview`.
+   - Exported in `backend/app/models/__init__.py`.
+2. **Alembic Database Migration (`backend/migrations/versions/f4a5b6c7d8e9_phase_3_5_plugin_sdk_extension_framework.py`)**:
+   - Creates tables: `plugins`, `plugin_manifests`, `plugin_installations`, `plugin_permissions`, `plugin_event_hooks`, `plugin_execution_logs`.
+   - Reversible `upgrade()` and `downgrade()`.
+   - Verified via `tests/integration/test_db_migrations.py`.
+3. **Pydantic Validation Schemas (`backend/app/schemas/plugin.py`)**:
+   - Request DTOs: `PluginInstallRequest`, `PluginUpdateRequest`, `PluginUninstallRequest`, `PluginStatusToggleRequest`, `PluginExecuteRequest`, `PluginConfigUpdateRequest`, `PluginPublishRequest`.
+   - Response DTOs: `PluginItemResponse`, `PluginExecutionResponse`, `PluginExecutionLogResponse`, `PluginMarketplaceItemResponse`, `PluginAnalyticsResponse`.
+   - Exported in `backend/app/schemas/__init__.py`.
+4. **Enterprise Business Service (`backend/app/services/plugins/service.py`)**:
+   - `EnterprisePluginService`:
+     - Built-in marketplace catalog auto-seeding (`seed_default_marketplace`) with certified plugins (Claude 3.5 Sonnet, SAP S/4HANA ERP, Slack Grid alerts).
+     - Marketplace browse (`browse_marketplace`) with tenant install detection, search, and category filtering.
+     - Plugin publish (`publish_marketplace_plugin`) with SemVer compatibility enforcement.
+     - Plugin install (`install_plugin`) with capability permission grants and event hook subscriptions.
+     - Plugin enable/disable (`enable_plugin`, `disable_plugin`) and version upgrades (`update_plugin_version`).
+     - Sandboxed execution (`execute_plugin_action`) dispatching via `PluginSandboxRunner`, timeout protection, and telemetry logging to `plugin_execution_logs`.
+     - Execution logs query (`list_execution_logs`) and operational KPI analytics (`get_plugin_analytics`).
+5. **FastAPI Master Router (`backend/app/api/v1/plugins.py`)**:
+   - Mounted at `/api/v1/plugins` in `backend/app/api/v1/router.py`.
+   - 12 fully typed endpoints returning `ApiResponse<T>` envelopes matching Section 17 of `docs/API/api-contract.md`.
+6. **Testing & Verification**:
+   - `tests/unit/test_plugin_services.py`: 11/11 unit tests passed.
+   - `tests/integration/test_plugin_endpoints.py`: 11/11 integration tests passed.
+   - `tests/unit/test_plugin_contracts.py`: 10/10 passed.
+   - `tests/integration/test_db_migrations.py`: 4/4 passed.
+   - Ruff linter: 0 errors across all backend code.
+
+### Files Modified / Created
+- `backend/app/models/plugin.py` (Created)
+- `backend/app/models/__init__.py` (Modified)
+- `backend/migrations/versions/f4a5b6c7d8e9_phase_3_5_plugin_sdk_extension_framework.py` (Created)
+- `backend/app/schemas/plugin.py` (Created)
+- `backend/app/schemas/__init__.py` (Modified)
+- `backend/app/services/plugins/service.py` (Created)
+- `backend/app/services/plugins/__init__.py` (Modified)
+- `backend/app/api/v1/plugins.py` (Created)
+- `backend/app/api/v1/router.py` (Modified)
+- `tests/unit/test_plugin_services.py` (Created)
+- `tests/integration/test_plugin_endpoints.py` (Created)
+- `tests/integration/test_db_migrations.py` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**
+
+#### Required Action for Receiving Agent
+1. Implement TypeScript domain types and enums in `frontend/src/types/plugin.ts` and re-export in `frontend/src/types/index.ts`.
+2. Add Phase 3.5 permissions in `frontend/src/types/permission.ts` (`plugin.view`, `plugin.manage`, `plugin.install`, `plugin.execute`).
+3. Implement API Client in `frontend/src/services/pluginService.ts` and re-export in `frontend/src/services/index.ts`.
+4. Implement custom React hook `frontend/src/hooks/usePlugins.ts` for real-time querying, mutations, and status polling.
+5. Build modular UI feature components in `frontend/src/features/plugins/`:
+   - `PluginMetricsBanner.tsx`
+   - `InstalledPluginsList.tsx`
+   - `PluginMarketplaceGrid.tsx`
+   - `InstallPluginModal.tsx`
+   - `PluginConfigModal.tsx`
+   - `PluginExecutionLogsDrawer.tsx`
+   - `DeveloperSDKDocumentationModal.tsx`
+   - `index.ts`
+6. Build master page `frontend/src/pages/PluginManagementPage.tsx`.
+7. Configure routes in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+8. Update sidebar navigation in `frontend/src/components/common/Sidebar.tsx` with Blocks/Puzzle icon.
+9. Author frontend test suites in `frontend/src/tests/` and verify with Vitest and Vite production build.
+
+---
+
+## Entry #076: Phase 3.5 — TypeScript Types, API Client, Custom Hooks, Feature Components, Master Page & Routing
+
+### Date
+2026-10-29
+
+### Author Agent
+Member 3 (Frontend & UI Lead)
+
+### Status
+COMPLETED ✓
+
+### Implemented Features
+1. **TypeScript Domain Models & Schema Enums (`frontend/src/types/plugin.ts`)**:
+   - `PluginCategory`, `PluginStatus`, `PluginVerificationTier`, `PluginExecutionStatus`.
+   - `PluginItem`, `PluginMarketplaceItem`, `PluginExecutionResponse`, `PluginExecutionLog`, `PluginAnalytics`.
+   - Typed payload contracts: `PluginInstallPayload`, `PluginUpdatePayload`, `PluginUninstallPayload`, `PluginExecutePayload`, `PluginConfigUpdatePayload`, `PluginPublishPayload`.
+   - Re-exported in `frontend/src/types/index.ts`.
+2. **Phase 3.5 RBAC Permissions (`frontend/src/types/permission.ts`)**:
+   - Added: `PLUGIN_VIEW`, `PLUGIN_MANAGE`, `PLUGIN_INSTALL`, `PLUGIN_EXECUTE`.
+   - Bound to canonical role sets (`VIEWER_PERMISSIONS`, `MEMBER_PERMISSIONS`, `MANAGER_PERMISSIONS`, `ORG_ADMIN_PERMISSIONS`).
+3. **Axios API Client Service (`frontend/src/services/pluginService.ts`)**:
+   - Implemented 13 strongly typed API client methods covering marketplace browsing, publishing, installation, status toggling, config management, sandbox action execution, telemetry logs, and analytics.
+   - Re-exported in `frontend/src/services/index.ts`.
+4. **State Management Hook (`frontend/src/hooks/usePlugins.ts`)**:
+   - Provides reactive state for installed extensions, marketplace catalog, telemetry logs, analytics, and sandbox execution responses.
+   - Supports real-time mutations with optimistic status updates and background refetching.
+5. **Modular UI Feature Components (`frontend/src/features/plugins/`)**:
+   - `PluginMetricsBanner.tsx`: Glassmorphic KPI cards for installed extensions, active extensions, total invocations, average sandbox latency (ms), and error rate.
+   - `InstalledPluginsList.tsx`: Searchable and filterable extension list with enable/disable toggle switches, configuration launcher, sandbox action trigger, version badges, and uninstallation actions.
+   - `PluginMarketplaceGrid.tsx`: Extension store view with verification tier badges (Certified, Verified, Community), ratings, install counts, and install CTA.
+   - `InstallPluginModal.tsx`: Capability permission consent dialog with granular checkboxes and initial configuration JSON editor.
+   - `PluginConfigModal.tsx`: Real-time tenant configuration editor with JSON validation.
+   - `PluginExecutionLogsDrawer.tsx`: Slide-over drawer with invocation logs and interactive Sandbox Action Tester.
+   - `DeveloperSDKDocumentationModal.tsx`: In-browser developer documentation modal with Python `BasePlugin` template and copy button.
+   - `index.ts`: Centralized barrel export.
+6. **Master Page, Navigation & Routing**:
+   - `frontend/src/pages/PluginManagementPage.tsx`: Full responsive master page coordinating tabs, metrics, catalog, and modals.
+   - `frontend/src/routes/paths.ts` & `frontend/src/routes/index.tsx`: Configured `/plugins` and `/marketplace` routes.
+   - `frontend/src/components/common/Sidebar.tsx`: Added `Plugin Ecosystem` navigation item with `Blocks` icon and `Phase 3.5` badge.
+7. **Testing & Verification**:
+   - ESLint: `npm run lint` → 0 errors, 0 warnings.
+   - Vitest: `src/tests/pluginService.test.ts` (7/7 passed), `src/tests/pluginComponents.test.tsx` (6/6 passed) → 13/13 passed (100%).
+   - Vite Production Build: `npm run build` → 1,855 modules transformed, 0 errors, clean bundle generated in `dist/`.
+
+### Files Modified / Created
+- `frontend/src/types/plugin.ts` (Created)
+- `frontend/src/types/index.ts` (Modified)
+- `frontend/src/types/permission.ts` (Modified)
+- `frontend/src/services/pluginService.ts` (Created)
+- `frontend/src/services/index.ts` (Modified)
+- `frontend/src/hooks/usePlugins.ts` (Created)
+- `frontend/src/features/plugins/PluginMetricsBanner.tsx` (Created)
+- `frontend/src/features/plugins/InstalledPluginsList.tsx` (Created)
+- `frontend/src/features/plugins/PluginMarketplaceGrid.tsx` (Created)
+- `frontend/src/features/plugins/InstallPluginModal.tsx` (Created)
+- `frontend/src/features/plugins/PluginConfigModal.tsx` (Created)
+- `frontend/src/features/plugins/PluginExecutionLogsDrawer.tsx` (Created)
+- `frontend/src/features/plugins/DeveloperSDKDocumentationModal.tsx` (Created)
+- `frontend/src/features/plugins/index.ts` (Created)
+- `frontend/src/pages/PluginManagementPage.tsx` (Created)
+- `frontend/src/routes/paths.ts` (Modified)
+- `frontend/src/routes/index.tsx` (Modified)
+- `frontend/src/components/common/Sidebar.tsx` (Modified)
+- `frontend/src/tests/pluginService.test.ts` (Created)
+- `frontend/src/tests/pluginComponents.test.tsx` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Target Receiving Agent
+- **Member 4 (Integration & DevOps Lead)**
+
+#### Required Action for Receiving Agent
+1. Provision Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml` for plugin sandbox timeouts, error spikes, and execution duration.
+---
+
+## Entry #077: Phase 3.5 — Containerization, Infrastructure, Monitoring & Full Sub-Phase Verification
+
+### Date
+2026-10-29
+
+### Author Agent
+Member 4 (Integration & DevOps Lead)
+
+### Status
+COMPLETED ✓
+
+### Implemented Features
+1. **Prometheus Alerting Rules (`infrastructure/prometheus/alert_rules.yml`)**:
+   - `PluginExecutionFailureRateHigh`: Warning alert triggering when plugin execution failures exceed 5% over 5m.
+   - `PluginSandboxTimeoutSpike`: Critical alert triggering when sandbox timeout errors exceed 3 occurrences in 5m.
+   - `PluginExecutionDurationHigh`: Warning alert triggering when p95 plugin execution duration exceeds 1500ms.
+   - `PluginMarketplaceInstallFailureRate`: Warning alert triggering when plugin installation failures exceed 2% over 5m.
+2. **Enterprise Grafana Monitoring Dashboard (`infrastructure/grafana/dashboards/plugin-ecosystem-dashboard.json`)**:
+   - 7 production monitoring panels: Total Executions KPI, Execution Error Rate gauge, p95 Execution Latency stat, Installed Plugins gauge, Real-Time Execution Throughput graph, Latency Distribution Quantiles (p50, p90, p99) timeseries, and Execution Distribution by Plugin Category pie chart.
+3. **Backend Integration Pipeline Test Suite (`tests/integration/test_plugin_pipeline.py`)**:
+   - `test_01_full_lifecycle_publish_install_execute_pipeline`: Validates marketplace catalog seeding, custom plugin publishing, tenant installation with permission grants, configuration updating, sandboxed action execution with timeout protection, execution telemetry logging, and operational analytics KPI verification.
+   - `test_02_sandbox_timeout_and_fault_isolation`: Enforces CPU/time quota guardrails where runaway or infinite-loop actions raise sandboxed timeout exceptions without crashing worker nodes.
+   - `test_03_multi_tenant_extension_quarantine`: Guarantees tenant isolation where organizations cannot access or execute uninstalled plugins or cross-tenant private extensions.
+   - 3/3 tests passed (100%).
+4. **Playwright End-to-End Automated Test Suite (`tests/e2e/plugin_ecosystem.spec.ts`)**:
+   - 7 comprehensive E2E test scenarios:
+     - `TC-3.5-01`: Navigation to `/plugins` and `/marketplace` via Sidebar with `Blocks` icon and `Phase 3.5` badge.
+     - `TC-3.5-02`: Real-time KPI metrics banner cards (Total, Active, Invocations, Avg Latency, Failure Rate).
+     - `TC-3.5-03`: Installed extensions list display, status toggle switches, and tenant configuration modal.
+     - `TC-3.5-04`: Marketplace catalog search and category filtering with capability consent install modal.
+     - `TC-3.5-05`: Slide-over audit drawer with execution telemetry logs and interactive Sandbox Action Tester.
+     - `TC-3.5-06`: In-browser Developer SDK documentation modal with Python template snippet.
+     - `TC-3.5-07`: Responsive viewport validation across Desktop (1280x800), Tablet (768x1024), and Mobile (375x667).
+   - 21 tests discovered across Chromium, Firefox, WebKit (`playwright test --list`).
+5. **Full Monorepo Empirical Verification**:
+   - Ruff Linter: `ruff check backend/ tests/` → All checks passed (0 errors, 0 warnings).
+   - Pytest Backend Suites: `pytest tests/unit/ tests/integration/` → 100% pass rate.
+   - Frontend ESLint: `npm run lint` → 0 errors, 0 warnings.
+   - Frontend Vitest Suites: `npm test` → 100% pass rate.
+   - Frontend Production Build: `npm run build` → 1,855 modules transformed, 0 errors, clean bundle.
+   - Playwright Discovery: `playwright test --list` → 336 tests in 16 files discovered cleanly.
+
+### Files Modified / Created
+- `infrastructure/prometheus/alert_rules.yml` (Modified)
+- `infrastructure/grafana/dashboards/plugin-ecosystem-dashboard.json` (Created)
+- `tests/integration/test_plugin_pipeline.py` (Created)
+- `tests/e2e/plugin_ecosystem.spec.ts` (Created)
+- `backend/app/services/plugins/service.py` (Modified)
+- `PROJECT_STATE.md` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Target Receiving Agent
+- **Human Project Lead / Approver**
+
+#### Required Action for Receiving Agent
+- Review and approve Phase 3.5 completion prior to starting Phase 4.0.
+
+
+
+
+
 
 
 

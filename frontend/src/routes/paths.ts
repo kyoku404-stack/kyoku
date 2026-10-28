@@ -43,6 +43,8 @@ export const ROUTES = {
   COMPLIANCE: '/compliance',
   WORKFLOWS: '/workflows',
   NOTIFICATIONS: '/notifications',
+  PLUGINS: '/plugins',
+  MARKETPLACE: '/marketplace',
   NOT_FOUND: '*',
 } as const;
 

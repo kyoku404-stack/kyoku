@@ -89,4 +89,5 @@ export type {
   ApprovalStatus as WorkflowApprovalStatus,
   NotificationItem as EnterpriseNotificationItem,
 } from './workflow';
+export * from './plugin';
 

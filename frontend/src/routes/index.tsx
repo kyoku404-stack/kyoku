@@ -41,6 +41,9 @@ const SecurityGovernancePage = lazy(() =>
 const WorkflowAutomationPage = lazy(() =>
   import('@/pages/WorkflowAutomationPage').then((m) => ({ default: m.WorkflowAutomationPage }))
 );
+const PluginManagementPage = lazy(() =>
+  import('@/pages/PluginManagementPage').then((m) => ({ default: m.PluginManagementPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -393,6 +396,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <WorkflowAutomationPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'plugins',
+        element: (
+          <SuspenseWrapper>
+            <PluginManagementPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'marketplace',
+        element: (
+          <SuspenseWrapper>
+            <PluginManagementPage />
           </SuspenseWrapper>
         ),
       },

@@ -1445,6 +1445,130 @@ CREATE TABLE workflow_templates (
 );
 ```
 
+---
+
+## 3.22 Plugin SDK & Extension Framework Schema
+
+### 3.22.1 `plugins` Table
+Master registry of all marketplace catalog and enterprise plugins:
+```sql
+CREATE TABLE plugins (
+    id VARCHAR(100) PRIMARY KEY,                      -- e.g. 'ai-anthropic-claude'
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL,                    -- 'AI', 'INTEGRATION', 'WORKFLOW', 'UI', 'ANALYTICS'
+    developer VARCHAR(150) NOT NULL,
+    current_version VARCHAR(30) NOT NULL DEFAULT '1.0.0',
+    verification_tier VARCHAR(30) NOT NULL DEFAULT 'COMMUNITY', -- 'VERIFIED', 'COMMUNITY', 'INTERNAL'
+    rating NUMERIC(3, 2) NOT NULL DEFAULT 5.00,
+    installs_count INTEGER NOT NULL DEFAULT 0,
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+    icon_url VARCHAR(500),
+    documentation_url VARCHAR(500),
+    source_repository VARCHAR(500),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_plugins_category ON plugins(category);
+CREATE INDEX idx_plugins_tier ON plugins(verification_tier);
+```
+
+### 3.22.2 `plugin_manifests` Table
+Versioned semantic configuration, capability permissions, and hook definitions:
+```sql
+CREATE TABLE plugin_manifests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plugin_id VARCHAR(100) NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+    version VARCHAR(30) NOT NULL,
+    manifest_json JSONB NOT NULL,
+    min_keep_version VARCHAR(30) NOT NULL DEFAULT '3.0.0',
+    max_keep_version VARCHAR(30) NOT NULL DEFAULT '3.9.9',
+    entry_point VARCHAR(255) NOT NULL,
+    permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+    event_hooks JSONB NOT NULL DEFAULT '[]'::jsonb,
+    configuration_schema JSONB NOT NULL DEFAULT '{}'::jsonb,
+    checksum_sha256 VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_plugin_manifest_version UNIQUE (plugin_id, version)
+);
+
+CREATE INDEX idx_plugin_manifests_lookup ON plugin_manifests(plugin_id, version);
+```
+
+### 3.22.3 `plugin_installations` Table
+Tenant-specific installation and lifecycle state:
+```sql
+CREATE TABLE plugin_installations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    plugin_id VARCHAR(100) NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+    version VARCHAR(30) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',     -- 'ACTIVE', 'INACTIVE', 'ERROR', 'PAUSED'
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    configuration JSONB NOT NULL DEFAULT '{}'::jsonb,
+    installed_by UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+    installed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_org_plugin_installation UNIQUE (organization_id, plugin_id)
+);
+
+CREATE INDEX idx_plugin_installations_org ON plugin_installations(organization_id, status);
+```
+
+### 3.22.4 `plugin_permissions` Table
+Granular granted capabilities per tenant installation:
+```sql
+CREATE TABLE plugin_permissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    installation_id UUID NOT NULL REFERENCES plugin_installations(id) ON DELETE CASCADE,
+    permission VARCHAR(80) NOT NULL,                  -- 'Documents.Read', 'AI.Query', etc.
+    is_granted BOOLEAN NOT NULL DEFAULT TRUE,
+    granted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    granted_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT uq_installation_permission UNIQUE (installation_id, permission)
+);
+
+CREATE INDEX idx_plugin_permissions_inst ON plugin_permissions(installation_id);
+```
+
+### 3.22.5 `plugin_event_hooks` Table
+Runtime event subscriptions bound to active installations:
+```sql
+CREATE TABLE plugin_event_hooks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    installation_id UUID NOT NULL REFERENCES plugin_installations(id) ON DELETE CASCADE,
+    event_topic VARCHAR(120) NOT NULL,                -- e.g. 'document.uploaded'
+    handler_method VARCHAR(120) NOT NULL DEFAULT 'on_event',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_installation_event UNIQUE (installation_id, event_topic)
+);
+
+CREATE INDEX idx_plugin_event_hooks_topic ON plugin_event_hooks(event_topic, is_active);
+```
+
+### 3.22.6 `plugin_execution_logs` Table
+Audit trail and sandbox execution telemetry:
+```sql
+CREATE TABLE plugin_execution_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    installation_id UUID REFERENCES plugin_installations(id) ON DELETE SET NULL,
+    plugin_id VARCHAR(100) NOT NULL,
+    action VARCHAR(120) NOT NULL,
+    status VARCHAR(30) NOT NULL,                      -- 'SUCCESS', 'ERROR', 'TIMEOUT'
+    duration_ms NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+    triggered_by VARCHAR(50) NOT NULL DEFAULT 'direct_api', -- 'direct_api', 'event_hook', 'scheduled'
+    error_message TEXT,
+    payload_preview JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_plugin_logs_org ON plugin_execution_logs(organization_id, created_at DESC);
+CREATE INDEX idx_plugin_logs_status ON plugin_execution_logs(plugin_id, status);
+```
+
 
 
 

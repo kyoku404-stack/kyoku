@@ -28,6 +28,7 @@ import {
   BrainCircuit,
   Cable,
   Zap,
+  Blocks,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -96,6 +97,13 @@ const navItems: NavItem[] = [
     icon: Zap,
     requiredPermission: Permission.WORKFLOW_VIEW,
     badge: 'Phase 3.4',
+  },
+  {
+    label: 'Plugin Ecosystem',
+    path: ROUTES.PLUGINS,
+    icon: Blocks,
+    requiredPermission: Permission.PLUGIN_VIEW,
+    badge: 'Phase 3.5',
   },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },

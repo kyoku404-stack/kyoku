@@ -33,4 +33,5 @@ export * from './connectorService';
 export * from './collaborationService';
 export * from './securityService';
 export * from './workflowService';
+export * from './pluginService';
 
