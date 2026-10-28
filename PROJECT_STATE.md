@@ -4,7 +4,7 @@
 Phase 3 — Enterprise Intelligence & Advanced Integration
 
 ## Current Sub-Phase
-Phase 3.4 — Notifications, Workflow Automation & Event-Driven Intelligence
+Phase 3.5 — Plugin SDK, Extension Framework & Developer Ecosystem
 
 ## Repository Health
 GREEN
@@ -16,6 +16,58 @@ Phase 3.1 (Enterprise Integrations & Connector Framework) is 100% COMPLETE acros
 Phase 3.2 (Real-Time Collaboration, Team Workspaces & Knowledge Sharing) is 100% COMPLETE across all four member roles.
 Phase 3.3 (Enterprise Security, Compliance, Governance & Data Protection) is 100% COMPLETE across all four member roles.
 Phase 3.4 (Notifications, Workflow Automation & Event-Driven Intelligence) is 100% COMPLETE across all four member roles.
+Phase 3.5 (Plugin SDK, Extension Framework & Developer Ecosystem) is 100% COMPLETE across all four member roles.
+
+Phase 3.5 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/plugin-sdk-extension-framework.md`) detailing the 5 extension archetypes (LLM, Document Converter, ERP/CRM Connector, Alert Dispatcher, Custom Pipeline Action), 8-stage plugin lifecycle, sandboxed execution environment with AST safety inspection, manifest schema specification, dynamic event hook routing, and enterprise marketplace discovery.
+- Authored Architecture Decision Records ADR-059, ADR-060, and ADR-061 in `docs/decisions/decisions.md`:
+  - `ADR-059`: Plugin Sandboxing, Process Isolation & Execution Quotas.
+  - `ADR-060`: Manifest-Driven Semantic Versioning & Dynamic Hot-Reloading.
+  - `ADR-061`: Event Hook Subscription Engine & Curated Marketplace Distribution.
+- Updated official REST API Contract (`docs/api/api-contract.md`) with Section 17 defining all 12 Phase 3.5 endpoints: `/api/v1/plugins`, `/plugins/installed`, `/plugins/marketplace`, `/plugins/publish`, `/plugins/{id}`, `/plugins/{id}/install`, `/plugins/{id}/uninstall`, `/plugins/{id}/enable`, `/plugins/{id}/disable`, `/plugins/{id}/execute`, `/plugins/{id}/config`, `/plugins/{id}/logs`, and `/plugins/analytics`.
+- Updated Database Schema Specification (`docs/database/database-schema.md`) with Section 3.22 defining tables `plugins`, `plugin_manifests`, `plugin_installations`, `plugin_permissions`, `plugin_event_hooks`, and `plugin_execution_logs` with composite indexes, foreign keys, and cascading delete constraints.
+- Implemented typed domain contracts and reference algorithms in `backend/app/services/plugins/contracts.py`:
+  - Enums: `PluginCategory`, `PluginVerificationTier`, `PluginStatus`, `PluginLogStatus`.
+  - Concrete Reference Engines: `PluginSandboxRunner`, `PluginHookBroker`, `PluginManifestValidator`, `SampleClaudeAIPlugin`, `SampleSAPInvoicePlugin`.
+- Added RBAC permissions in `backend/app/services/ai/interfaces.py`: `PLUGIN_VIEW`, `PLUGIN_MANAGE`, `PLUGIN_INSTALL`, `PLUGIN_EXECUTE`.
+- Authored dedicated unit test suite `tests/unit/test_plugin_contracts.py` (10 tests, 100% pass rate).
+
+Phase 3.5 Member 2 (Backend & Database Lead) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models `Plugin`, `PluginManifestModel`, `PluginInstallation`, `PluginPermission`, `PluginEventHook`, and `PluginExecutionLog` in `backend/app/models/plugin.py` matching schema 3.22; re-exported in `backend/app/models/__init__.py`.
+- Authored and verified clean Alembic schema migration revision `f4a5b6c7d8e9_phase_3_5_plugin_sdk_extension_framework.py` chained from `e3f4a5b6c7d8` to `f4a5b6c7d8e9 (head)`.
+- Implemented Pydantic v2 validation schemas in `backend/app/schemas/plugin.py` validating requests and responses for all Phase 3.5 endpoints; re-exported in `backend/app/schemas/__init__.py`.
+- Implemented `EnterprisePluginService` (`backend/app/services/plugins/service.py`) supporting catalog auto-seeding with certified extensions, marketplace querying, SemVer publishing, installation with capability consent, status toggles, sandboxed action execution with timeout enforcement, audit telemetry logging, and operational analytics KPI aggregation.
+- Implemented FastAPI REST endpoints in `backend/app/api/v1/plugins.py` and mounted in `backend/app/api/v1/router.py`.
+- Authored backend unit test suite `tests/unit/test_plugin_services.py` (11 tests) and integration test suite `tests/integration/test_plugin_endpoints.py` (11 tests) and migration suite `tests/integration/test_db_migrations.py` (4 tests) (100% pass rate).
+
+Phase 3.5 Member 3 (Frontend & UI Lead) deliverables are COMPLETED:
+- Authored TypeScript interfaces and enums in `frontend/src/types/plugin.ts` and updated `frontend/src/types/permission.ts` and `frontend/src/types/index.ts`.
+- Implemented `pluginService` (`frontend/src/services/pluginService.ts`) covering all 13 marketplace, lifecycle, execution, configuration, audit telemetry, and analytics REST endpoints; re-exported in `frontend/src/services/index.ts`.
+- Developed `usePlugins` custom React hook (`frontend/src/hooks/usePlugins.ts`) managing marketplace querying, installed extension toggling, configuration updates, sandbox action execution, telemetry log slide-over, and developer documentation modals.
+- Built modular UI feature components in `frontend/src/features/plugins/`:
+  - `PluginMetricsBanner.tsx`: KPI cards for Total Extensions, Active Extensions, Invocations, Avg Latency (ms), and Failure Rate.
+  - `InstalledPluginsList.tsx`: Tabular overview of active extensions with enable/disable switches, configure action, sandbox test button, and uninstall flow.
+  - `PluginMarketplaceGrid.tsx`: Extension store view with search filtering, verification tier badges (Certified, Verified, Community), ratings, and install CTA.
+  - `InstallPluginModal.tsx`: Capability permission consent dialog with granular privilege checkboxes and JSON configuration editor.
+  - `PluginConfigModal.tsx`: Real-time tenant extension JSON configuration editor with validation.
+  - `PluginExecutionLogsDrawer.tsx`: Slide-over audit drawer with telemetry log inspector and live Sandbox Action Tester.
+  - `DeveloperSDKDocumentationModal.tsx`: In-browser developer documentation modal with Python `BasePlugin` template and copy button.
+  - `index.ts`: Centralized barrel export.
+- Built master `PluginManagementPage` (`frontend/src/pages/PluginManagementPage.tsx`) assembling the unified plugin cockpit.
+- Configured routes `/plugins` and `/marketplace` in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+- Updated navigation in `frontend/src/components/common/Sidebar.tsx` with `Plugin Ecosystem` link, `Blocks` icon, and `Phase 3.5` badge.
+- Authored frontend test suites:
+  - `frontend/src/tests/pluginService.test.ts` (7 tests, 100% pass rate).
+  - `frontend/src/tests/pluginComponents.test.tsx` (6 tests, 100% pass rate).
+- Full Vitest suite: 42/42 test files passed, 345/345 tests passed (100%). ESLint clean (0 errors, 0 warnings). Clean production Vite build (`tsc && vite build`).
+
+Phase 3.5 Member 4 (Integration & DevOps Lead) deliverables are COMPLETED:
+- Configured Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml`: `PluginExecutionFailureRateHigh` (rate > 5%), `PluginSandboxTimeoutSpike` (count > 3), `PluginExecutionDurationHigh` (p95 > 1.5s), and `PluginMarketplaceInstallFailureRate` (rate > 2%).
+- Provisioned dedicated Grafana Plugin Ecosystem Dashboard (`infrastructure/grafana/dashboards/plugin-ecosystem-dashboard.json`) visualizing Total Plugin Executions, Error Rate gauge, p95 Execution Latency, Installed Plugins gauge, Plugin Execution Throughput timeseries, Sandbox Latency Quantiles (p50, p90, p99), and Execution Distribution by Plugin Category pie chart.
+- Authored backend integration pipeline test suite (`tests/integration/test_plugin_pipeline.py`) validating end-to-end plugin publishing, installation, permission gating, configuration updating, sandboxed action execution with timeout protection, event hook dispatching, execution telemetry logging, and cross-tenant quarantine isolation (3 tests, 100% pass rate).
+- Authored Playwright E2E browser test suite (`tests/e2e/plugin_ecosystem.spec.ts`) covering navigation, plugin metrics banner, installed extensions list & configuration modal, marketplace browsing & install consent modal, telemetry log drawer & sandbox action tester, developer SDK documentation modal, and responsive viewports (Desktop, Tablet, Mobile) (21 tests discovered across Chromium, Firefox, WebKit).
+- Monorepo empirical verification: 760 backend tests passing (100%) + 345 frontend Vitest tests passing (100%) + 21 Playwright tests discovered with zero lint, typescript, or build errors. Phase 3.5 is 100% complete across all 4 member roles.
+
 
 Phase 3.4 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/workflow-automation-event-driven-intelligence.md`) detailing the enterprise event broker architecture, directed acyclic graph (DAG) workflow orchestrator, human-in-the-loop (HITL) approval gates, predicate condition evaluator, AI-powered automation actions (document summarization, sentiment extraction, intelligent reviewer suggestion), and multi-channel notification dispatcher (In-App, Email, Slack, Teams).

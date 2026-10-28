@@ -32,7 +32,6 @@ from backend.app.services.plugins.contracts import (
     BasePlugin,
     PluginCategory,
     PluginExecutionInput,
-    PluginExecutionOutput,
     PluginLogStatus,
     PluginManifest,
     PluginSandboxRunner,
@@ -755,16 +754,14 @@ class EnterprisePluginService:
                 async def initialize(self, configuration: dict[str, Any]) -> None:
                     self.configuration = configuration
 
-                async def execute(self, execution_input: PluginExecutionInput) -> PluginExecutionOutput:
-                    return PluginExecutionOutput(
-                        success=True,
-                        data={
-                            "action": execution_input.action,
-                            "plugin_id": self.manifest.id,
-                            "dispatched_to": "dynamic_connector",
-                            "echo_params": execution_input.parameters,
-                        },
-                    )
+                async def execute(self, execution_input: PluginExecutionInput) -> dict[str, Any]:
+                    return {
+                        "status": "COMPLETED",
+                        "action": execution_input.action,
+                        "plugin_id": self.manifest.id,
+                        "dispatched_to": "dynamic_connector",
+                        "echo_params": execution_input.parameters,
+                    }
 
                 async def shutdown(self) -> None:
                     pass

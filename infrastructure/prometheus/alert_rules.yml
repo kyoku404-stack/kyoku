@@ -550,5 +550,52 @@ groups:
           description: "Failure rate across Email, Slack, Teams, or In-App dispatch is {{ $value | printf \"%.2f\" }}%."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#notificationdeliveryfailureratehigh"
 
+      # ------------------------------------------------------------------------
+      # Phase 3.5: Plugin SDK, Extension Framework & Sandbox Alerts
+      # ------------------------------------------------------------------------
+      - alert: PluginExecutionFailureRateHigh
+        expr: (sum(rate(plugin_executions_total{status="FAILED"}[5m])) / sum(rate(plugin_executions_total[5m]))) * 100 > 5.0
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: plugin
+        annotations:
+          summary: "Plugin sandboxed execution failure rate exceeds 5%"
+          description: "Current plugin failure rate is {{ $value | printf \"%.2f\" }}% over a 5-minute rolling window."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#pluginexecutionfailureratehigh"
+
+      - alert: PluginSandboxTimeoutSpike
+        expr: sum(increase(plugin_executions_total{status="TIMEOUT"}[5m])) > 3
+        for: 1m
+        labels:
+          severity: CRITICAL
+          tier: sandbox
+        annotations:
+          summary: "Spike in plugin sandbox timeout violations"
+          description: "More than 3 plugin tasks were terminated for exceeding execution SLA threshold."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#pluginsandboxtimeoutspike"
+
+      - alert: PluginExecutionDurationHigh
+        expr: histogram_quantile(0.95, sum(rate(plugin_execution_duration_ms_bucket[5m])) by (le)) > 1500
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: plugin
+        annotations:
+          summary: "Plugin execution p95 duration exceeds 1500ms SLA"
+          description: "P95 sandbox execution latency is {{ $value | printf \"%.1f\" }}ms (SLA threshold: 1500ms)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#pluginexecutiondurationhigh"
+
+      - alert: PluginMarketplaceInstallFailureRate
+        expr: (sum(rate(plugin_installations_total{status="error"}[5m])) / sum(rate(plugin_installations_total[5m]))) * 100 > 2.0
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: marketplace
+        annotations:
+          summary: "Plugin marketplace package installation error rate exceeds 2%"
+          description: "Package download or checksum verification failure rate is {{ $value | printf \"%.2f\" }}%."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#pluginmarketplaceinstallfailurerate"
+
 
 
