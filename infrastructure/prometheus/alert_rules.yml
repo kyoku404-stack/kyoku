@@ -398,4 +398,52 @@ groups:
           description: "Connector {{ $labels.connector_id }} credentials will expire in {{ $value | printf \"%.0f\" }} seconds. Refresh required."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#connectorauthexpiringsoon"
 
+      # ------------------------------------------------------------------------
+      # Phase 3.2 Real-Time Collaboration & Team Workspaces Alerts
+      # ------------------------------------------------------------------------
+      - alert: CollaborationCommentLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(collaboration_comment_duration_seconds_bucket[5m])) by (le)) > 0.50
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: collaboration
+        annotations:
+          summary: "Document comment creation p95 latency exceeds 500ms SLA"
+          description: "P95 latency for comment submission is {{ $value | printf \"%.3f\" }}s (threshold: 0.500s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#collaborationcommentlatencyhigh"
+
+      - alert: CollaborationDiscussionSummaryLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(collaboration_summary_duration_seconds_bucket[5m])) by (le)) > 2.0
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: collaboration
+        annotations:
+          summary: "AI Discussion summary generation p95 latency exceeds 2.0s"
+          description: "AI discussion summarization latency is {{ $value | printf \"%.2f\" }}s (threshold: 2.00s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#collaborationdiscussionsummarylatencyhigh"
+
+      - alert: CollaborationActivityFeedLag
+        expr: histogram_quantile(0.95, sum(rate(collaboration_activity_feed_duration_seconds_bucket[5m])) by (le)) > 1.0
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: collaboration
+        annotations:
+          summary: "Activity feed query latency exceeds 1.0s SLA"
+          description: "Activity feed response time p95 is {{ $value | printf \"%.2f\" }}s (threshold: 1.00s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#collaborationactivityfeedlag"
+
+      - alert: CollaborationPresenceHeartbeatFailureRate
+        expr: (sum(rate(collaboration_presence_heartbeat_errors_total[5m])) / sum(rate(collaboration_presence_heartbeat_total[5m]))) * 100 > 5.0
+        for: 2m
+        labels:
+          severity: CRITICAL
+          tier: collaboration
+        annotations:
+          summary: "Presence heartbeat failure rate exceeds 5%"
+          description: "Presence heartbeat error rate is {{ $value | printf \"%.2f\" }}% over the last 5 minutes."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#collaborationpresenceheartbeatfailurerate"
+
+
 
