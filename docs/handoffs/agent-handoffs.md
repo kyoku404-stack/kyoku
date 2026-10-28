@@ -5793,6 +5793,87 @@ COMPLETED ✓
 8. Update sidebar navigation in `frontend/src/components/common/Sidebar.tsx` with Blocks/Puzzle icon.
 9. Author frontend test suites in `frontend/src/tests/` and verify with Vitest and Vite production build.
 
+---
+
+## Entry #076: Phase 3.5 — TypeScript Types, API Client, Custom Hooks, Feature Components, Master Page & Routing
+
+### Date
+2026-10-29
+
+### Author Agent
+Member 3 (Frontend & UI Lead)
+
+### Status
+COMPLETED ✓
+
+### Implemented Features
+1. **TypeScript Domain Models & Schema Enums (`frontend/src/types/plugin.ts`)**:
+   - `PluginCategory`, `PluginStatus`, `PluginVerificationTier`, `PluginExecutionStatus`.
+   - `PluginItem`, `PluginMarketplaceItem`, `PluginExecutionResponse`, `PluginExecutionLog`, `PluginAnalytics`.
+   - Typed payload contracts: `PluginInstallPayload`, `PluginUpdatePayload`, `PluginUninstallPayload`, `PluginExecutePayload`, `PluginConfigUpdatePayload`, `PluginPublishPayload`.
+   - Re-exported in `frontend/src/types/index.ts`.
+2. **Phase 3.5 RBAC Permissions (`frontend/src/types/permission.ts`)**:
+   - Added: `PLUGIN_VIEW`, `PLUGIN_MANAGE`, `PLUGIN_INSTALL`, `PLUGIN_EXECUTE`.
+   - Bound to canonical role sets (`VIEWER_PERMISSIONS`, `MEMBER_PERMISSIONS`, `MANAGER_PERMISSIONS`, `ORG_ADMIN_PERMISSIONS`).
+3. **Axios API Client Service (`frontend/src/services/pluginService.ts`)**:
+   - Implemented 13 strongly typed API client methods covering marketplace browsing, publishing, installation, status toggling, config management, sandbox action execution, telemetry logs, and analytics.
+   - Re-exported in `frontend/src/services/index.ts`.
+4. **State Management Hook (`frontend/src/hooks/usePlugins.ts`)**:
+   - Provides reactive state for installed extensions, marketplace catalog, telemetry logs, analytics, and sandbox execution responses.
+   - Supports real-time mutations with optimistic status updates and background refetching.
+5. **Modular UI Feature Components (`frontend/src/features/plugins/`)**:
+   - `PluginMetricsBanner.tsx`: Glassmorphic KPI cards for installed extensions, active extensions, total invocations, average sandbox latency (ms), and error rate.
+   - `InstalledPluginsList.tsx`: Searchable and filterable extension list with enable/disable toggle switches, configuration launcher, sandbox action trigger, version badges, and uninstallation actions.
+   - `PluginMarketplaceGrid.tsx`: Extension store view with verification tier badges (Certified, Verified, Community), ratings, install counts, and install CTA.
+   - `InstallPluginModal.tsx`: Capability permission consent dialog with granular checkboxes and initial configuration JSON editor.
+   - `PluginConfigModal.tsx`: Real-time tenant configuration editor with JSON validation.
+   - `PluginExecutionLogsDrawer.tsx`: Slide-over drawer with invocation logs and interactive Sandbox Action Tester.
+   - `DeveloperSDKDocumentationModal.tsx`: In-browser developer documentation modal with Python `BasePlugin` template and copy button.
+   - `index.ts`: Centralized barrel export.
+6. **Master Page, Navigation & Routing**:
+   - `frontend/src/pages/PluginManagementPage.tsx`: Full responsive master page coordinating tabs, metrics, catalog, and modals.
+   - `frontend/src/routes/paths.ts` & `frontend/src/routes/index.tsx`: Configured `/plugins` and `/marketplace` routes.
+   - `frontend/src/components/common/Sidebar.tsx`: Added `Plugin Ecosystem` navigation item with `Blocks` icon and `Phase 3.5` badge.
+7. **Testing & Verification**:
+   - ESLint: `npm run lint` → 0 errors, 0 warnings.
+   - Vitest: `src/tests/pluginService.test.ts` (7/7 passed), `src/tests/pluginComponents.test.tsx` (6/6 passed) → 13/13 passed (100%).
+   - Vite Production Build: `npm run build` → 1,855 modules transformed, 0 errors, clean bundle generated in `dist/`.
+
+### Files Modified / Created
+- `frontend/src/types/plugin.ts` (Created)
+- `frontend/src/types/index.ts` (Modified)
+- `frontend/src/types/permission.ts` (Modified)
+- `frontend/src/services/pluginService.ts` (Created)
+- `frontend/src/services/index.ts` (Modified)
+- `frontend/src/hooks/usePlugins.ts` (Created)
+- `frontend/src/features/plugins/PluginMetricsBanner.tsx` (Created)
+- `frontend/src/features/plugins/InstalledPluginsList.tsx` (Created)
+- `frontend/src/features/plugins/PluginMarketplaceGrid.tsx` (Created)
+- `frontend/src/features/plugins/InstallPluginModal.tsx` (Created)
+- `frontend/src/features/plugins/PluginConfigModal.tsx` (Created)
+- `frontend/src/features/plugins/PluginExecutionLogsDrawer.tsx` (Created)
+- `frontend/src/features/plugins/DeveloperSDKDocumentationModal.tsx` (Created)
+- `frontend/src/features/plugins/index.ts` (Created)
+- `frontend/src/pages/PluginManagementPage.tsx` (Created)
+- `frontend/src/routes/paths.ts` (Modified)
+- `frontend/src/routes/index.tsx` (Modified)
+- `frontend/src/components/common/Sidebar.tsx` (Modified)
+- `frontend/src/tests/pluginService.test.ts` (Created)
+- `frontend/src/tests/pluginComponents.test.tsx` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Target Receiving Agent
+- **Member 4 (Integration & DevOps Lead)**
+
+#### Required Action for Receiving Agent
+1. Provision Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml` for plugin sandbox timeouts, error spikes, and execution duration.
+2. Provision Grafana dashboard in `infrastructure/grafana/dashboards/plugin-ecosystem-dashboard.json`.
+3. Author comprehensive backend integration & pipeline test suite in `tests/integration/test_plugin_pipeline.py`.
+4. Author Playwright E2E test suite in `tests/e2e/plugin_ecosystem.spec.ts` covering marketplace browsing, extension installation, config updates, and sandbox execution across responsive viewports.
+5. Execute full monorepo verification (Ruff, Pytest, ESLint, Vitest, Vite build, Playwright discovery).
+6. Update `PROJECT_STATE.md` marking Phase 3.5 100% complete across all 4 roles.
+
+
 
 
 

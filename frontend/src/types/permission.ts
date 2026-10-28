@@ -71,6 +71,12 @@ export const Permission = {
   NOTIFICATION_VIEW: 'notification:view',
   NOTIFICATION_MANAGE: 'notification:manage',
 
+  // Plugin SDK & Extension Framework (Phase 3.5)
+  PLUGIN_VIEW: 'plugin.view',
+  PLUGIN_MANAGE: 'plugin.manage',
+  PLUGIN_INSTALL: 'plugin.install',
+  PLUGIN_EXECUTE: 'plugin.execute',
+
   // Analytics & Audit
   ANALYTICS_VIEW: 'analytics.view',
   ANALYTICS_EXPORT: 'analytics.export',
@@ -110,6 +116,7 @@ export const VIEWER_PERMISSIONS: Set<string> = new Set([
   Permission.CONNECTOR_VIEW,
   Permission.WORKFLOW_VIEW,
   Permission.NOTIFICATION_VIEW,
+  Permission.PLUGIN_VIEW,
 ]);
 
 /**
@@ -126,6 +133,7 @@ export const MEMBER_PERMISSIONS: Set<string> = new Set([
   Permission.CONNECTOR_SYNC,
   Permission.WORKFLOW_EXECUTE,
   Permission.NOTIFICATION_MANAGE,
+  Permission.PLUGIN_EXECUTE,
 ]);
 
 /**
@@ -144,6 +152,7 @@ export const MANAGER_PERMISSIONS: Set<string> = new Set([
   Permission.USER_INVITE,
   Permission.WORKFLOW_MANAGE,
   Permission.WORKFLOW_APPROVE,
+  Permission.PLUGIN_INSTALL,
 ]);
 
 /**
@@ -167,6 +176,7 @@ export const ORG_ADMIN_PERMISSIONS: Set<string> = new Set([
   Permission.ANALYTICS_EXPORT,
   Permission.AUDIT_READ,
   Permission.CONNECTOR_MANAGE,
+  Permission.PLUGIN_MANAGE,
 ]);
 
 /**
