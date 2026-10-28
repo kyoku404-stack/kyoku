@@ -5549,6 +5549,64 @@ Stage 2 of Phase 3.4 is 100% complete. Implemented the complete relational persi
 8. Author frontend tests in `frontend/src/tests/workflowService.test.ts` and `frontend/src/tests/workflowComponents.test.tsx`.
 9. Verify with `npm test`, `npm run lint`, `npm run build`.
 
+---
+
+### Handoff #072: Phase 3.4 — Notifications, Workflow Automation & Event-Driven Intelligence (Stage 3: Frontend & UI Lead -> Stage 4: Integration & DevOps Lead)
+- **Date**: 2026-10-29
+- **Author**: Member 3 (Frontend & UI Lead)
+- **Recipient**: Member 4 (Integration & DevOps Lead)
+- **Status**: Completed & Verified
+
+#### Executive Summary
+Stage 3 of Phase 3.4 is 100% complete. Implemented typed domain contracts, API client service methods for all 15 endpoints, the `useWorkflow` custom React hook, 8 modular feature components in `frontend/src/features/workflow/`, the master page `WorkflowAutomationPage.tsx`, routes `/workflows` and `/notifications`, and sidebar navigation. Validated with 20 newly authored frontend tests (100% pass across all 332 tests in the project), 0 ESLint warnings, and a clean production build.
+
+#### Key Deliverables Implemented
+1. **TypeScript Domain Models (`frontend/src/types/workflow.ts`, `frontend/src/types/index.ts`, `frontend/src/types/permission.ts`)**:
+   - Types: `WorkflowTriggerType`, `WorkflowStatus`, `WorkflowExecutionStatus`, `WorkflowStepAction`, `ApprovalStatus`, `ApprovalDecision`, `NotificationChannel`, `NotificationPriority`, `NotificationCategory`.
+   - Interfaces: `WorkflowConditionRule`, `WorkflowRetryPolicy`, `WorkflowStepItem`, `WorkflowItem`, `WorkflowCreatePayload`, `WorkflowUpdatePayload`, `WorkflowExecutionStepItem`, `WorkflowExecutionItem`, `WorkflowApprovalItem`, `WorkflowApprovalDecisionPayload`, `NotificationItem`, `NotificationPreferenceItem`, `NotificationPreferenceUpdatePayload`, `WorkflowTemplateItem`, `WorkflowAnalyticsData`.
+   - Permissions added to `Permission`, `VIEWER_PERMISSIONS`, `MEMBER_PERMISSIONS`, `MANAGER_PERMISSIONS`, `ORG_ADMIN_PERMISSIONS`: `WORKFLOW_VIEW`, `WORKFLOW_MANAGE`, `WORKFLOW_EXECUTE`, `WORKFLOW_APPROVE`, `NOTIFICATION_VIEW`, `NOTIFICATION_MANAGE`.
+2. **API Client Service (`frontend/src/services/workflowService.ts`, `frontend/src/services/index.ts`)**:
+   - `workflowService`: All 15 endpoints (`createWorkflow`, `getWorkflows`, `getWorkflow`, `updateWorkflow`, `deleteWorkflow`, `executeWorkflow`, `getWorkflowExecutions`, `getExecutionDetails`, `getPendingApprovals`, `decideApproval`, `getWorkflowTemplates`, `getWorkflowAnalytics`, `getNotifications`, `markNotificationRead`, `markAllNotificationsRead`, `getNotificationPreferences`, `updateNotificationPreferences`).
+3. **Custom React Hook (`frontend/src/hooks/useWorkflow.ts`)**:
+   - Unified state management for workflow definitions, execution tracking, human approval gates, notification drawer, channel preferences, and analytics telemetry.
+4. **Modular UI Feature Components (`frontend/src/features/workflow/`)**:
+   - `WorkflowMetricsBanner.tsx`: Top KPI cards (Active Workflows, Total Executions, Success Rate SLA, Pending Approvals) and quick actions.
+   - `WorkflowListTable.tsx`: Tabular overview of workflows with trigger pills, expandable DAG pipeline step view, active toggle, run action, and delete.
+   - `CreateWorkflowModal.tsx`: Visual dialog for configuring triggers, predicate condition rules, and ordered action steps.
+   - `WorkflowApprovalQueue.tsx`: Cards for paused workflows requiring human approval with Approve/Reject actions and audit justification comment modal.
+   - `NotificationCenterDrawer.tsx`: Flyout inbox drawer with unread counters, category filtering, and mark read actions.
+   - `NotificationPreferencesModal.tsx`: Multi-channel matrix editor (In-App, Email, Slack, Teams) per category.
+   - `WorkflowTemplateGallery.tsx`: Pre-built blueprint cards with 1-click Deploy Template action.
+   - `WorkflowAnalyticsDashboard.tsx`: Telemetry charts for success SLA meter, latency p95 distribution, and throughput volume.
+   - `index.ts`: Barrel export.
+5. **Master Page & Routing (`frontend/src/pages/WorkflowAutomationPage.tsx`, `frontend/src/routes/paths.ts`, `frontend/src/routes/index.tsx`, `frontend/src/components/common/Sidebar.tsx`)**:
+   - Master page with Workflows, Approvals, Templates, and Analytics tabs.
+   - Paths registered: `ROUTES.WORKFLOWS = '/workflows'`, `ROUTES.NOTIFICATIONS = '/notifications'`.
+   - Sidebar navigation item added with `Zap` icon and "Phase 3.4" badge.
+6. **Frontend Test Suites**:
+   - `frontend/src/tests/workflowService.test.ts` (12 unit tests, 100% pass).
+   - `frontend/src/tests/workflowComponents.test.tsx` (8 component tests, 100% pass).
+
+#### Verification Results
+- [x] ESLint: `npm run lint` (0 errors, 0 warnings).
+- [x] Vitest: `npm test` (332/332 tests passing across 40 test files, 100% pass rate).
+- [x] Production Build: `npm run build` (Clean Vite production bundle in 4.54s).
+
+#### Target Receiving Agent
+- **Member 4 (Integration & DevOps Lead)**
+
+#### Required Action for Receiving Agent
+1. Inspect Member 1, 2, and 3 codebases, services, and handoff entries.
+2. Update Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml` for workflow execution failure rates, duration p95 SLA, pending approvals stalled, and notification dispatch failures.
+3. Provision Grafana dashboard in `infrastructure/grafana/dashboards/workflow-automation-dashboard.json`.
+4. Authored comprehensive backend integration & performance test suite in `tests/integration/test_workflow_pipeline.py`.
+5. Authored Playwright E2E automated test suite in `tests/e2e/workflow_automation.spec.ts` covering complete user workflows across desktop, tablet, and mobile breakpoints.
+6. Run full verification: Ruff linter, pytest, vitest, npm build, and playwright discovery.
+7. Update `PROJECT_STATE.md` marking Phase 3.4 100% complete across all 4 roles.
+8. Append Handoff Entry #073 in `docs/handoffs/agent-handoffs.md` summarizing DevOps completion.
+9. Commit Stage 4 deliverables, push branch to central repo, and stop execution awaiting human review.
+
+
 
 
 

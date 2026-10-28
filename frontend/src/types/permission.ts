@@ -63,6 +63,14 @@ export const Permission = {
   CONNECTOR_MANAGE: 'connector:manage',
   CONNECTOR_SYNC: 'connector:sync',
 
+  // Workflow Automation & Notifications (Phase 3.4)
+  WORKFLOW_VIEW: 'workflow:view',
+  WORKFLOW_MANAGE: 'workflow:manage',
+  WORKFLOW_EXECUTE: 'workflow:execute',
+  WORKFLOW_APPROVE: 'workflow:approve',
+  NOTIFICATION_VIEW: 'notification:view',
+  NOTIFICATION_MANAGE: 'notification:manage',
+
   // Analytics & Audit
   ANALYTICS_VIEW: 'analytics.view',
   ANALYTICS_EXPORT: 'analytics.export',
@@ -100,6 +108,8 @@ export const VIEWER_PERMISSIONS: Set<string> = new Set([
   Permission.TEAM_READ,
   Permission.MEMBER_READ,
   Permission.CONNECTOR_VIEW,
+  Permission.WORKFLOW_VIEW,
+  Permission.NOTIFICATION_VIEW,
 ]);
 
 /**
@@ -114,6 +124,8 @@ export const MEMBER_PERMISSIONS: Set<string> = new Set([
   Permission.PROJECT_UPDATE,
   Permission.INVITATION_READ,
   Permission.CONNECTOR_SYNC,
+  Permission.WORKFLOW_EXECUTE,
+  Permission.NOTIFICATION_MANAGE,
 ]);
 
 /**
@@ -130,6 +142,8 @@ export const MANAGER_PERMISSIONS: Set<string> = new Set([
   Permission.MEETING_CREATE,
   Permission.MEETING_MANAGE,
   Permission.USER_INVITE,
+  Permission.WORKFLOW_MANAGE,
+  Permission.WORKFLOW_APPROVE,
 ]);
 
 /**

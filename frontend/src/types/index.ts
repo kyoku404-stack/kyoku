@@ -63,4 +63,30 @@ export type {
 export * from './connector';
 export * from './collaboration';
 export * from './security';
+export type {
+  WorkflowTriggerType,
+  WorkflowExecutionStatus,
+  WorkflowStepAction,
+  NotificationChannel,
+  NotificationPriority,
+  NotificationCategory,
+  WorkflowConditionRule,
+  WorkflowRetryPolicy,
+  WorkflowStepItem,
+  WorkflowItem,
+  WorkflowCreatePayload,
+  WorkflowUpdatePayload,
+  WorkflowExecutionStepItem,
+  WorkflowExecutionItem,
+  WorkflowApprovalItem,
+  WorkflowApprovalDecisionPayload,
+  NotificationPreferenceItem,
+  NotificationPreferenceUpdatePayload,
+  WorkflowTemplateItem,
+  WorkflowAnalyticsData,
+  ApprovalDecision as WorkflowApprovalDecision,
+  WorkflowStatus as AutomationWorkflowStatus,
+  ApprovalStatus as WorkflowApprovalStatus,
+  NotificationItem as EnterpriseNotificationItem,
+} from './workflow';
 

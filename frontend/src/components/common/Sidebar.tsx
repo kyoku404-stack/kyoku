@@ -27,6 +27,7 @@ import {
   Network,
   BrainCircuit,
   Cable,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -88,6 +89,13 @@ const navItems: NavItem[] = [
     path: ROUTES.SECURITY,
     icon: ShieldCheck,
     badge: 'Phase 3.3',
+  },
+  {
+    label: 'Workflow Automation',
+    path: ROUTES.WORKFLOWS,
+    icon: Zap,
+    requiredPermission: Permission.WORKFLOW_VIEW,
+    badge: 'Phase 3.4',
   },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
