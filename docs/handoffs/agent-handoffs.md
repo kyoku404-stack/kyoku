@@ -5467,6 +5467,89 @@ Member 1 has completed all Phase 3.4 AI Architecture and domain contract deliver
 5. Implement FastAPI REST endpoints in `backend/app/api/v1/workflow.py` and mount in `backend/app/api/v1/router.py`.
 6. Author unit and integration tests in `tests/unit/test_workflow_services.py` and `tests/integration/test_workflow_endpoints.py`.
 
+---
+
+### Handoff #071: Phase 3.4 — Notifications, Workflow Automation & Event-Driven Intelligence (Stage 2: Backend & Database Lead -> Stage 3: Frontend & UI Lead)
+- **Date**: 2026-10-29
+- **Author**: Member 2 (Backend & Database Lead)
+- **Recipient**: Member 3 (Frontend & UI Lead)
+- **Status**: Completed & Verified
+
+#### Executive Summary
+Stage 2 of Phase 3.4 is 100% complete. Implemented the complete relational persistence layer, Alembic migration, business logic service, Pydantic schemas, and FastAPI REST endpoints across all 15 routes specified in Section 16 of `docs/api/api-contract.md`.
+
+#### Key Deliverables Implemented
+1. **SQLAlchemy Models (`backend/app/models/workflow.py`, `backend/app/models/notification.py`)**:
+   - `Workflow`: Workflow definition with name, description, trigger_type, trigger_config, condition_rules, is_active, execution_count, success_count.
+   - `WorkflowStep`: Ordered sequence steps with step_order, action_type, action_config, retry_policy, timeout_seconds.
+   - `WorkflowExecution`: Execution instances with trigger_event, status, context_data, trigger_metadata, error_message, started_at, completed_at, duration_ms.
+   - `WorkflowExecutionStep`: Step run records with status, input_payload, output_payload, error_details, attempts, execution_time_ms.
+   - `WorkflowApproval`: Human-in-the-loop approvals with status, decision, comments, requested_approver_id, approved_by_id, decided_at, expires_at.
+   - `NotificationPreference`: User channel preferences matrix (`in_app`, `email`, `slack`, `teams`) keyed by category (`workflow`, `security`, `system`, `task`).
+   - `WorkflowTemplate`: Reusable workflow templates with category, complexity, is_built_in, trigger_type, condition_rules, steps_template.
+   - `Notification`: Enhanced with `channel`, `priority`, `category`, `read_at`, `metadata_json`, backwards-compatible property aliases.
+2. **Alembic Migration (`backend/migrations/versions/e3f4a5b6c7d8_phase_3_4_workflow_automation_notifications.py`)**:
+   - Revision `e3f4a5b6c7d8` -> depends on `d2e3f4a5b6c7`.
+   - Verified across migration test suite with both upgrade and downgrade paths.
+3. **Pydantic v2 Schemas (`backend/app/schemas/workflow.py`)**:
+   - `WorkflowCreate`, `WorkflowUpdate`, `WorkflowStepSchema`, `WorkflowResponse`, `WorkflowListResponse`
+   - `WorkflowExecuteRequest`, `WorkflowExecutionResponse`, `WorkflowExecutionListResponse`, `WorkflowExecutionStepResponse`
+   - `ApprovalDecisionRequest`, `ApprovalResponse`, `ApprovalListResponse`
+   - `NotificationPreferenceUpdate`, `NotificationPreferenceResponse`, `NotificationPreferencesListResponse`
+   - `WorkflowTemplateResponse`, `WorkflowTemplateListResponse`
+   - `WorkflowAnalyticsResponse`
+4. **Business Logic Orchestrator (`backend/app/services/workflow/service.py`)**:
+   - `EnterpriseWorkflowService`: Complete orchestration supporting DAG/sequential step execution, predicate condition rule evaluation, retry loops with exponential backoff, human-in-the-loop approval pause/resume, multi-channel notification dispatching, template instantiation, and analytics aggregation.
+5. **FastAPI Endpoints (`backend/app/api/v1/workflows.py`, `backend/app/api/v1/notifications.py`)**:
+   - `POST /api/v1/workflows`: Create workflow with steps
+   - `GET /api/v1/workflows`: List workflows with filtering (is_active, trigger_type)
+   - `GET /api/v1/workflows/{id}`: Get workflow details and step list
+   - `POST /api/v1/workflows/{id}/execute`: Trigger manual workflow execution
+   - `DELETE /api/v1/workflows/{id}`: Delete workflow
+   - `GET /api/v1/workflows/{id}/executions`: List workflow executions
+   - `GET /api/v1/workflows/executions/{execution_id}`: Get execution details with step runs
+   - `GET /api/v1/workflows/approvals/pending`: List pending approvals
+   - `POST /api/v1/workflows/approvals/{id}/decide`: Approve or reject pending workflow execution
+   - `GET /api/v1/workflows/templates`: List workflow templates
+   - `GET /api/v1/workflows/analytics`: Get aggregated workflow execution metrics
+   - `GET /api/v1/notifications`: List notifications with filter (is_read, category)
+   - `POST /api/v1/notifications/{id}/read`: Mark notification as read
+   - `POST /api/v1/notifications/read-all`: Mark all notifications as read
+   - `GET /api/v1/notifications/preferences`: Get user notification preferences
+   - `POST /api/v1/notifications/preferences`: Update user notification preferences
+6. **Backend Test Suites**:
+   - `tests/unit/test_workflow_services.py` (7 tests, 100% pass)
+   - `tests/integration/test_workflow_endpoints.py` (6 tests, 100% pass)
+   - `tests/integration/test_db_migrations.py` (4 tests, 100% pass)
+
+#### Verification Results
+- Ruff: Clean (0 errors, 0 warnings).
+- Pytest: 28/28 workflow & migration tests passing.
+
+#### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**
+
+#### Required Action for Receiving Agent
+1. Create TypeScript types in `frontend/src/types/workflow.ts` and re-export in `frontend/src/types/index.ts`.
+2. Implement API client service methods in `frontend/src/services/workflowService.ts` and re-export in `frontend/src/services/index.ts`.
+3. Create custom hook `frontend/src/hooks/useWorkflow.ts`.
+4. Build modular UI feature components in `frontend/src/features/workflow/`:
+   - `WorkflowMetricsBanner.tsx`
+   - `WorkflowListTable.tsx`
+   - `CreateWorkflowModal.tsx`
+   - `WorkflowApprovalQueue.tsx`
+   - `NotificationCenterDrawer.tsx`
+   - `NotificationPreferencesModal.tsx`
+   - `WorkflowTemplateGallery.tsx`
+   - `WorkflowAnalyticsDashboard.tsx`
+   - `index.ts`
+5. Create master page `frontend/src/pages/WorkflowAutomationPage.tsx`.
+6. Configure routes in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+7. Update `Sidebar.tsx` navigation with Workflow / Notifications entry.
+8. Author frontend tests in `frontend/src/tests/workflowService.test.ts` and `frontend/src/tests/workflowComponents.test.tsx`.
+9. Verify with `npm test`, `npm run lint`, `npm run build`.
+
+
 
 
 

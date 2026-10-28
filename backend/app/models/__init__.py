@@ -47,6 +47,15 @@ from backend.app.models.security import (
 from backend.app.models.task import Task
 from backend.app.models.team import Team
 from backend.app.models.user import User
+from backend.app.models.workflow import (
+    NotificationPreference,
+    Workflow,
+    WorkflowApproval,
+    WorkflowExecution,
+    WorkflowExecutionStep,
+    WorkflowStep,
+    WorkflowTemplate,
+)
 
 __all__ = [
     "AIRecommendation",
@@ -75,6 +84,7 @@ __all__ = [
     "KgRelationship",
     "Meeting",
     "Notification",
+    "NotificationPreference",
     "Organization",
     "Project",
     "RAGFeedback",
@@ -90,6 +100,12 @@ __all__ = [
     "Task",
     "Team",
     "User",
+    "Workflow",
+    "WorkflowApproval",
+    "WorkflowExecution",
+    "WorkflowExecutionStep",
+    "WorkflowStep",
+    "WorkflowTemplate",
     "Workspace",
     "WorkspaceMember",
     "project_users",

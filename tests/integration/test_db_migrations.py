@@ -43,6 +43,7 @@ class TestDatabaseMigrations:
             "b9c0d1e2f3a4",
             "c0d1e2f3a4b5",
             "d2e3f4a5b6c7",
+            "e3f4a5b6c7d8",
         )
 
     def test_schema_metadata_tables_completeness(self):
@@ -89,6 +90,14 @@ class TestDatabaseMigrations:
             "security_data_retention_rules",
             "security_erasure_requests",
             "security_threat_alerts",
+            "workflows",
+            "workflow_steps",
+            "workflow_executions",
+            "workflow_execution_steps",
+            "workflow_approvals",
+            "notifications",
+            "notification_preferences",
+            "workflow_templates",
         }
 
         missing_tables = expected_tables - table_names
