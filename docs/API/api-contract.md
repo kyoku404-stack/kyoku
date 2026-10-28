@@ -3657,6 +3657,440 @@ All endpoints require Bearer JWT authentication and tenant isolation (`organizat
 }
 ```
 
+---
+
+## 16. Workflow Automation, Notifications & Event-Driven Intelligence (Phase 3.4)
+
+### 16.1 Overview
+The Phase 3.4 Workflow Automation API enables enterprise organizations to orchestrate multi-step autonomous workflows, manage human-in-the-loop approvals, dispatch contextual notifications across in-app/email/Slack/Teams channels, and analyze operational automation performance.
+
+Base Path: `/api/v1`
+
+---
+
+### 16.2 Workflow Management
+
+#### 16.2.1 Create Workflow
+- **Method**: `POST`
+- **Path**: `/api/v1/workflows/create`
+- **Auth**: Bearer JWT (`workflow.manage` permission)
+- **Request Body**:
+```json
+{
+  "name": "Confidential Policy Ingestion & Review",
+  "description": "Automatically summarize uploaded policies, scan for PII, and notify legal reviewer.",
+  "trigger_type": "EVENT",
+  "event_pattern": "document.uploaded",
+  "condition_rules": {
+    "field": "document_type",
+    "operator": "equals",
+    "value": "POLICY"
+  },
+  "is_active": true,
+  "steps": [
+    {
+      "step_order": 1,
+      "action_type": "AI_SUMMARIZE",
+      "configuration": { "max_summary_length": 250 }
+    },
+    {
+      "step_order": 2,
+      "action_type": "AI_SUGGEST_REVIEWER",
+      "configuration": { "target_role": "LegalReviewer" }
+    },
+    {
+      "step_order": 3,
+      "action_type": "REQUIRE_APPROVAL",
+      "configuration": { "approver_role": "LegalManager" }
+    },
+    {
+      "step_order": 4,
+      "action_type": "NOTIFY",
+      "configuration": { "channel": "IN_APP", "priority": "HIGH" }
+    }
+  ]
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Workflow created successfully.",
+  "data": {
+    "id": "wf-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "name": "Confidential Policy Ingestion & Review",
+    "trigger_type": "EVENT",
+    "event_pattern": "document.uploaded",
+    "is_active": true,
+    "step_count": 4,
+    "created_at": "2026-10-29T10:00:00Z"
+  }
+}
+```
+
+#### 16.2.2 List Workflows
+- **Method**: `GET`
+- **Path**: `/api/v1/workflows/list`
+- **Auth**: Bearer JWT (`workflow.view` permission)
+- **Query Parameters**:
+  - `is_active`: boolean (optional)
+  - `trigger_type`: string (optional: `EVENT`, `SCHEDULE`, `MANUAL`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "wf-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "name": "Confidential Policy Ingestion & Review",
+      "description": "Automatically summarize uploaded policies, scan for PII, and notify legal reviewer.",
+      "trigger_type": "EVENT",
+      "event_pattern": "document.uploaded",
+      "is_active": true,
+      "step_count": 4,
+      "created_at": "2026-10-29T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### 16.2.3 Get Workflow Status & Details
+- **Method**: `GET`
+- **Path**: `/api/v1/workflows/status/{id}`
+- **Auth**: Bearer JWT (`workflow.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "workflow": {
+      "id": "wf-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "name": "Confidential Policy Ingestion & Review",
+      "trigger_type": "EVENT",
+      "is_active": true
+    },
+    "recent_executions": [
+      {
+        "id": "exec-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+        "status": "COMPLETED",
+        "duration_ms": 420,
+        "started_at": "2026-10-29T10:05:00Z",
+        "completed_at": "2026-10-29T10:05:01Z"
+      }
+    ]
+  }
+}
+```
+
+#### 16.2.4 Execute Workflow
+- **Method**: `POST`
+- **Path**: `/api/v1/workflows/execute`
+- **Auth**: Bearer JWT (`workflow.execute` permission)
+- **Request Body**:
+```json
+{
+  "workflow_id": "wf-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+  "input_payload": {
+    "document_id": "doc-123",
+    "document_type": "POLICY",
+    "title": "Corporate AI Usage Policy 2026"
+  }
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Workflow execution triggered successfully.",
+  "data": {
+    "execution_id": "exec-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "status": "RUNNING",
+    "started_at": "2026-10-29T10:10:00Z"
+  }
+}
+```
+
+#### 16.2.5 Delete / Deactivate Workflow
+- **Method**: `DELETE`
+- **Path**: `/api/v1/workflows/{id}`
+- **Auth**: Bearer JWT (`workflow.manage` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Workflow deleted successfully."
+}
+```
+
+#### 16.2.6 List Workflow Executions
+- **Method**: `GET`
+- **Path**: `/api/v1/workflows/executions`
+- **Auth**: Bearer JWT (`workflow.view` permission)
+- **Query Parameters**:
+  - `workflow_id`: UUID (optional)
+  - `status`: string (optional: `RUNNING`, `WAITING_APPROVAL`, `COMPLETED`, `FAILED`, `CANCELLED`)
+  - `page`: int (default: 1)
+  - `page_size`: int (default: 20)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "total": 45,
+  "page": 1,
+  "page_size": 20,
+  "data": [
+    {
+      "id": "exec-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "workflow_id": "wf-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "workflow_name": "Confidential Policy Ingestion & Review",
+      "status": "COMPLETED",
+      "duration_ms": 380,
+      "started_at": "2026-10-29T10:10:00Z",
+      "completed_at": "2026-10-29T10:10:01Z"
+    }
+  ]
+}
+```
+
+#### 16.2.7 List Reusable Workflow Templates
+- **Method**: `GET`
+- **Path**: `/api/v1/workflows/templates`
+- **Auth**: Bearer JWT (`workflow.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "tpl-doc-approval",
+      "name": "Document Approval Pipeline",
+      "description": "Multi-tier manager review and sign-off for newly uploaded documents.",
+      "category": "GOVERNANCE",
+      "trigger_type": "EVENT",
+      "steps_preview": ["AI Summarize", "Suggest Reviewer", "Manager Approval", "Notify Team"]
+    },
+    {
+      "id": "tpl-ai-summary",
+      "name": "Autonomous AI Ingestion",
+      "description": "Auto-summarize, keyword extraction, and vector index update.",
+      "category": "AI",
+      "trigger_type": "EVENT",
+      "steps_preview": ["Extract Text", "Generate Summary", "Update Graph", "Notify Author"]
+    },
+    {
+      "id": "tpl-scheduled-report",
+      "name": "Weekly Executive Digest",
+      "description": "Synthesizes organizational knowledge metrics and emails leadership.",
+      "category": "REPORTING",
+      "trigger_type": "SCHEDULE",
+      "steps_preview": ["Aggregate Analytics", "Draft Briefing", "Send Email"]
+    }
+  ]
+}
+```
+
+---
+
+### 16.3 Approval Workflows
+
+#### 16.3.1 Submit Workflow Approval Decision
+- **Method**: `POST`
+- **Path**: `/api/v1/workflows/approve`
+- **Auth**: Bearer JWT (`workflow.approve` permission)
+- **Request Body**:
+```json
+{
+  "approval_id": "appr-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+  "decision": "APPROVE",
+  "comments": "Reviewed and approved for publication."
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Workflow step approved and execution resumed.",
+  "data": {
+    "approval_id": "appr-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "status": "APPROVED",
+    "execution_id": "exec-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "responded_at": "2026-10-29T10:15:00Z"
+  }
+}
+```
+
+#### 16.3.2 List Pending Approvals
+- **Method**: `GET`
+- **Path**: `/api/v1/workflows/approvals/pending`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "appr-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "execution_id": "exec-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "workflow_name": "Confidential Policy Ingestion & Review",
+      "requester_name": "Alice Johnson",
+      "step_description": "Manager approval required for document publication",
+      "requested_at": "2026-10-29T10:10:00Z",
+      "status": "PENDING"
+    }
+  ]
+}
+```
+
+---
+
+### 16.4 Notification Center
+
+#### 16.4.1 List User Notifications
+- **Method**: `GET`
+- **Path**: `/api/v1/notifications`
+- **Auth**: Bearer JWT
+- **Query Parameters**:
+  - `unread_only`: boolean (default: false)
+  - `category`: string (optional: `WORKFLOW`, `APPROVAL`, `DOCUMENT`, `AI`, `SECURITY`, `SYSTEM`)
+  - `page`: int (default: 1)
+  - `page_size`: int (default: 20)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "unread_count": 3,
+  "total": 18,
+  "page": 1,
+  "page_size": 20,
+  "data": [
+    {
+      "id": "notif-1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "title": "Approval Required: Policy Ingestion",
+      "message": "Corporate AI Usage Policy 2026 awaits your review and sign-off.",
+      "channel": "IN_APP",
+      "priority": "HIGH",
+      "category": "APPROVAL",
+      "is_read": false,
+      "link_url": "/workflows/approvals",
+      "created_at": "2026-10-29T10:10:00Z"
+    }
+  ]
+}
+```
+
+#### 16.4.2 Mark Notification as Read
+- **Method**: `POST`
+- **Path**: `/api/v1/notifications/{id}/read`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Notification marked as read."
+}
+```
+
+#### 16.4.3 Mark All Notifications as Read
+- **Method**: `POST`
+- **Path**: `/api/v1/notifications/read-all`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "All notifications marked as read."
+}
+```
+
+#### 16.4.4 Get Notification Preferences
+- **Method**: `GET`
+- **Path**: `/api/v1/notifications/preferences`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "channel": "IN_APP",
+      "category": "APPROVAL",
+      "is_enabled": true
+    },
+    {
+      "channel": "EMAIL",
+      "category": "APPROVAL",
+      "is_enabled": true
+    },
+    {
+      "channel": "SLACK",
+      "category": "SYSTEM",
+      "is_enabled": false
+    }
+  ]
+}
+```
+
+#### 16.4.5 Update Notification Preferences
+- **Method**: `POST`
+- **Path**: `/api/v1/notifications/preferences`
+- **Auth**: Bearer JWT
+- **Request Body**:
+```json
+{
+  "preferences": [
+    {
+      "channel": "EMAIL",
+      "category": "WORKFLOW",
+      "is_enabled": true
+    },
+    {
+      "channel": "SLACK",
+      "category": "APPROVAL",
+      "is_enabled": true
+    }
+  ]
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Notification preferences updated successfully."
+}
+```
+
+---
+
+### 16.5 Workflow Analytics
+
+#### 16.5.1 Get Workflow Metrics & Analytics
+- **Method**: `GET`
+- **Path**: `/api/v1/workflows/analytics`
+- **Auth**: Bearer JWT (`workflow.view` permission)
+- **Query Parameters**:
+  - `days`: int (default: 30)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "total_workflows_executed": 142,
+    "success_rate": 97.2,
+    "avg_execution_time_ms": 340.5,
+    "failed_workflows": 4,
+    "pending_approvals": 3,
+    "notifications_delivered": 485,
+    "ai_automation_usage_count": 96,
+    "executions_by_day": [
+      { "date": "2026-10-27", "count": 28 },
+      { "date": "2026-10-28", "count": 34 },
+      { "date": "2026-10-29", "count": 42 }
+    ]
+  }
+}
+```
+
+
 
 
 
