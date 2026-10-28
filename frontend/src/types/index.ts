@@ -61,3 +61,5 @@ export type {
   KnowledgeHealthResponse,
 } from './intelligence';
 export * from './connector';
+export * from './collaboration';
+

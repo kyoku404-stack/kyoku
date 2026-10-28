@@ -2868,4 +2868,368 @@ All endpoints require Bearer JWT authentication and tenant isolation (`organizat
 }
 ```
 
+---
+
+## 14. Real-Time Collaboration, Team Workspaces & Knowledge Sharing (Phase 3.2)
+
+### 14.1 Workspace Management
+
+#### 14.1.1 Create Team Workspace
+- **Method**: `POST`
+- **Path**: `/api/v1/workspaces/create`
+- **Auth**: Bearer JWT (`workspace.manage` or `workspace.create`)
+- **Request Body**:
+```json
+{
+  "name": "Engineering Core",
+  "slug": "engineering-core",
+  "description": "Core engineering workspace for architecture, RFCs, and guidelines",
+  "avatar_color": "#4F46E5",
+  "is_private": false
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Workspace created successfully.",
+  "data": {
+    "id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "name": "Engineering Core",
+    "slug": "engineering-core",
+    "description": "Core engineering workspace for architecture, RFCs, and guidelines",
+    "avatar_color": "#4F46E5",
+    "is_private": false,
+    "member_count": 1,
+    "created_at": "2026-10-28T09:00:00Z"
+  }
+}
+```
+
+#### 14.1.2 Retrieve Workspace by ID
+- **Method**: `GET`
+- **Path**: `/api/v1/workspaces/{id}`
+- **Auth**: Bearer JWT (`workspace.view`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "name": "Engineering Core",
+    "slug": "engineering-core",
+    "description": "Core engineering workspace for architecture, RFCs, and guidelines",
+    "avatar_color": "#4F46E5",
+    "is_private": false,
+    "current_user_role": "ADMIN",
+    "members": [
+      {
+        "user_id": "u1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+        "email": "lead@company.com",
+        "full_name": "Tech Lead",
+        "role": "ADMIN",
+        "joined_at": "2026-10-28T09:00:00Z"
+      }
+    ],
+    "created_at": "2026-10-28T09:00:00Z"
+  }
+}
+```
+
+#### 14.1.3 List Workspaces
+- **Method**: `GET`
+- **Path**: `/api/v1/workspaces/list`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "total": 3,
+    "workspaces": [
+      {
+        "id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+        "name": "Engineering Core",
+        "slug": "engineering-core",
+        "description": "Core engineering workspace",
+        "avatar_color": "#4F46E5",
+        "member_count": 12,
+        "current_user_role": "ADMIN",
+        "created_at": "2026-10-28T09:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### 14.1.4 Workspace Collaboration Dashboard
+- **Method**: `GET`
+- **Path**: `/api/v1/workspaces/{id}/dashboard`
+- **Auth**: Bearer JWT (`workspace.view`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "workspace_id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "active_members_count": 8,
+    "active_projects_count": 4,
+    "recent_documents_count": 15,
+    "open_discussions_count": 6,
+    "pending_approvals_count": 2,
+    "recent_activities": [],
+    "recent_discussions": []
+  }
+}
+```
+
+---
+
+### 14.2 Shared Projects
+
+#### 14.2.1 Create Shared Project
+- **Method**: `POST`
+- **Path**: `/api/v1/projects/create`
+- **Auth**: Bearer JWT (`workspace.manage` or `workspace.create`)
+- **Request Body**:
+```json
+{
+  "workspace_id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+  "name": "API v2 Redesign",
+  "description": "Cross-team project migrating public APIs to OpenAPI 3.1 specification"
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Project created successfully.",
+  "data": {
+    "id": "p1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "workspace_id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "name": "API v2 Redesign",
+    "description": "Cross-team project migrating public APIs to OpenAPI 3.1 specification",
+    "created_at": "2026-10-28T09:10:00Z"
+  }
+}
+```
+
+---
+
+### 14.3 Document Discussions, Comments & Mentions
+
+#### 14.3.1 Add Comment
+- **Method**: `POST`
+- **Path**: `/api/v1/comments/create`
+- **Auth**: Bearer JWT (`comment.create`)
+- **Request Body**:
+```json
+{
+  "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "workspace_id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+  "content": "Please verify section 3.2 with @Sarah before the audit.",
+  "page_number": 3,
+  "highlight_text": "Retention period shall not exceed 90 days."
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Comment posted successfully.",
+  "data": {
+    "id": "c1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "author_id": "u1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "author_name": "John Doe",
+    "content": "Please verify section 3.2 with @Sarah before the audit.",
+    "page_number": 3,
+    "highlight_text": "Retention period shall not exceed 90 days.",
+    "parent_comment_id": null,
+    "status": "OPEN",
+    "mentions": ["Sarah"],
+    "created_at": "2026-10-28T09:12:00Z"
+  }
+}
+```
+
+#### 14.3.2 Reply to Comment
+- **Method**: `POST`
+- **Path**: `/api/v1/comments/reply`
+- **Auth**: Bearer JWT (`comment.create`)
+- **Request Body**:
+```json
+{
+  "parent_comment_id": "c1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+  "content": "Verified and approved per compliance standards."
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Reply posted successfully.",
+  "data": {
+    "id": "c2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d",
+    "parent_comment_id": "c1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "author_name": "Sarah Connor",
+    "content": "Verified and approved per compliance standards.",
+    "status": "OPEN",
+    "created_at": "2026-10-28T09:15:00Z"
+  }
+}
+```
+
+#### 14.3.3 Resolve Comment Thread
+- **Method**: `POST`
+- **Path**: `/api/v1/comments/{id}/resolve`
+- **Auth**: Bearer JWT (`comment.resolve`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Discussion thread resolved successfully.",
+  "data": {
+    "id": "c1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "status": "RESOLVED",
+    "resolved_by_id": "u1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "resolved_at": "2026-10-28T09:20:00Z"
+  }
+}
+```
+
+#### 14.3.4 Send Explicit User Mention
+- **Method**: `POST`
+- **Path**: `/api/v1/mentions/send`
+- **Auth**: Bearer JWT (`comment.create`)
+- **Request Body**:
+```json
+{
+  "mentioned_user_id": "u2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d",
+  "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "workspace_id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+  "context_text": "@Sarah Please review the updated HR policy."
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Mention notification dispatched successfully.",
+  "data": {
+    "notification_id": "n1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "delivered": true
+  }
+}
+```
+
+---
+
+### 14.4 Activity Feed & Document Version History
+
+#### 14.4.1 Workspace Activity Feed
+- **Method**: `GET`
+- **Path**: `/api/v1/activity/feed`
+- **Auth**: Bearer JWT (`workspace.view`)
+- **Query Parameters**:
+  - `workspace_id`: (Required, UUID)
+  - `activity_type`: (Optional, string)
+  - `limit`: (Optional, default: 30)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "workspace_id": "w1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "activities": [
+      {
+        "id": "a1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+        "activity_type": "COMMENT_ADDED",
+        "actor_name": "Bob Smith",
+        "entity_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+        "entity_type": "document",
+        "entity_title": "Employee Handbook.pdf",
+        "description": "Bob commented on Employee Handbook.pdf",
+        "created_at": "2026-10-28T10:18:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### 14.4.2 Document Version History
+- **Method**: `GET`
+- **Path**: `/api/v1/version/history/{id}`
+- **Auth**: Bearer JWT (`document.view`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "total_versions": 2,
+    "versions": [
+      {
+        "version_id": "v2a3b4c5-d6e7-8a9b-0c1d-2e3f4a5b6c7d",
+        "version_number": 2,
+        "editor_name": "Alice Green",
+        "change_summary": "Updated annual leave allocation from 18 to 20 days",
+        "approval_status": "APPROVED",
+        "created_at": "2026-10-28T10:25:00Z"
+      },
+      {
+        "version_id": "v1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+        "version_number": 1,
+        "editor_name": "Alice Green",
+        "change_summary": "Initial handbook draft",
+        "approval_status": "APPROVED",
+        "created_at": "2026-10-28T10:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 14.5 AI Collaboration Assistant
+
+#### 14.5.1 Summarize Discussion Thread
+- **Method**: `POST`
+- **Path**: `/api/v1/collaboration/discussions/{document_id}/summary`
+- **Auth**: Bearer JWT (`workspace.view`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "executive_summary": "The discussion centered on HR leave policy harmonization. Sarah and John finalized that annual leave increases to 20 days with supervisor sign-off.",
+    "key_decisions": [
+      {
+        "decision": "Annual leave allocation confirmed at 20 days per fiscal year",
+        "agreed_by": ["Sarah Connor", "John Doe"],
+        "timestamp": "2026-10-28T09:20:00Z"
+      }
+    ],
+    "action_items": [
+      {
+        "assignee": "Sarah Connor",
+        "action": "Publish revised employee handbook PDF to the HR portal",
+        "deadline": "Friday"
+      }
+    ],
+    "suggested_documents": [
+      {
+        "document_id": "d9e8f7a6-b5c4-3d2e-1f0a-9b8c7d6e5f4a",
+        "title": "Corporate Compliance Handbook 2026",
+        "relevance_score": 0.92
+      }
+    ]
+  }
+}
+```
+
+
 

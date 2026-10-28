@@ -999,5 +999,125 @@ CREATE INDEX idx_sync_logs_job ON connector_sync_logs(sync_job_id);
 CREATE INDEX idx_sync_logs_external_doc ON connector_sync_logs(organization_id, connector_id, external_document_id);
 ```
 
+---
+
+### 3.19 Real-Time Collaboration, Team Workspaces & Knowledge Sharing (Phase 3.2)
+
+#### 3.19.1 `workspaces` Table
+Stores collaborative team workspaces (e.g., HR, Engineering, Legal, Marketing) within an organization:
+```sql
+CREATE TABLE workspaces (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(120) NOT NULL,
+    slug VARCHAR(120) NOT NULL,
+    description TEXT,
+    avatar_color VARCHAR(30) DEFAULT '#4F46E5',
+    is_private BOOLEAN NOT NULL DEFAULT FALSE,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    created_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_workspace_org_slug UNIQUE (organization_id, slug)
+);
+
+CREATE INDEX idx_workspaces_tenant ON workspaces(organization_id, is_archived);
+CREATE INDEX idx_workspaces_slug ON workspaces(organization_id, slug);
+```
+
+#### 3.19.2 `workspace_members` Table
+Stores memberships and granular RBAC roles for team members in each workspace:
+```sql
+CREATE TABLE workspace_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(30) NOT NULL DEFAULT 'MEMBER',
+    joined_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_workspace_user UNIQUE (workspace_id, user_id),
+    CONSTRAINT chk_workspace_member_role CHECK (role IN ('ADMIN', 'MEMBER', 'VIEWER', 'GUEST'))
+);
+
+CREATE INDEX idx_workspace_members_user ON workspace_members(user_id);
+CREATE INDEX idx_workspace_members_workspace ON workspace_members(workspace_id, role);
+```
+
+#### 3.19.3 `document_comments` Table
+Stores threaded comments and replies associated with specific documents:
+```sql
+CREATE TABLE document_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    parent_comment_id UUID REFERENCES document_comments(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    page_number INT,
+    highlight_text TEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
+    resolved_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    mentions_json JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_comment_status CHECK (status IN ('OPEN', 'RESOLVED', 'ARCHIVED'))
+);
+
+CREATE INDEX idx_comments_doc ON document_comments(document_id, parent_comment_id, created_at ASC);
+CREATE INDEX idx_comments_workspace ON document_comments(workspace_id, status);
+CREATE INDEX idx_comments_author ON document_comments(author_id);
+```
+
+#### 3.19.4 `document_version_history` Table
+Immutable historical version checkpoints for enterprise documents:
+```sql
+CREATE TABLE document_version_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    version_number INT NOT NULL,
+    editor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    change_summary TEXT NOT NULL,
+    file_path VARCHAR(1024),
+    file_size_bytes BIGINT,
+    checksum VARCHAR(64),
+    approval_status VARCHAR(30) NOT NULL DEFAULT 'APPROVED',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_doc_version UNIQUE (document_id, version_number),
+    CONSTRAINT chk_approval_status CHECK (approval_status IN ('DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED'))
+);
+
+CREATE INDEX idx_version_history_doc ON document_version_history(document_id, version_number DESC);
+```
+
+#### 3.19.5 `collaboration_activities` Table
+Real-time workspace activity feed audit log:
+```sql
+CREATE TABLE collaboration_activities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+    actor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    activity_type VARCHAR(60) NOT NULL,
+    entity_id UUID NOT NULL,
+    entity_type VARCHAR(60) NOT NULL,
+    entity_title VARCHAR(512),
+    description TEXT NOT NULL,
+    metadata_json JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_activity_type CHECK (activity_type IN (
+        'DOCUMENT_UPLOAD', 'DOCUMENT_UPDATE', 'COMMENT_ADDED',
+        'REPLY_ADDED', 'USER_MENTION', 'PROJECT_CREATED',
+        'MEMBER_JOINED', 'AI_SUMMARY_GENERATED', 'DISCUSSION_RESOLVED', 'VERSION_CHECKPOINT'
+    ))
+);
+
+CREATE INDEX idx_activities_workspace ON collaboration_activities(workspace_id, created_at DESC);
+CREATE INDEX idx_activities_actor ON collaboration_activities(actor_id, created_at DESC);
+```
+
+
 
 
