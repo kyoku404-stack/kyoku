@@ -83,6 +83,12 @@ const navItems: NavItem[] = [
     icon: MessageSquare,
     badge: 'Phase 3.2',
   },
+  {
+    label: 'Security & Governance',
+    path: ROUTES.SECURITY,
+    icon: ShieldCheck,
+    badge: 'Phase 3.3',
+  },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
   {

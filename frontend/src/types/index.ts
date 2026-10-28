@@ -62,4 +62,5 @@ export type {
 } from './intelligence';
 export * from './connector';
 export * from './collaboration';
+export * from './security';
 
