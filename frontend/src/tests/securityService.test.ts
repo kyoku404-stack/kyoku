@@ -37,7 +37,7 @@ describe('Phase 3.3 Security Service API Client', () => {
     vi.clearAllMocks();
   });
 
-  it('enterpriseLogin() posts credentials to /security/auth/login', async () => {
+  it('enterpriseLogin() posts credentials to /security/login', async () => {
     const mockRes = {
       access_token: 'jwt-access-token',
       token_type: 'bearer',
@@ -57,7 +57,7 @@ describe('Phase 3.3 Security Service API Client', () => {
       password: 'StrongPassword123!',
     });
 
-    expect(apiClient.post).toHaveBeenCalledWith('/security/auth/login', {
+    expect(apiClient.post).toHaveBeenCalledWith('/security/login', {
       email: 'officer@enterprise.com',
       password: 'StrongPassword123!',
     });
@@ -65,7 +65,7 @@ describe('Phase 3.3 Security Service API Client', () => {
     expect(res.data?.mfa_required).toBe(true);
   });
 
-  it('setupMFA() requests TOTP secret from /security/auth/mfa/setup', async () => {
+  it('setupMFA() requests TOTP secret from /security/mfa/setup', async () => {
     const mockMfa = {
       secret_key: 'JBSWY3DPEHPK3PXP',
       otpauth_uri: 'otpauth://totp/KEEP:user?secret=JBSWY3DPEHPK3PXP',
@@ -76,24 +76,24 @@ describe('Phase 3.3 Security Service API Client', () => {
     });
 
     const res = await securityService.setupMFA();
-    expect(apiClient.post).toHaveBeenCalledWith('/security/auth/mfa/setup', {});
+    expect(apiClient.post).toHaveBeenCalledWith('/security/mfa/setup', {});
     expect(res.data?.secret_key).toBe('JBSWY3DPEHPK3PXP');
     expect(res.data?.backup_codes).toHaveLength(2);
   });
 
-  it('verifyMFA() validates code against /security/auth/mfa/verify', async () => {
+  it('verifyMFA() validates code against /security/mfa/verify', async () => {
     (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       data: { success: true, data: { is_enabled: true, mfa_verified: true } },
     });
 
     const res = await securityService.verifyMFA('123456');
-    expect(apiClient.post).toHaveBeenCalledWith('/security/auth/mfa/verify', {
+    expect(apiClient.post).toHaveBeenCalledWith('/security/mfa/verify', {
       code: '123456',
     });
     expect(res.data?.is_enabled).toBe(true);
   });
 
-  it('getAuditLogs() retrieves logs from /security/audit/logs', async () => {
+  it('getAuditLogs() retrieves logs from /security/audit', async () => {
     const mockLogs = {
       success: true,
       total: 1,
@@ -117,14 +117,14 @@ describe('Phase 3.3 Security Service API Client', () => {
     });
 
     const res = await securityService.getAuditLogs({ page: 1, action: 'AUTH_LOGIN' });
-    expect(apiClient.get).toHaveBeenCalledWith('/security/audit/logs', {
+    expect(apiClient.get).toHaveBeenCalledWith('/security/audit', {
       params: { page: 1, action: 'AUTH_LOGIN' },
     });
     expect(res.data).toHaveLength(1);
     expect(res.data[0].action).toBe('AUTH_LOGIN');
   });
 
-  it('classifyData() submits text for PII scanning to /security/data/classify', async () => {
+  it('classifyData() submits text for PII scanning to /security/data-classification/scan', async () => {
     const mockClassification = {
       classification_level: ClassificationLevel.CONFIDENTIAL,
       detected_pii_entities: [{ type: 'EMAIL', count: 1, masked_sample: 'u***@test.com' }],
@@ -137,7 +137,7 @@ describe('Phase 3.3 Security Service API Client', () => {
     });
 
     const res = await securityService.classifyData('Contact user@test.com for details');
-    expect(apiClient.post).toHaveBeenCalledWith('/security/data/classify', {
+    expect(apiClient.post).toHaveBeenCalledWith('/security/data-classification/scan', {
       content: 'Contact user@test.com for details',
       document_id: undefined,
     });
@@ -145,7 +145,7 @@ describe('Phase 3.3 Security Service API Client', () => {
     expect(res.data?.pii_count).toBe(1);
   });
 
-  it('getComplianceOverview() fetches multi-standard readiness from /security/compliance/overview', async () => {
+  it('getComplianceOverview() fetches multi-standard readiness from /security/compliance', async () => {
     const mockCompliance = {
       overall_compliance_score: 93.5,
       standards: [
@@ -163,7 +163,7 @@ describe('Phase 3.3 Security Service API Client', () => {
     });
 
     const res = await securityService.getComplianceOverview();
-    expect(apiClient.get).toHaveBeenCalledWith('/security/compliance/overview');
+    expect(apiClient.get).toHaveBeenCalledWith('/security/compliance');
     expect(res.data?.overall_compliance_score).toBe(93.5);
     expect(res.data?.standards[0].standard).toBe(ComplianceStandard.SOC_2);
   });

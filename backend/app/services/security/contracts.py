@@ -187,6 +187,11 @@ class BaseTOTPEngine(ABC):
         """Verifies a 6-digit TOTP passcode within time-step drift tolerance."""
         ...
 
+    @abstractmethod
+    def generate_code(self, secret: str, timestamp: int | None = None) -> str:
+        """Generates a 6-digit TOTP passcode for the current or specified timestamp."""
+        ...
+
 
 class RFC6238TOTPEngine(BaseTOTPEngine):
     """Standard RFC 6238 TOTP Engine implementation using HMAC-SHA1."""
@@ -212,6 +217,13 @@ class RFC6238TOTPEngine(BaseTOTPEngine):
         truncated_hash = struct.unpack(">I", h[offset : offset + 4])[0] & 0x7FFFFFFF
         code = str(truncated_hash % (10**self.DIGITS)).zfill(self.DIGITS)
         return code
+
+    def generate_code(self, secret: str, timestamp: int | None = None) -> str:
+        padding = "=" * ((8 - len(secret) % 8) % 8)
+        key_bytes = base64.b32decode(secret.upper() + padding)
+        t = timestamp if timestamp is not None else int(time.time())
+        counter = t // self.TIME_STEP
+        return self._compute_totp(key_bytes, counter)
 
     def verify_code(self, secret: str, code: str, window: int = 1) -> bool:
         if not secret or not code:
@@ -262,7 +274,7 @@ class DefaultDeterministicPIIScanner(BasePIIScanner):
         r"\b(?:\d{4}[-\s]?){3}\d{4}\b"
     )
     API_KEY_PATTERN: ClassVar[re.Pattern] = re.compile(
-        r"\b(?:sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16})\b"
+        r"\b(?:sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:ak|sk|pk)_(?:live|test)_[a-zA-Z0-9]{16,})\b"
     )
     CODENAME_PATTERN: ClassVar[re.Pattern] = re.compile(
         r"\bProject\s+[A-Z][a-zA-Z0-9_-]{2,}\b"
@@ -395,9 +407,9 @@ class DefaultAIGuardrailEngine(BaseAIGuardrailEngine):
     """Rule-based AI safety and prompt injection guardrail engine."""
 
     INJECTION_SIGNATURES: ClassVar[list[tuple[str, re.Pattern]]] = [
-        ("INSTRUCTION_OVERRIDE", re.compile(r"ignore\s+(?:all\s+)?previous\s+instructions", re.IGNORECASE)),
-        ("SYSTEM_PROMPT_LEAK", re.compile(r"(?:reveal|print|leak|show)\s+(?:the\s+)?system\s+prompt", re.IGNORECASE)),
-        ("JAILBREAK_ROLEPLAY", re.compile(r"\b(?:DAN|Do\s+Anything\s+Now|jailbroken\s+mode)\b", re.IGNORECASE)),
+        ("INSTRUCTION_OVERRIDE", re.compile(r"(?:ignore|disregard|forget)\s+(?:all\s+)?(?:previous|prior)\s+(?:instructions|rules|prompts)", re.IGNORECASE)),
+        ("SYSTEM_PROMPT_LEAK", re.compile(r"(?:reveal|print|leak|show|output)\s+(?:the\s+)?system\s+(?:prompt|instructions)", re.IGNORECASE)),
+        ("JAILBREAK_ROLEPLAY", re.compile(r"\b(?:DAN|Do\s+Anything\s+Now|jailbreak|jailbroken)\b", re.IGNORECASE)),
         ("PRIVILEGE_BYPASS", re.compile(r"bypass\s+(?:security|safety|filter|rbac)", re.IGNORECASE)),
         ("DELIMITER_ESCAPE", re.compile(r"(?:###|```)\s*(?:system|override)", re.IGNORECASE)),
     ]

@@ -51,6 +51,7 @@ from backend.app.schemas.security import (
     RolePermissionsResponse,
     SecurityAuditLogData,
     SecurityThreatAlertItem,
+    SecurityThreatAlertResponse,
     SecurityThreatAlertsResponse,
     UpdateRolePermissionsRequest,
     UpdateRolePermissionsResponse,
@@ -548,4 +549,35 @@ async def get_threat_alerts(
             )
             for a in alerts
         ],
+    )
+
+
+@router.put(
+    "/monitoring/alerts/{alert_id}/resolve",
+    response_model=SecurityThreatAlertResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Resolve a security threat incident",
+    description="Marks an active threat anomaly alert as investigated and resolved.",
+)
+async def resolve_threat_alert(
+    alert_id: UUID,
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> SecurityThreatAlertResponse:
+    alert = await security_service.resolve_threat_alert(
+        db=db,
+        org_id=current_user.organization_id,
+        alert_id=alert_id,
+    )
+    return SecurityThreatAlertResponse(
+        success=True,
+        data=SecurityThreatAlertItem(
+            id=alert.id,
+            alert_type=alert.alert_type,
+            severity=alert.severity,
+            description=alert.description,
+            source_ip=alert.source_ip,
+            resolved=alert.resolved,
+            triggered_at=alert.triggered_at,
+        ),
     )

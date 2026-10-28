@@ -445,5 +445,63 @@ groups:
           description: "Presence heartbeat error rate is {{ $value | printf \"%.2f\" }}% over the last 5 minutes."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#collaborationpresenceheartbeatfailurerate"
 
+      # ------------------------------------------------------------------------
+      # Phase 3.3 Enterprise Security, Compliance & Governance Alerts
+      # ------------------------------------------------------------------------
+      - alert: SecurityFailedLoginSpike
+        expr: sum(rate(security_failed_logins_total[3m])) * 60 > 5.0
+        for: 1m
+        labels:
+          severity: HIGH
+          tier: security
+        annotations:
+          summary: "Potential brute force attack: Failed logins exceed 5 in 3 minutes"
+          description: "Rate of failed authentication attempts is {{ $value | printf \"%.1f\" }} attempts/min."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#securityfailedloginspike"
+
+      - alert: SecurityPromptInjectionDetected
+        expr: sum(increase(security_guardrail_blocks_total{reason="prompt_injection"}[5m])) > 0
+        for: 0s
+        labels:
+          severity: CRITICAL
+          tier: security
+        annotations:
+          summary: "Adversarial AI Prompt Injection payload blocked"
+          description: "{{ $value }} prompt injection attempt(s) detected and blocked by safety guardrails."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#securitypromptinjectiondetected"
+
+      - alert: ComplianceScoreLow
+        expr: compliance_overall_score < 85.0
+        for: 15m
+        labels:
+          severity: WARNING
+          tier: compliance
+        annotations:
+          summary: "Enterprise compliance score dropped below 85%"
+          description: "Compliance posture has degraded to {{ $value | printf \"%.1f\" }}% (threshold: 85.0%)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#compliancescorelow"
+
+      - alert: SecurityAuditLogLagHigh
+        expr: histogram_quantile(0.95, sum(rate(security_audit_log_write_duration_seconds_bucket[5m])) by (le)) > 0.10
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: security
+        annotations:
+          summary: "Audit log write p95 latency exceeds 100ms SLA"
+          description: "P95 latency for immutable audit log writes is {{ $value | printf \"%.3f\" }}s."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#securityauditloglaghigh"
+
+      - alert: SecurityPIIScanLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(security_pii_scan_duration_seconds_bucket[5m])) by (le)) > 0.10
+        for: 2m
+        labels:
+          severity: WARNING
+          tier: security
+        annotations:
+          summary: "PII classification scan p95 latency exceeds 100ms SLA"
+          description: "Deterministic PII regex scan latency is {{ $value | printf \"%.3f\" }}s (threshold: 0.100s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#securitypiiscanlatencyhigh"
+
 
 

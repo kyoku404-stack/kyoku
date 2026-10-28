@@ -49,8 +49,8 @@ export interface AIGovernanceQueryParams {
 }
 
 export interface SecurityAlertQueryParams {
+  unresolved_only?: boolean;
   resolved?: boolean;
-  severity?: string;
 }
 
 export const securityService = {
@@ -62,7 +62,7 @@ export const securityService = {
     payload: EnterpriseLoginPayload
   ): Promise<ApiResponse<EnterpriseLoginData>> {
     const response = await apiClient.post<ApiResponse<EnterpriseLoginData>>(
-      '/security/auth/login',
+      '/security/login',
       payload
     );
     return response.data;
@@ -70,7 +70,7 @@ export const securityService = {
 
   async enterpriseLogout(): Promise<ApiResponse<{ message: string }>> {
     const response = await apiClient.post<ApiResponse<{ message: string }>>(
-      '/security/auth/logout',
+      '/security/logout',
       {}
     );
     return response.data;
@@ -82,7 +82,7 @@ export const securityService = {
 
   async setupMFA(): Promise<ApiResponse<MFASetupData>> {
     const response = await apiClient.post<ApiResponse<MFASetupData>>(
-      '/security/auth/mfa/setup',
+      '/security/mfa/setup',
       {}
     );
     return response.data;
@@ -90,7 +90,7 @@ export const securityService = {
 
   async verifyMFA(code: string): Promise<ApiResponse<MFAVerifyData>> {
     const response = await apiClient.post<ApiResponse<MFAVerifyData>>(
-      '/security/auth/mfa/verify',
+      '/security/mfa/verify',
       { code }
     );
     return response.data;
@@ -98,7 +98,7 @@ export const securityService = {
 
   async disableMFA(code: string): Promise<ApiResponse<{ message: string }>> {
     const response = await apiClient.post<ApiResponse<{ message: string }>>(
-      '/security/auth/mfa/disable',
+      '/security/mfa/disable',
       { code }
     );
     return response.data;
@@ -112,7 +112,7 @@ export const securityService = {
     params?: AuditLogQueryParams
   ): Promise<PaginatedSecurityAuditLogsResponse> {
     const response = await apiClient.get<PaginatedSecurityAuditLogsResponse>(
-      '/security/audit/logs',
+      '/security/audit',
       { params }
     );
     return response.data;
@@ -123,7 +123,7 @@ export const securityService = {
     startDate?: string,
     endDate?: string
   ): Promise<Blob> {
-    const response = await apiClient.get('/security/audit/export', {
+    const response = await apiClient.get('/security/audit', {
       params: {
         format,
         start_date: startDate,
@@ -140,7 +140,7 @@ export const securityService = {
 
   async getRolesMatrix(): Promise<ApiResponse<RolePermissionItem[]>> {
     const response = await apiClient.get<ApiResponse<RolePermissionItem[]>>(
-      '/security/roles/matrix'
+      '/security/roles'
     );
     return response.data;
   },
@@ -149,9 +149,9 @@ export const securityService = {
     role: string,
     permissions: string[]
   ): Promise<ApiResponse<RolePermissionItem>> {
-    const response = await apiClient.put<ApiResponse<RolePermissionItem>>(
-      `/security/roles/${role}/permissions`,
-      { permissions }
+    const response = await apiClient.post<ApiResponse<RolePermissionItem>>(
+      '/security/permissions',
+      { role, permissions }
     );
     return response.data;
   },
@@ -165,7 +165,7 @@ export const securityService = {
     documentId?: string
   ): Promise<ApiResponse<DataClassificationScanData>> {
     const response = await apiClient.post<ApiResponse<DataClassificationScanData>>(
-      '/security/data/classify',
+      '/security/data-classification/scan',
       {
         content,
         document_id: documentId,
@@ -178,7 +178,7 @@ export const securityService = {
     documentId: string
   ): Promise<ApiResponse<DocumentClassificationStatusData>> {
     const response = await apiClient.get<ApiResponse<DocumentClassificationStatusData>>(
-      `/security/data/classification/${documentId}`
+      `/security/data-classification/${documentId}`
     );
     return response.data;
   },
@@ -191,7 +191,7 @@ export const securityService = {
     params?: AIGovernanceQueryParams
   ): Promise<PaginatedAIGovernanceLogsResponse> {
     const response = await apiClient.get<PaginatedAIGovernanceLogsResponse>(
-      '/security/ai/governance/logs',
+      '/security/ai-governance/logs',
       { params }
     );
     return response.data;
@@ -199,7 +199,7 @@ export const securityService = {
 
   async getAIGovernanceStats(): Promise<ApiResponse<AIGovernanceStatsData>> {
     const response = await apiClient.get<ApiResponse<AIGovernanceStatsData>>(
-      '/security/ai/governance/stats'
+      '/security/ai-governance/stats'
     );
     return response.data;
   },
@@ -210,7 +210,7 @@ export const securityService = {
 
   async getComplianceOverview(): Promise<ApiResponse<ComplianceOverviewData>> {
     const response = await apiClient.get<ApiResponse<ComplianceOverviewData>>(
-      '/security/compliance/overview'
+      '/security/compliance'
     );
     return response.data;
   },
@@ -219,7 +219,7 @@ export const securityService = {
     payload: DataRetentionPolicyPayload
   ): Promise<ApiResponse<DataRetentionRuleData>> {
     const response = await apiClient.post<ApiResponse<DataRetentionRuleData>>(
-      '/security/compliance/retention-policy',
+      '/security/compliance/retention-policies',
       payload
     );
     return response.data;
@@ -229,7 +229,7 @@ export const securityService = {
     payload: GDPRErasurePayload
   ): Promise<ApiResponse<GDPRErasureData>> {
     const response = await apiClient.post<ApiResponse<GDPRErasureData>>(
-      '/security/compliance/gdpr/erasure',
+      '/security/compliance/gdpr-erasure',
       payload
     );
     return response.data;

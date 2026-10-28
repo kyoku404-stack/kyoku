@@ -357,3 +357,10 @@ class SecurityThreatAlertsResponse(BaseModel):
 
     success: bool = True
     data: list[SecurityThreatAlertItem] = Field(default_factory=list)
+
+
+class SecurityThreatAlertResponse(BaseModel):
+    """Response returning a single resolved security threat alert."""
+
+    success: bool = True
+    data: SecurityThreatAlertItem

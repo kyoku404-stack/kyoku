@@ -41,7 +41,7 @@ class TestSecurityServiceUnit:
         setup_data = await service.setup_mfa(db, user_id, email)
         assert "secret_key" in setup_data
         assert "otpauth_uri" in setup_data
-        assert len(setup_data["backup_codes"]) == 4
+        assert len(setup_data["backup_codes"]) == 8
 
         # Mock credential in db for verification
         mock_cred = MagicMock()

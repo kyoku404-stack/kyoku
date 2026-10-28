@@ -182,7 +182,7 @@ class EnterpriseSecurityService:
         """Provisions a new TOTP shared secret and backup codes."""
         secret_key = self.totp_engine.generate_secret()
         otpauth_uri = self.totp_engine.generate_otpauth_uri(secret_key, email)
-        backup_codes = self.totp_engine.generate_backup_codes(count=4)
+        backup_codes = self.totp_engine.generate_backup_codes(count=8)
 
         query = select(SecurityMFACredential).where(SecurityMFACredential.user_id == user_id)
         res = await db.execute(query)
@@ -636,3 +636,20 @@ class EnterpriseSecurityService:
 
         query = query.order_by(SecurityThreatAlert.triggered_at.desc()).limit(50)
         return list((await db.execute(query)).scalars().all())
+
+    async def resolve_threat_alert(
+        self, db: AsyncSession, org_id: uuid.UUID, alert_id: uuid.UUID
+    ) -> SecurityThreatAlert:
+        """Resolves an active security threat incident."""
+        query = select(SecurityThreatAlert).where(
+            SecurityThreatAlert.id == alert_id,
+            (SecurityThreatAlert.organization_id == org_id)
+            | (SecurityThreatAlert.organization_id == uuid.UUID("00000000-0000-0000-0000-000000000000")),
+        )
+        alert = (await db.execute(query)).scalar_one_or_none()
+        if not alert:
+            raise NotFoundException(message=f"Threat alert {alert_id} not found.")
+        alert.resolved = True
+        await db.commit()
+        await db.refresh(alert)
+        return alert
