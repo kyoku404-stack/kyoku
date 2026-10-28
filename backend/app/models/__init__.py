@@ -32,6 +32,14 @@ from backend.app.models.knowledge import DocumentChunk, KgEntity, KgRelationship
 from backend.app.models.meeting import Meeting
 from backend.app.models.notification import Notification
 from backend.app.models.organization import Organization
+from backend.app.models.plugin import (
+    Plugin,
+    PluginEventHook,
+    PluginExecutionLog,
+    PluginInstallation,
+    PluginManifestModel,
+    PluginPermission,
+)
 from backend.app.models.project import Project, project_users
 from backend.app.models.rag import RAGFeedback, RAGQuery
 from backend.app.models.security import (
@@ -86,6 +94,12 @@ __all__ = [
     "Notification",
     "NotificationPreference",
     "Organization",
+    "Plugin",
+    "PluginEventHook",
+    "PluginExecutionLog",
+    "PluginInstallation",
+    "PluginManifestModel",
+    "PluginPermission",
     "Project",
     "RAGFeedback",
     "RAGQuery",

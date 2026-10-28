@@ -28,13 +28,20 @@ from backend.app.services.plugins.contracts import (
     SampleSAPInvoicePlugin,
     SemanticVersionValidator,
 )
+from backend.app.services.plugins.service import (
+    DEFAULT_SEED_PLUGINS,
+    EnterprisePluginService,
+    register_plugin_runtime,
+)
 
 __all__ = [
+    "DEFAULT_SEED_PLUGINS",
     "BaseAIPlugin",
     "BaseIntegrationPlugin",
     "BasePlugin",
     "BaseWorkflowActionPlugin",
     "CapabilityPermissionGuard",
+    "EnterprisePluginService",
     "HookTriggerType",
     "MarketplaceCatalogItem",
     "PluginCapability",
@@ -51,4 +58,5 @@ __all__ = [
     "SampleClaudeAIPlugin",
     "SampleSAPInvoicePlugin",
     "SemanticVersionValidator",
+    "register_plugin_runtime",
 ]

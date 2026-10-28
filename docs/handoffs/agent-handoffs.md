@@ -5707,6 +5707,93 @@ COMPLETED / READY FOR BACKEND IMPLEMENTATION (MEMBER 2)
 5. Implement FastAPI router in `backend/app/api/v1/plugins.py` and mount in `backend/app/api/v1/router.py`.
 6. Author unit and integration test suites in `tests/unit/test_plugin_services.py` and `tests/integration/test_plugin_endpoints.py`.
 
+---
+
+## Entry #075: Phase 3.5 — Relational Persistence, Alembic Migrations, Plugin Service & REST APIs
+
+### Date
+2026-10-29
+
+### Author Agent
+Member 2 (Backend & Database Lead)
+
+### Status
+COMPLETED ✓
+
+### Implemented Features
+1. **SQLAlchemy ORM Models (`backend/app/models/plugin.py`)**:
+   - `Plugin`: Master catalog registry tracking `id`, `name`, `description`, `category`, `developer`, `current_version`, `verification_tier`, `rating`, `installs_count`, `is_public`, `icon_url`, `documentation_url`.
+   - `PluginManifestModel`: Versioned manifest definitions, checksum SHA-256, Keep SemVer limits (`min_keep_version`, `max_keep_version`), `entry_point`, `permissions`, `event_hooks`, `configuration_schema`.
+   - `PluginInstallation`: Tenant-scoped installation record with `organization_id`, `version`, `status`, `is_enabled`, `configuration` JSONB, audit timestamps.
+   - `PluginPermission`: Granular capability grants bound to installations.
+   - `PluginEventHook`: Active platform event subscriptions mapped to installed plugins.
+   - `PluginExecutionLog`: Execution telemetry audit records tracking `action`, `status`, `duration_ms`, `triggered_by`, `error_message`, and `payload_preview`.
+   - Exported in `backend/app/models/__init__.py`.
+2. **Alembic Database Migration (`backend/migrations/versions/f4a5b6c7d8e9_phase_3_5_plugin_sdk_extension_framework.py`)**:
+   - Creates tables: `plugins`, `plugin_manifests`, `plugin_installations`, `plugin_permissions`, `plugin_event_hooks`, `plugin_execution_logs`.
+   - Reversible `upgrade()` and `downgrade()`.
+   - Verified via `tests/integration/test_db_migrations.py`.
+3. **Pydantic Validation Schemas (`backend/app/schemas/plugin.py`)**:
+   - Request DTOs: `PluginInstallRequest`, `PluginUpdateRequest`, `PluginUninstallRequest`, `PluginStatusToggleRequest`, `PluginExecuteRequest`, `PluginConfigUpdateRequest`, `PluginPublishRequest`.
+   - Response DTOs: `PluginItemResponse`, `PluginExecutionResponse`, `PluginExecutionLogResponse`, `PluginMarketplaceItemResponse`, `PluginAnalyticsResponse`.
+   - Exported in `backend/app/schemas/__init__.py`.
+4. **Enterprise Business Service (`backend/app/services/plugins/service.py`)**:
+   - `EnterprisePluginService`:
+     - Built-in marketplace catalog auto-seeding (`seed_default_marketplace`) with certified plugins (Claude 3.5 Sonnet, SAP S/4HANA ERP, Slack Grid alerts).
+     - Marketplace browse (`browse_marketplace`) with tenant install detection, search, and category filtering.
+     - Plugin publish (`publish_marketplace_plugin`) with SemVer compatibility enforcement.
+     - Plugin install (`install_plugin`) with capability permission grants and event hook subscriptions.
+     - Plugin enable/disable (`enable_plugin`, `disable_plugin`) and version upgrades (`update_plugin_version`).
+     - Sandboxed execution (`execute_plugin_action`) dispatching via `PluginSandboxRunner`, timeout protection, and telemetry logging to `plugin_execution_logs`.
+     - Execution logs query (`list_execution_logs`) and operational KPI analytics (`get_plugin_analytics`).
+5. **FastAPI Master Router (`backend/app/api/v1/plugins.py`)**:
+   - Mounted at `/api/v1/plugins` in `backend/app/api/v1/router.py`.
+   - 12 fully typed endpoints returning `ApiResponse<T>` envelopes matching Section 17 of `docs/API/api-contract.md`.
+6. **Testing & Verification**:
+   - `tests/unit/test_plugin_services.py`: 11/11 unit tests passed.
+   - `tests/integration/test_plugin_endpoints.py`: 11/11 integration tests passed.
+   - `tests/unit/test_plugin_contracts.py`: 10/10 passed.
+   - `tests/integration/test_db_migrations.py`: 4/4 passed.
+   - Ruff linter: 0 errors across all backend code.
+
+### Files Modified / Created
+- `backend/app/models/plugin.py` (Created)
+- `backend/app/models/__init__.py` (Modified)
+- `backend/migrations/versions/f4a5b6c7d8e9_phase_3_5_plugin_sdk_extension_framework.py` (Created)
+- `backend/app/schemas/plugin.py` (Created)
+- `backend/app/schemas/__init__.py` (Modified)
+- `backend/app/services/plugins/service.py` (Created)
+- `backend/app/services/plugins/__init__.py` (Modified)
+- `backend/app/api/v1/plugins.py` (Created)
+- `backend/app/api/v1/router.py` (Modified)
+- `tests/unit/test_plugin_services.py` (Created)
+- `tests/integration/test_plugin_endpoints.py` (Created)
+- `tests/integration/test_db_migrations.py` (Modified)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**
+
+#### Required Action for Receiving Agent
+1. Implement TypeScript domain types and enums in `frontend/src/types/plugin.ts` and re-export in `frontend/src/types/index.ts`.
+2. Add Phase 3.5 permissions in `frontend/src/types/permission.ts` (`plugin.view`, `plugin.manage`, `plugin.install`, `plugin.execute`).
+3. Implement API Client in `frontend/src/services/pluginService.ts` and re-export in `frontend/src/services/index.ts`.
+4. Implement custom React hook `frontend/src/hooks/usePlugins.ts` for real-time querying, mutations, and status polling.
+5. Build modular UI feature components in `frontend/src/features/plugins/`:
+   - `PluginMetricsBanner.tsx`
+   - `InstalledPluginsList.tsx`
+   - `PluginMarketplaceGrid.tsx`
+   - `InstallPluginModal.tsx`
+   - `PluginConfigModal.tsx`
+   - `PluginExecutionLogsDrawer.tsx`
+   - `DeveloperSDKDocumentationModal.tsx`
+   - `index.ts`
+6. Build master page `frontend/src/pages/PluginManagementPage.tsx`.
+7. Configure routes in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+8. Update sidebar navigation in `frontend/src/components/common/Sidebar.tsx` with Blocks/Puzzle icon.
+9. Author frontend test suites in `frontend/src/tests/` and verify with Vitest and Vite production build.
+
+
 
 
 
