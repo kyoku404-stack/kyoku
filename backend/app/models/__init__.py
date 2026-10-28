@@ -11,6 +11,13 @@ from backend.app.models.assistant import (
     AssistantWorkflow,
 )
 from backend.app.models.chat import ChatMessage, ChatSession
+from backend.app.models.collaboration import (
+    CollaborationActivity,
+    DocumentComment,
+    DocumentVersionHistory,
+    Workspace,
+    WorkspaceMember,
+)
 from backend.app.models.connector import (
     Connector,
     ConnectorSyncJob,
@@ -41,6 +48,7 @@ __all__ = [
     "AssistantWorkflow",
     "ChatMessage",
     "ChatSession",
+    "CollaborationActivity",
     "Connector",
     "ConnectorSyncJob",
     "ConnectorSyncLog",
@@ -48,7 +56,9 @@ __all__ = [
     "DetectedAnomaly",
     "Document",
     "DocumentChunk",
+    "DocumentComment",
     "DocumentVersion",
+    "DocumentVersionHistory",
     "IngestionJob",
     "Invitation",
     "KgEntity",
@@ -62,5 +72,7 @@ __all__ = [
     "Task",
     "Team",
     "User",
+    "Workspace",
+    "WorkspaceMember",
     "project_users",
 ]
