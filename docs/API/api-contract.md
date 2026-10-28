@@ -3231,5 +3231,432 @@ All endpoints require Bearer JWT authentication and tenant isolation (`organizat
 }
 ```
 
+---
+
+## 15. Phase 3.3 — Enterprise Security, Compliance, Governance & Data Protection API Contract
+
+### 15.1 Enterprise Authentication & Session Management
+
+#### 15.1.1 Enterprise User Login & SSO Handshake
+- **Method**: `POST`
+- **Path**: `/api/v1/security/login`
+- **Auth**: None (Public)
+- **Request Body**:
+```json
+{
+  "email": "security_admin@enterprise.com",
+  "password": "Password123!",
+  "provider": "local",
+  "sso_token": null
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Authentication successful.",
+  "data": {
+    "access_token": "eyJhbGciOi...",
+    "token_type": "bearer",
+    "expires_in": 3600,
+    "user_id": "u1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "organization_id": "o1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "role": "OrgAdmin",
+    "mfa_required": false,
+    "mfa_verified": true
+  }
+}
+```
+
+#### 15.1.2 Enterprise Session Logout
+- **Method**: `POST`
+- **Path**: `/api/v1/security/logout`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Session invalidated successfully."
+}
+```
+
+---
+
+### 15.2 Multi-Factor Authentication (MFA / TOTP)
+
+#### 15.2.1 Setup MFA / Generate TOTP Secret
+- **Method**: `POST`
+- **Path**: `/api/v1/security/mfa/setup`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "secret_key": "JBSWY3DPEHPK3PXP",
+    "otpauth_uri": "otpauth://totp/KEEP:user@company.com?secret=JBSWY3DPEHPK3PXP&issuer=KEEP",
+    "backup_codes": ["a1b2c3d4", "e5f6g7h8", "i9j0k1l2", "m3n4o5p6"]
+  }
+}
+```
+
+#### 15.2.2 Verify MFA Code
+- **Method**: `POST`
+- **Path**: `/api/v1/security/mfa/verify`
+- **Auth**: Bearer JWT
+- **Request Body**:
+```json
+{
+  "code": "123456"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Multi-factor authentication verified.",
+  "data": {
+    "is_enabled": true,
+    "mfa_verified": true
+  }
+}
+```
+
+#### 15.2.3 Disable MFA
+- **Method**: `POST`
+- **Path**: `/api/v1/security/mfa/disable`
+- **Auth**: Bearer JWT
+- **Request Body**:
+```json
+{
+  "code": "123456"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "MFA disabled successfully."
+}
+```
+
+---
+
+### 15.3 Enterprise Audit Trails
+
+#### 15.3.1 Retrieve Security Audit Trail
+- **Method**: `GET`
+- **Path**: `/api/v1/security/audit`
+- **Auth**: Bearer JWT (`audit.read` or `security.view`)
+- **Query Parameters**:
+  - `action`: string (optional filter)
+  - `status`: string (optional filter: `SUCCESS`, `FAILURE`, `DENIED`)
+  - `page`: int (default: 1)
+  - `page_size`: int (default: 50)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "total": 120,
+  "page": 1,
+  "page_size": 50,
+  "data": [
+    {
+      "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "organization_id": "o1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "user_id": "u1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "action": "DOCUMENT_ACCESS",
+      "resource": "document",
+      "resource_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "ip_address": "192.168.1.100",
+      "user_agent": "Mozilla/5.0 ...",
+      "status": "SUCCESS",
+      "details": { "classification": "CONFIDENTIAL" },
+      "created_at": "2026-10-28T10:15:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 15.4 Roles & Permissions Management
+
+#### 15.4.1 List Defined Roles & Permission Matrix
+- **Method**: `GET`
+- **Path**: `/api/v1/security/roles`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "role": "Super Admin",
+      "description": "Full platform administration across all tenants",
+      "permissions": ["*"]
+    },
+    {
+      "role": "Organization Admin",
+      "description": "Tenant governance, policy enforcement and audit inspection",
+      "permissions": ["audit.read", "security.manage", "user.manage", "workspace.manage"]
+    },
+    {
+      "role": "Department Manager",
+      "description": "Departmental asset administration",
+      "permissions": ["workspace.manage", "document.read", "document.write"]
+    },
+    {
+      "role": "Employee",
+      "description": "Standard organization member access",
+      "permissions": ["workspace.view", "document.read", "comment.create"]
+    },
+    {
+      "role": "Viewer",
+      "description": "Read-only access with export restrictions",
+      "permissions": ["workspace.view", "document.read"]
+    }
+  ]
+}
+```
+
+#### 15.4.2 Update Role Permissions
+- **Method**: `POST`
+- **Path**: `/api/v1/security/permissions`
+- **Auth**: Bearer JWT (`security.manage`)
+- **Request Body**:
+```json
+{
+  "role": "Employee",
+  "permissions": ["workspace.view", "document.read", "comment.create", "ai.chat"]
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Permissions updated successfully."
+}
+```
+
+---
+
+### 15.5 Sensitive Data Classification & PII Scanner
+
+#### 15.5.1 Scan Text or Document for Sensitive Data / PII
+- **Method**: `POST`
+- **Path**: `/api/v1/security/data-classification/scan`
+- **Auth**: Bearer JWT
+- **Request Body**:
+```json
+{
+  "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "content": "Contact John Doe at john.doe@enterprise.com, SSN 000-12-3456, key sk-abc1234567890."
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "classification_level": "RESTRICTED",
+    "detected_pii_entities": [
+      { "type": "EMAIL", "count": 1, "masked_sample": "j***e@enterprise.com" },
+      { "type": "SSN", "count": 1, "masked_sample": "***-**-3456" },
+      { "type": "API_KEY", "count": 1, "masked_sample": "sk-***" }
+    ],
+    "pii_count": 3,
+    "confidence_score": 0.98,
+    "redacted_preview": "Contact John Doe at [REDACTED_EMAIL], SSN [REDACTED_SSN], key [REDACTED_API_KEY]."
+  }
+}
+```
+
+#### 15.5.2 Get Document Classification Status
+- **Method**: `GET`
+- **Path**: `/api/v1/security/data-classification/{document_id}`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "document_id": "d1a2b3c4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "classification_level": "RESTRICTED",
+    "pii_count": 3,
+    "confidence_score": 0.98,
+    "scanned_at": "2026-10-28T10:20:00Z"
+  }
+}
+```
+
+---
+
+### 15.6 AI Governance & Safety Guardrails
+
+#### 15.6.1 Query AI Governance Logs
+- **Method**: `GET`
+- **Path**: `/api/v1/security/ai-governance/logs`
+- **Auth**: Bearer JWT (`security.view`)
+- **Query Parameters**:
+  - `page`: int (default: 1)
+  - `page_size`: int (default: 20)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "total": 45,
+  "data": [
+    {
+      "id": "g1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "user_id": "u1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "prompt_snippet": "Summarize Q3 financial revenue report",
+      "model_name": "gpt-4o-mini",
+      "guardrail_status": "PASSED",
+      "token_usage": 320,
+      "latency_ms": 142.5,
+      "created_at": "2026-10-28T10:30:00Z"
+    }
+  ]
+}
+```
+
+#### 15.6.2 AI Governance Safety Telemetry
+- **Method**: `GET`
+- **Path**: `/api/v1/security/ai-governance/stats`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "total_queries_audited": 1420,
+    "guardrail_blocks": 3,
+    "avg_latency_ms": 154.2,
+    "prompt_injection_attempts": 2,
+    "safety_score_percentage": 99.8
+  }
+}
+```
+
+---
+
+### 15.7 Enterprise Compliance Framework
+
+#### 15.7.1 Multi-Standard Compliance Status & Scores
+- **Method**: `GET`
+- **Path**: `/api/v1/security/compliance`
+- **Auth**: Bearer JWT (`security.compliance` or `security.view`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "overall_compliance_score": 94,
+    "standards": [
+      {
+        "standard": "GDPR",
+        "score": 96,
+        "status": "COMPLIANT",
+        "controls_passed": 12,
+        "controls_total": 12
+      },
+      {
+        "standard": "ISO_27001",
+        "score": 92,
+        "status": "COMPLIANT",
+        "controls_passed": 18,
+        "controls_total": 20
+      },
+      {
+        "standard": "SOC_2",
+        "score": 95,
+        "status": "COMPLIANT",
+        "controls_passed": 15,
+        "controls_total": 16
+      },
+      {
+        "standard": "HIPAA",
+        "score": 93,
+        "status": "COMPLIANT",
+        "controls_passed": 14,
+        "controls_total": 15
+      }
+    ]
+  }
+}
+```
+
+#### 15.7.2 Configure Data Retention Rules
+- **Method**: `POST`
+- **Path**: `/api/v1/security/compliance/retention-policies`
+- **Auth**: Bearer JWT (`security.manage`)
+- **Request Body**:
+```json
+{
+  "resource_type": "audit_logs",
+  "retention_days": 365,
+  "action_on_expiry": "ARCHIVE"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Data retention policy updated."
+}
+```
+
+#### 15.7.3 Execute GDPR Article 17 Erasure Request
+- **Method**: `POST`
+- **Path**: `/api/v1/security/compliance/gdpr-erasure`
+- **Auth**: Bearer JWT (`security.manage`)
+- **Request Body**:
+```json
+{
+  "target_user_id": "u1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+  "reason": "Employee departure right to erasure request"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "User data anonymized and erased in accordance with GDPR Article 17.",
+  "data": {
+    "erasure_id": "e1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+    "completed_at": "2026-10-28T10:40:00Z"
+  }
+}
+```
+
+---
+
+### 15.8 Security Monitoring & Anomaly Alerts
+
+#### 15.8.1 Query Security Threat Alerts
+- **Method**: `GET`
+- **Path**: `/api/v1/security/monitoring/alerts`
+- **Auth**: Bearer JWT
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "t1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+      "alert_type": "FAILED_LOGIN_SPIKE",
+      "severity": "HIGH",
+      "description": "5 consecutive failed logins detected for user admin@enterprise.com",
+      "source_ip": "203.0.113.195",
+      "resolved": false,
+      "triggered_at": "2026-10-28T10:35:00Z"
+    }
+  ]
+}
+```
+
+
 
 
