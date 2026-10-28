@@ -60,3 +60,4 @@ export type {
   RecommendationsResponse,
   KnowledgeHealthResponse,
 } from './intelligence';
+export * from './connector';

@@ -26,6 +26,7 @@ import {
   Bot,
   Network,
   BrainCircuit,
+  Cable,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -68,6 +69,13 @@ const navItems: NavItem[] = [
     icon: BrainCircuit,
     requiredPermission: Permission.ANALYTICS_VIEW,
     badge: 'Phase 2.5',
+  },
+  {
+    label: 'Integrations & Connectors',
+    path: ROUTES.INTEGRATIONS,
+    icon: Cable,
+    requiredPermission: Permission.CONNECTOR_VIEW,
+    badge: 'Phase 3.1',
   },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },

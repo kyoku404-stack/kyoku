@@ -2660,3 +2660,212 @@ All intelligence and predictive analytics endpoints are mounted at `/api/v1/anal
 }
 ```
 
+---
+
+## 13. Enterprise Integrations & Connector Framework (Phase 3.1)
+
+### 13.1 Overview
+The Connector Framework enables seamless, secure ingestion from external enterprise platforms into KEEP's unified RAG and Knowledge Graph pipelines.
+All endpoints require Bearer JWT authentication and tenant isolation (`organization_id`).
+
+### 13.2 Endpoints
+
+#### 13.2.1 POST /api/v1/connectors/register
+**Purpose**: Register a new enterprise connector configuration.  
+**Permissions**: `connector.manage` or `admin.write` (SuperAdmin, OrgAdmin).  
+**Request Body**:
+```json
+{
+  "name": "Corporate Google Drive",
+  "platform_type": "GOOGLE_DRIVE",
+  "platform_category": "CLOUD_STORAGE",
+  "auth_type": "OAUTH2",
+  "config": {
+    "sync_interval_minutes": 60,
+    "sync_folders": ["root", "Engineering Docs"],
+    "file_extensions": [".pdf", ".docx", ".gdoc", ".txt"]
+  }
+}
+```
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Connector registered successfully.",
+  "data": {
+    "id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+    "name": "Corporate Google Drive",
+    "platform_type": "GOOGLE_DRIVE",
+    "platform_category": "CLOUD_STORAGE",
+    "auth_type": "OAUTH2",
+    "status": "CONFIGURED",
+    "config": {
+      "sync_interval_minutes": 60,
+      "sync_folders": ["root", "Engineering Docs"],
+      "file_extensions": [".pdf", ".docx", ".gdoc", ".txt"]
+    },
+    "total_documents_synced": 0,
+    "created_at": "2026-10-28T02:00:00Z"
+  }
+}
+```
+
+#### 13.2.2 POST /api/v1/connectors/authenticate
+**Purpose**: Provide credentials or initiate OAuth authentication handshake for a registered connector.  
+**Permissions**: `connector.manage` or `admin.write`.  
+**Request Body**:
+```json
+{
+  "connector_id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+  "auth_type": "OAUTH2",
+  "credentials": {
+    "access_token": "ya29.a0AfH6SMB...",
+    "refresh_token": "1//04...",
+    "expires_in": 3600
+  }
+}
+```
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Connector authenticated successfully.",
+  "data": {
+    "connector_id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+    "status": "CONNECTED",
+    "authenticated_at": "2026-10-28T02:00:00Z"
+  }
+}
+```
+
+#### 13.2.3 GET /api/v1/connectors/list
+**Purpose**: List all configured connectors for the authenticated tenant.  
+**Permissions**: `connector.view` or `admin.read`.  
+**Query Parameters**:
+- `platform_category`: (Optional) Filter by category.
+- `status`: (Optional) Filter by connector status.
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Connectors retrieved successfully.",
+  "data": {
+    "total_connectors": 3,
+    "connectors": [
+      {
+        "id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+        "name": "Corporate Google Drive",
+        "platform_type": "GOOGLE_DRIVE",
+        "platform_category": "CLOUD_STORAGE",
+        "auth_type": "OAUTH2",
+        "status": "HEALTHY",
+        "total_documents_synced": 342,
+        "last_sync_at": "2026-10-28T01:30:00Z",
+        "last_sync_status": "COMPLETED",
+        "created_at": "2026-10-28T00:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### 13.2.4 POST /api/v1/connectors/sync
+**Purpose**: Trigger a manual or scheduled synchronization run.  
+**Permissions**: `connector.manage` or `admin.write`.  
+**Request Body**:
+```json
+{
+  "connector_id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+  "sync_mode": "INCREMENTAL"
+}
+```
+**Response (202 Accepted)**:
+```json
+{
+  "success": true,
+  "message": "Synchronization job started successfully.",
+  "data": {
+    "sync_job_id": "j1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "connector_id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+    "sync_mode": "INCREMENTAL",
+    "status": "RUNNING",
+    "started_at": "2026-10-28T02:01:00Z"
+  }
+}
+```
+
+#### 13.2.5 GET /api/v1/connectors/status/{id}
+**Purpose**: Retrieve real-time operational status, health indicators, and sync statistics for a specific connector.  
+**Permissions**: `connector.view`.  
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Connector status retrieved successfully.",
+  "data": {
+    "id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+    "name": "Corporate Google Drive",
+    "platform_type": "GOOGLE_DRIVE",
+    "status": "HEALTHY",
+    "last_sync_at": "2026-10-28T01:30:00Z",
+    "last_sync_status": "COMPLETED",
+    "total_documents_synced": 342,
+    "active_sync_job": null,
+    "health_metrics": {
+      "api_latency_ms": 142.5,
+      "quota_used_pct": 28.4,
+      "success_rate_pct": 98.7
+    }
+  }
+}
+```
+
+#### 13.2.6 DELETE /api/v1/connectors/remove/{id}
+**Purpose**: Safely deregister and remove a connector instance.  
+**Permissions**: `connector.manage` or `admin.write`.  
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Connector removed successfully.",
+  "data": {
+    "id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+    "name": "Corporate Google Drive",
+    "status": "DISCONNECTED"
+  }
+}
+```
+
+#### 13.2.7 GET /api/v1/connectors/logs
+**Purpose**: Query synchronization execution history, resource delta logs, and error traces.  
+**Permissions**: `connector.view`.  
+**Query Parameters**:
+- `connector_id`: (Optional) Filter by connector.
+- `limit`: (Optional, default: 50, max: 200).
+- `status`: (Optional: SUCCESS, WARNING, FAILURE).
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Connector logs retrieved successfully.",
+  "data": {
+    "total_logs": 2,
+    "logs": [
+      {
+        "id": "l9a8b7c6-d5e4-3f2a-1b0c-9d8e7f6a5b4c",
+        "connector_id": "c7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+        "sync_job_id": "j1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+        "external_document_id": "doc-991",
+        "document_title": "Q3 Engineering Roadmap",
+        "source_url": "https://docs.google.com/document/d/doc-991",
+        "action_taken": "UPDATED",
+        "status": "SUCCESS",
+        "checksum": "a8f3b2c1d0e9f8a7...",
+        "created_at": "2026-10-28T01:30:15Z"
+      }
+    ]
+  }
+}
+```
+
+

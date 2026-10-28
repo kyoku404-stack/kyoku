@@ -1464,3 +1464,99 @@ Member 1 specifies recommendation taxonomy and contracts. Member 2 provides ORM 
 #### Status
 ACCEPTED
 
+---
+
+### ADR-047 — Pluggable Multi-Tenant Enterprise Connector Lifecycle & Integration Gateway Architecture
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.1.txt` (Chapters 3, 5, 15) mandates that KEEP evolve into a centralized enterprise intelligence hub by securely integrating with external SaaS platforms (Google Drive, Microsoft 365, GitHub, Slack, Jira, Notion, Confluence). The system requires a standardized connector lifecycle and gateway architecture to isolate external vendor APIs from internal RAG processing.
+
+#### Decision
+1. **Pluggable Base Connector Adapter Pattern**:
+   - Define abstract interface `BaseConnectorAdapter` enforcing uniform lifecycle methods: `authenticate()`, `test_connection()`, `discover_resources()`, `fetch_resource_content()`, and `disconnect()`.
+   - Each SaaS integration implements this adapter, isolating platform-specific SDKs, rate limits, and pagination details.
+2. **Deterministic Lifecycle State Machine**:
+   - Connectors transition across verified states: `CONFIGURED` $\rightarrow$ `AUTHENTICATING` $\rightarrow$ `CONNECTED` $\rightarrow$ `SYNCING` $\rightarrow$ `HEALTHY` (or `DEGRADED` / `ERROR` upon communication failure).
+3. **Multi-Tenant Gateway Routing**:
+   - All connector instances and sync jobs are strictly isolated by `organization_id`.
+
+#### Alternatives Considered
+- Direct ad-hoc API calls within RAG pipelines: Rejected — creates brittle vendor couplings, complicates credential rotation, and breaks rate-limit controls.
+- Third-party managed ETL services (e.g. Fivetran): Rejected — compromises customer data sovereignty and lacks custom KEEP permission mapping.
+
+#### Reason
+Standardized adapter contracts ensure any future SaaS platform can be added without modifying core RAG, vector search, or database models.
+
+#### Impact
+Member 1 provides abstract contracts and mock test adapter. Member 2 implements REST endpoints and persistent ORM models. Member 3 builds the Integration Dashboard. Member 4 monitors connector health.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-048 — Standardized External Document Normalization, Metadata Mapping & Incremental Change Detection Engine
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.1.txt` (Chapters 7, 8, 9, 10) mandates that diverse external formats (Google Docs, Slack message threads, GitHub markdown repositories, Jira tickets) be converted into a uniform KEEP document schema while detecting incremental updates to avoid redundant re-embedding.
+
+#### Decision
+1. **Canonical Normalized Document Envelope**:
+   - Standardize all ingested external resources into `NormalizedDocument` tracking: `external_id`, `source_platform`, `source_url`, `title`, `raw_content`, `mime_type`, `author`, `department`, `tags`, timestamps, and permissions.
+2. **Cryptographic Delta Fingerprinting**:
+   - Compute SHA-256 content checksums $\text{SHA-256}(\text{Raw Content} + \text{MIME})$.
+   - Contrast against previous sync state to categorize resources as `NEW`, `UPDATED`, `DELETED`, or `UNCHANGED`.
+3. **Incremental Sync Window**:
+   - For platforms supporting modified timestamp queries, request only resources modified since `last_sync_at - 300\text{s}` (5-minute safety buffer against clock skew).
+
+#### Alternatives Considered
+- Full re-indexing on every sync: Rejected — unsustainable API consumption and vector embedding compute costs for enterprises with > 100k files.
+- Relying solely on external version numbers: Rejected — platforms like Slack and GitHub do not provide unified file version integers.
+
+#### Reason
+SHA-256 fingerprinting guarantees 100% accurate change detection across all platforms with zero unnecessary chunking or re-embedding.
+
+#### Impact
+Member 1 defines normalizer contracts and SHA-256 change detector. Member 2 integrates with `DocumentService` and `document_chunks`. Member 3 surfaces sync delta statistics on the dashboard.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-049 — Token-Encrypted Multi-Provider Authentication, Secret Storage & Cross-Platform RBAC Permission Translation
+
+#### Date
+2026-10-28
+
+#### Context
+`devdocs/p3/p3.1.txt` (Chapters 6, 13) requires supporting multiple authentication schemes (OAuth 2.0, Personal Access Tokens, API Keys, Service Accounts) and preserving source platform access controls so users cannot search content they do not have rights to view.
+
+#### Decision
+1. **Authenticated Symmetric Secret Encryption at Rest**:
+   - Encrypt all refresh tokens, client secrets, and API keys using Fernet (AES-128-CBC with HMAC-SHA256 authenticated encryption) seeded from the organization application key. Plaintext credentials are never persisted.
+2. **Cross-Platform Access Control Mapping**:
+   - Map external permission levels (`Admin`, `Editor`, `Viewer`, `Channel Member`) into standard KEEP RBAC roles (`OrgAdmin`, `Manager`, `Member`, `Guest`).
+   - Store `allowed_roles` on normalized records to enforce tenant-level search isolation.
+3. **Automated Token Refresh**:
+   - The authentication service checks access token expiry before sync jobs and triggers refresh flows transparently.
+
+#### Alternatives Considered
+- Storing tokens in plaintext in PostgreSQL: Rejected — severe security vulnerability violating enterprise compliance standards (SOC 2, ISO 27001).
+- Discarding external permissions: Rejected — causes serious privilege escalation by allowing unauthorized employees to view sensitive executive docs in AI search.
+
+#### Reason
+Token encryption and role mapping ensure enterprise-grade security and zero-trust data sovereignty across all external connections.
+
+#### Impact
+Member 1 specifies `BaseAuthenticator` and `AuthCredentials` contracts. Member 2 implements encrypted database columns and OAuth token exchange. Member 3 builds secure credential configuration drawers.
+
+#### Status
+ACCEPTED
+

@@ -58,6 +58,11 @@ export const Permission = {
   INVITATION_READ: 'invitation.read',
   INVITATION_REVOKE: 'invitation.revoke',
 
+  // Connectors & Integrations
+  CONNECTOR_VIEW: 'connector:view',
+  CONNECTOR_MANAGE: 'connector:manage',
+  CONNECTOR_SYNC: 'connector:sync',
+
   // Analytics & Audit
   ANALYTICS_VIEW: 'analytics.view',
   ANALYTICS_EXPORT: 'analytics.export',
@@ -94,6 +99,7 @@ export const VIEWER_PERMISSIONS: Set<string> = new Set([
   Permission.DEPT_READ,
   Permission.TEAM_READ,
   Permission.MEMBER_READ,
+  Permission.CONNECTOR_VIEW,
 ]);
 
 /**
@@ -107,6 +113,7 @@ export const MEMBER_PERMISSIONS: Set<string> = new Set([
   Permission.PROJECT_CREATE,
   Permission.PROJECT_UPDATE,
   Permission.INVITATION_READ,
+  Permission.CONNECTOR_SYNC,
 ]);
 
 /**
@@ -145,6 +152,7 @@ export const ORG_ADMIN_PERMISSIONS: Set<string> = new Set([
   Permission.AI_CONFIG,
   Permission.ANALYTICS_EXPORT,
   Permission.AUDIT_READ,
+  Permission.CONNECTOR_MANAGE,
 ]);
 
 /**

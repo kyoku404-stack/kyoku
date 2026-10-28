@@ -29,6 +29,9 @@ const KnowledgeGraphPage = lazy(() =>
 const EnterpriseIntelligencePage = lazy(() =>
   import('@/pages/EnterpriseIntelligencePage').then((m) => ({ default: m.EnterpriseIntelligencePage }))
 );
+const IntegrationsPage = lazy(() =>
+  import('@/pages/IntegrationsPage').then((m) => ({ default: m.IntegrationsPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -317,6 +320,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <EnterpriseIntelligencePage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'integrations',
+        element: (
+          <SuspenseWrapper>
+            <IntegrationsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'connectors',
+        element: (
+          <SuspenseWrapper>
+            <IntegrationsPage />
           </SuspenseWrapper>
         ),
       },

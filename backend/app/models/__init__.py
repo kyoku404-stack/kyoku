@@ -11,6 +11,11 @@ from backend.app.models.assistant import (
     AssistantWorkflow,
 )
 from backend.app.models.chat import ChatMessage, ChatSession
+from backend.app.models.connector import (
+    Connector,
+    ConnectorSyncJob,
+    ConnectorSyncLog,
+)
 from backend.app.models.department import Department
 from backend.app.models.document import Document
 from backend.app.models.document_version import DocumentVersion
@@ -36,6 +41,9 @@ __all__ = [
     "AssistantWorkflow",
     "ChatMessage",
     "ChatSession",
+    "Connector",
+    "ConnectorSyncJob",
+    "ConnectorSyncLog",
     "Department",
     "DetectedAnomaly",
     "Document",

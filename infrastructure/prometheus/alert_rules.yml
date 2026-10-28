@@ -351,4 +351,51 @@ groups:
           description: "Analytics & KHS computation duration is {{ $value | printf \"%.2f\" }}s (SLA: 2.0s)."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#analyticscomputationlatencyhigh"
 
+      # ------------------------------------------------------------------------
+      # Enterprise Integrations & Connector Framework Alerts (Phase 3.1)
+      # ------------------------------------------------------------------------
+      - alert: ConnectorSyncFailureRateHigh
+        expr: (sum(rate(connector_sync_jobs_failed_total[5m])) / (sum(rate(connector_sync_jobs_total[5m])) + 0.001)) * 100 > 10.0
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: enterprise-connectors
+        annotations:
+          summary: "Connector sync failure rate exceeds 10% SLA threshold"
+          description: "Connector synchronization failure rate is {{ $value | printf \"%.1f\" }}% over the last 5 minutes."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#connectorsyncfailureratehigh"
+
+      - alert: ConnectorConsecutiveFailuresHigh
+        expr: connector_consecutive_failures_count >= 3
+        for: 3m
+        labels:
+          severity: CRITICAL
+          tier: enterprise-connectors
+        annotations:
+          summary: "CRITICAL: Connector experienced 3 or more consecutive synchronization failures"
+          description: "Connector instance {{ $labels.connector_id }} ({{ $labels.platform_type }}) failed {{ $value }} consecutive sync cycles."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#connectorconsecutivefailureshigh"
+
+      - alert: ConnectorSyncDurationHigh
+        expr: histogram_quantile(0.95, sum(rate(connector_sync_duration_seconds_bucket[10m])) by (le)) > 60.0
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: enterprise-connectors
+        annotations:
+          summary: "Connector synchronization p95 latency exceeds 60s"
+          description: "P95 sync batch latency is {{ $value | printf \"%.1f\" }}s for connector {{ $labels.platform_type }}."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#connectorsyncdurationhigh"
+
+      - alert: ConnectorAuthExpiringSoon
+        expr: connector_auth_token_expires_in_seconds < 86400
+        for: 30m
+        labels:
+          severity: WARNING
+          tier: enterprise-connectors
+        annotations:
+          summary: "Connector authentication credential/token expires in < 24 hours"
+          description: "Connector {{ $labels.connector_id }} credentials will expire in {{ $value | printf \"%.0f\" }} seconds. Refresh required."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#connectorauthexpiringsoon"
+
 

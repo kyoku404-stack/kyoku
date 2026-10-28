@@ -35,6 +35,8 @@ export const ROUTES = {
   KNOWLEDGE_GRAPH: '/graph',
   INTELLIGENCE: '/intelligence',
   ENTERPRISE_INTELLIGENCE: '/enterprise-intelligence',
+  INTEGRATIONS: '/integrations',
+  CONNECTORS: '/connectors',
   NOT_FOUND: '*',
 } as const;
 
