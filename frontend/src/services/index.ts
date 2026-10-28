@@ -29,3 +29,4 @@ export * from './ragService';
 export * from './assistantService';
 export * from './graphService';
 export * from './intelligenceService';
+export * from './connectorService';

@@ -4847,6 +4847,53 @@ Member 2 has developed, implemented, and verified the complete backend infrastru
 #### Target Receiving Agent
 - **Member 3 (Frontend & UI Lead)**: Ready to implement TypeScript interfaces in `frontend/src/types/connector.ts`, API client in `frontend/src/services/connectorService.ts`, custom React hook `useConnectors.ts`, modular feature components in `frontend/src/features/connectors/`, master `IntegrationsPage.tsx`, routing under `/integrations`, and sidebar navigation.
 
+---
+
+### Handoff Entry #060 — Stage 3: Member 3 (Frontend & UI Lead)
+- **Timestamp**: 2026-10-28T03:15:00Z
+- **Author Agent**: Member 3 (Frontend & UI Lead)
+- **Role Domain**: `frontend/src/types/connector.ts`, `frontend/src/types/permission.ts`, `frontend/src/services/connectorService.ts`, `frontend/src/hooks/useConnectors.ts`, `frontend/src/features/connectors/`, `frontend/src/pages/IntegrationsPage.tsx`, `frontend/src/routes/`, `frontend/src/components/common/Sidebar.tsx`, `frontend/src/tests/connectorService.test.ts`, `frontend/src/tests/connectorComponents.test.tsx`
+- **Sub-Phase**: Phase 3.1 — Enterprise Integrations & Connector Framework
+
+#### Status
+COMPLETED / READY FOR MEMBER 4 (INTEGRATION & DEVOPS LEAD)
+
+#### Executive Summary
+Member 3 has developed, integrated, verified, and styled the complete user interface for Phase 3.1 Enterprise Integrations & Connector Framework. The implementation delivers an enterprise-grade integrations hub featuring live telemetry KPIs, interactive connector cards with platform logos and health badges, multi-step connector registration wizard supporting 14 platforms across 6 categories, secure authentication dialog with credential obfuscation, real-time health telemetry inspection drawer, resource-level synchronization audit logs table, and reactive polling state management.
+
+#### Implemented Features & Deliverables
+1. **TypeScript Definitions & Enums (`frontend/src/types/connector.ts`, `frontend/src/types/permission.ts`)**:
+   - Runtime `const` objects and derived types for `PlatformType` (14 platforms), `PlatformCategory` (6 categories), `AuthType`, `ConnectorStatus`, `SyncMode`, `SyncJobStatus`, and `SyncAction`.
+   - Granular permissions added to `permission.ts`: `CONNECTOR_VIEW` (`connector:view`), `CONNECTOR_MANAGE` (`connector:manage`), `CONNECTOR_SYNC` (`connector:sync`) with hierarchical inheritance across Viewer, Member, and OrgAdmin.
+2. **API Client Service (`frontend/src/services/connectorService.ts`)**:
+   - Implemented typed asynchronous methods for all 7 Phase 3.1 REST endpoints: `register()`, `authenticate()`, `list()`, `sync()`, `getStatus()`, `remove()`, and `getLogs()`.
+   - Re-exported in `frontend/src/services/index.ts`.
+3. **State Management & Custom Hook (`frontend/src/hooks/useConnectors.ts`)**:
+   - `useConnectors()` hook with search, category filtering, status filtering, tab switching, and 15-second background polling.
+   - Optimistic state updates on registration, manual sync triggering, and deletion.
+4. **Modular Feature Components (`frontend/src/features/connectors/`)**:
+   - `ConnectorMetricsBanner`: Executive KPI stat cards displaying total connectors, healthy count, active syncing count, error count, and total documents ingested.
+   - `ConnectorGrid`: Responsive grid of connector cards with platform-specific branding icons, live operational status badges, and action triggers (Sync, Status, Auth, Remove).
+   - `RegisterConnectorModal`: SaaS platform picker, connection configuration, interval setting, and validation.
+   - `AuthenticateModal`: Secure credential input with toggleable masking and HMAC-SHA256 guidance.
+   - `ConnectorStatusDrawer`: Slide-over health telemetry inspector displaying API response latency, quota consumption progress bar, and SLA adherence.
+   - `SyncHistoryTable`: Resource audit table tracking provenance links, checksums, and delta actions (Added, Updated, Deleted, Unchanged).
+   - Barrel-exported in `frontend/src/features/connectors/index.ts`.
+5. **Master Page, Routing & Navigation (`frontend/src/pages/IntegrationsPage.tsx`, `frontend/src/routes/`)**:
+   - `IntegrationsPage.tsx` mounted under `ROUTES.INTEGRATIONS` (`/integrations`) and `ROUTES.CONNECTORS` (`/connectors`).
+   - Lazy-loaded in `frontend/src/routes/index.tsx` wrapped in `RequireAuth`.
+   - Updated `Sidebar.tsx` with `Cable` icon, Phase 3.1 badge, and `CONNECTOR_VIEW` permission guard.
+6. **Empirical Verification**:
+   - `frontend/src/tests/connectorService.test.ts`: 7/7 tests passed (100%).
+   - `frontend/src/tests/connectorComponents.test.tsx`: 6/6 tests passed (100%).
+   - Total connector test suite: 13/13 tests passed (100%).
+   - ESLint: 0 errors, 0 warnings (`npm run lint`).
+   - TypeScript compilation & Vite build: clean production build (`dist/assets/IntegrationsPage-Bx1gxj8l.js` generated, 0 errors).
+
+#### Target Receiving Agent
+- **Member 4 (Integration & DevOps Lead)**: Provision Prometheus alerting rules in `infrastructure/prometheus/alert_rules.yml`, Grafana dashboard in `infrastructure/grafana/dashboards/enterprise-integrations-dashboard.json`, pipeline integration test suite `tests/integration/test_connector_pipeline.py`, Playwright E2E browser tests `tests/e2e/integrations_connectors.spec.ts`, full monorepo verification, and Git finalization.
+
+
 
 
 
