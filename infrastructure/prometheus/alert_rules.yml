@@ -596,6 +596,71 @@ groups:
           summary: "Plugin marketplace package installation error rate exceeds 2%"
           description: "Package download or checksum verification failure rate is {{ $value | printf \"%.2f\" }}%."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#pluginmarketplaceinstallfailurerate"
+# ------------------------------------------------------------------------
+      # Phase 3.6: Production Infrastructure, Scalability & Observability Alerts
+      # ------------------------------------------------------------------------
+      - alert: HighSystemCpuUsage
+        expr: system_cpu_utilization_ratio * 100 > 80.0
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: infrastructure
+        annotations:
+          summary: "Host or container CPU utilization exceeds 80%"
+          description: "Aggregate system CPU utilization is {{ $value | printf \"%.1f\" }}% over the last 3 minutes (threshold: 80%)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#highsystemcpuusage"
 
+      - alert: SystemMemoryExhaustion
+        expr: (system_memory_used_bytes / system_memory_total_bytes) * 100 > 85.0
+        for: 3m
+        labels:
+          severity: WARNING
+          tier: infrastructure
+        annotations:
+          summary: "System RAM memory utilization exceeds 85%"
+          description: "RAM memory utilization is {{ $value | printf \"%.1f\" }}% over a 3-minute evaluation window (threshold: 85%)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#systemmemoryexhaustion"
 
+      - alert: SystemDiskHeadroomCritical
+        expr: (system_disk_used_bytes / system_disk_total_bytes) * 100 > 90.0
+        for: 5m
+        labels:
+          severity: CRITICAL
+          tier: storage
+        annotations:
+          summary: "CRITICAL: System primary disk headroom below 10%"
+          description: "Primary disk utilization is {{ $value | printf \"%.1f\" }}% (threshold: 90%). Imminent risk of journal freeze."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#systemdiskheadroomcritical"
 
+      - alert: SystemDeploymentFailureRateHigh
+        expr: sum(increase(system_deployments_total{status=\"failed\"}[5m])) > 0
+        for: 5m
+        labels:
+          severity: CRITICAL
+          tier: deployment
+        annotations:
+          summary: "Automated service deployment failure detected"
+          description: "One or more rolling blue-green/canary service deployments failed during the last 5 minutes."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#systemdeploymentfailureratehigh"
+
+      - alert: DisasterRecoveryRpoDriftHigh
+        expr: (time() - system_backup_last_successful_timestamp_seconds) > 3600
+        for: 10m
+        labels:
+          severity: WARNING
+          tier: disaster_recovery
+        annotations:
+          summary: "Disaster Recovery RPO drift exceeds 1 hour"
+          description: "Last verified system backup was completed {{ $value | printf \"%.0f\" }} seconds ago (RPO target: 3600s)."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#disasterrecoveryrpodrifthigh"
+
+      - alert: RedisCacheHitRatioDegraded
+        expr: (sum(rate(redis_keyspace_hits_total[5m])) / (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m])))) * 100 < 85.0
+        for: 5m
+        labels:
+          severity: WARNING
+          tier: cache
+        annotations:
+          summary: "Distributed Redis cache hit ratio degraded below 85%"
+          description: "Cache hit ratio is {{ $value | printf \"%.2f\" }}% over 5m window, indicating cache thrashing or key invalidation storm."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#rediscachehitratiodegraded"

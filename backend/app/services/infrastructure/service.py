@@ -534,7 +534,7 @@ class EnterpriseInfrastructureService:
     ) -> CreateBackupData:
         """Initiates an immediate point-in-time backup snapshot."""
         now = datetime.now(UTC)
-        ts_str = now.strftime("%Y%m%d-%H%M%S")
+        ts_str = f"{now.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
         backup_name = f"backup-keep-manual-{ts_str}"
         mock_payload = f"manual-backup-{ts_str}".encode()
         checksum = hashlib.sha256(mock_payload).hexdigest()

@@ -206,3 +206,4 @@ describe('Phase 3.6 System Service API Client', () => {
     expect(res.data?.flushed_namespaces).toHaveLength(2);
   });
 });
+
