@@ -4356,3 +4356,357 @@ Base Path: `/api/v1`
 
 
 
+
+---
+
+## 18. Phase 3.6 — Production Infrastructure, Scalability, Observability & High Availability APIs
+
+Specification Source: `devdocs/p3/p3.6.txt` (Chapters 1–20)  
+Lead Architect: Member 1 | Implementer: Member 2 | Consumer: Member 3 | DevOps: Member 4  
+
+### 18.1 System Health & Diagnostics
+
+#### 18.1.1 Get Platform Health Diagnostics
+- **Method**: `GET`
+- **Path**: `/api/v1/system/health`
+- **Auth**: Optional / Public (or Bearer JWT for detailed subsystem probes)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "System health probe successful.",
+  "data": {
+    "status": "HEALTHY",
+    "uptime_seconds": 864200.5,
+    "timestamp": "2026-11-06T03:30:00Z",
+    "version": "3.6.0",
+    "overall_score": 0.995,
+    "subsystems": {
+      "database": {
+        "status": "HEALTHY",
+        "latency_ms": 2.4,
+        "pool_available": 18,
+        "pool_active": 2
+      },
+      "redis": {
+        "status": "HEALTHY",
+        "latency_ms": 0.8,
+        "hit_ratio_percent": 94.2
+      },
+      "vector_database": {
+        "status": "HEALTHY",
+        "indexed_vectors": 145020,
+        "hnsw_ready": true
+      },
+      "storage": {
+        "status": "HEALTHY",
+        "used_gb": 42.5,
+        "total_gb": 500.0,
+        "headroom_percent": 91.5
+      },
+      "ai_workers": {
+        "status": "HEALTHY",
+        "active_workers": 4,
+        "queued_jobs": 0
+      }
+    }
+  }
+}
+```
+
+### 18.2 System Performance Telemetry
+
+#### 18.2.1 Get System Metrics
+- **Method**: `GET`
+- **Path**: `/api/v1/system/metrics`
+- **Auth**: Bearer JWT (`system.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Performance metrics retrieved.",
+  "data": {
+    "timestamp": "2026-11-06T03:30:00Z",
+    "cpu": {
+      "percent": 34.2,
+      "cores": 8,
+      "load_avg_1m": 1.25
+    },
+    "memory": {
+      "total_mb": 16384,
+      "used_mb": 6240,
+      "percent": 38.1
+    },
+    "disk": {
+      "total_gb": 256.0,
+      "used_gb": 78.4,
+      "percent": 30.6
+    },
+    "network": {
+      "rx_bytes_sec": 1245000,
+      "tx_bytes_sec": 4820000
+    },
+    "application": {
+      "requests_per_second": 84.5,
+      "p50_latency_ms": 18.2,
+      "p95_latency_ms": 84.6,
+      "p99_latency_ms": 210.0,
+      "error_rate_percent": 0.04,
+      "active_connections": 128
+    },
+    "cache": {
+      "hit_ratio_percent": 93.8,
+      "total_keys": 42100,
+      "memory_used_mb": 182.4
+    }
+  }
+}
+```
+
+### 18.3 Centralized System Logs
+
+#### 18.3.1 Query System Logs
+- **Method**: `GET`
+- **Path**: `/api/v1/system/logs`
+- **Auth**: Bearer JWT (`system.view` permission)
+- **Query Parameters**:
+  - `service_name`: string (optional, e.g. `keep-backend-api`, `keep-ai-worker`)
+  - `severity`: string (optional: `INFO`, `WARN`, `ERROR`, `FATAL`)
+  - `limit`: int (default: 50, max: 200)
+  - `query`: string (optional search string)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "log-7b89f0a1",
+      "service_name": "keep-backend-api",
+      "severity": "INFO",
+      "message": "Health probe completed with 100% checks passing.",
+      "trace_id": "tr-4f9e1a2b",
+      "metadata": {
+        "duration_ms": 4.2,
+        "client_ip": "10.0.1.42"
+      },
+      "created_at": "2026-11-06T03:29:45Z"
+    }
+  ]
+}
+```
+
+### 18.4 Deployment Orchestration
+
+#### 18.4.1 Trigger System Deployment
+- **Method**: `POST`
+- **Path**: `/api/v1/system/deploy`
+- **Auth**: Bearer JWT (`system.deploy` permission)
+- **Request Body**:
+```json
+{
+  "service_name": "keep-backend-api",
+  "version": "3.6.1-patch1",
+  "strategy": "BLUE_GREEN",
+  "environment": "production",
+  "auto_rollback_on_failure": true
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Deployment initiated successfully.",
+  "data": {
+    "deployment_id": "dep-9a8b7c6d",
+    "service_name": "keep-backend-api",
+    "version": "3.6.1-patch1",
+    "strategy": "BLUE_GREEN",
+    "status": "IN_PROGRESS",
+    "started_at": "2026-11-06T03:30:10Z"
+  }
+}
+```
+
+### 18.5 System Release & Version
+
+#### 18.5.1 Get System Release Information
+- **Method**: `GET`
+- **Path**: `/api/v1/system/version`
+- **Auth**: Bearer JWT (`system.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "version": "3.6.0",
+    "git_commit": "599b185",
+    "build_date": "2026-11-06T03:00:00Z",
+    "environment": "production",
+    "python_version": "3.12.10",
+    "frameworks": {
+      "fastapi": "0.115.0",
+      "sqlalchemy": "2.0.36",
+      "pydantic": "2.9.2"
+    }
+  }
+}
+```
+
+### 18.6 Microservices Operational Matrix
+
+#### 18.6.1 Get Services Status
+- **Method**: `GET`
+- **Path**: `/api/v1/system/status`
+- **Auth**: Bearer JWT (`system.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "service_name": "keep-frontend",
+      "status": "RUNNING",
+      "replicas_desired": 2,
+      "replicas_ready": 2,
+      "version": "3.6.0",
+      "uptime_hours": 142.5,
+      "memory_mb": 84.0,
+      "cpu_percent": 1.2
+    },
+    {
+      "service_name": "keep-backend-api",
+      "status": "RUNNING",
+      "replicas_desired": 3,
+      "replicas_ready": 3,
+      "version": "3.6.0",
+      "uptime_hours": 142.5,
+      "memory_mb": 420.5,
+      "cpu_percent": 8.4
+    },
+    {
+      "service_name": "keep-ai-worker",
+      "status": "RUNNING",
+      "replicas_desired": 2,
+      "replicas_ready": 2,
+      "version": "3.6.0",
+      "uptime_hours": 142.5,
+      "memory_mb": 1250.0,
+      "cpu_percent": 15.6
+    },
+    {
+      "service_name": "keep-ingestion-worker",
+      "status": "RUNNING",
+      "replicas_desired": 2,
+      "replicas_ready": 2,
+      "version": "3.6.0",
+      "uptime_hours": 142.5,
+      "memory_mb": 680.0,
+      "cpu_percent": 4.1
+    },
+    {
+      "service_name": "keep-embedding-worker",
+      "status": "RUNNING",
+      "replicas_desired": 2,
+      "replicas_ready": 2,
+      "version": "3.6.0",
+      "uptime_hours": 142.5,
+      "memory_mb": 890.0,
+      "cpu_percent": 6.8
+    },
+    {
+      "service_name": "keep-notification-srv",
+      "status": "RUNNING",
+      "replicas_desired": 2,
+      "replicas_ready": 2,
+      "version": "3.6.0",
+      "uptime_hours": 142.5,
+      "memory_mb": 190.0,
+      "cpu_percent": 2.0
+    }
+  ]
+}
+```
+
+### 18.7 Disaster Recovery & Backup Inventory
+
+#### 18.7.1 Get System Backups
+- **Method**: `GET`
+- **Path**: `/api/v1/system/backups`
+- **Auth**: Bearer JWT (`system.backup` or `system.view` permission)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "rpo_target_minutes": 60,
+    "rto_target_minutes": 240,
+    "current_rpo_drift_minutes": 18,
+    "last_successful_backup": "2026-11-06T03:12:00Z",
+    "backups": [
+      {
+        "id": "bak-992a81b2",
+        "backup_name": "backup-keep-prod-20261106-031200",
+        "backup_type": "DATABASE",
+        "status": "VERIFIED",
+        "size_bytes": 145892040,
+        "storage_location": "s3://keep-enterprise-backups/prod/backup-keep-prod-20261106-031200.tar.gz",
+        "rpo_drift_seconds": 1080,
+        "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "verified_at": "2026-11-06T03:15:00Z",
+        "created_at": "2026-11-06T03:12:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### 18.7.2 Trigger Manual Backup Snapshot
+- **Method**: `POST`
+- **Path**: `/api/v1/system/backups/create`
+- **Auth**: Bearer JWT (`system.backup` permission)
+- **Request Body**:
+```json
+{
+  "backup_type": "DATABASE",
+  "notes": "Pre-deployment snapshot for Phase 3.6 upgrade"
+}
+```
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Manual backup snapshot initiated successfully.",
+  "data": {
+    "backup_id": "bak-102bc45d",
+    "backup_name": "backup-keep-manual-20261106-033100",
+    "status": "COMPLETED",
+    "size_bytes": 146100200,
+    "created_at": "2026-11-06T03:31:00Z"
+  }
+}
+```
+
+### 18.8 Multi-Tier Cache Administration
+
+#### 18.8.1 Flush Cache Namespaces
+- **Method**: `POST`
+- **Path**: `/api/v1/system/cache/flush`
+- **Auth**: Bearer JWT (`system.manage` permission)
+- **Request Body**:
+```json
+{
+  "namespaces": ["ai_response", "vector_query", "dashboard"],
+  "flush_all": false
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Target cache namespaces flushed successfully.",
+  "data": {
+    "flushed_namespaces": ["keep:ai:resp:", "keep:vector:q:", "keep:dashboard:"],
+    "keys_removed": 1420
+  }
+}
+```

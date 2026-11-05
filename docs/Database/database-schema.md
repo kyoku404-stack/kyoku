@@ -1574,3 +1574,90 @@ CREATE INDEX idx_plugin_logs_status ON plugin_execution_logs(plugin_id, status);
 
 
 
+
+---
+
+## 3.23 Phase 3.6 — Production Infrastructure & Operations Tables
+
+Specification Reference: `devdocs/p3/p3.6.txt` (Chapters 1–20)  
+Architect: Member 1 | Implementer: Member 2  
+
+### 3.23.1 `system_deployments` Table
+Tracks rolling, blue-green, and canary deployments with automated rollback tracking:
+```sql
+CREATE TABLE system_deployments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    deployment_id VARCHAR(100) NOT NULL UNIQUE,
+    service_name VARCHAR(100) NOT NULL DEFAULT 'all',  -- 'all', 'keep-backend-api', 'keep-frontend', etc.
+    version VARCHAR(50) NOT NULL,
+    strategy VARCHAR(50) NOT NULL DEFAULT 'ROLLING',   -- 'ROLLING', 'BLUE_GREEN', 'CANARY'
+    environment VARCHAR(50) NOT NULL DEFAULT 'production',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',     -- 'PENDING', 'IN_PROGRESS', 'SUCCESS', 'FAILED', 'ROLLED_BACK'
+    rollback_version VARCHAR(50),
+    auto_rollback_on_failure BOOLEAN NOT NULL DEFAULT TRUE,
+    deployed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_system_deployments_env_status ON system_deployments(environment, status);
+CREATE INDEX idx_system_deployments_started ON system_deployments(started_at DESC);
+```
+
+### 3.23.2 `system_backups` Table
+Disaster recovery snapshot inventory, storage paths, RPO tracking, and checksum verification:
+```sql
+CREATE TABLE system_backups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    backup_name VARCHAR(120) NOT NULL UNIQUE,
+    backup_type VARCHAR(50) NOT NULL DEFAULT 'DATABASE', -- 'DATABASE', 'FULL', 'OBJECT_STORAGE', 'WAL'
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',        -- 'PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'VERIFIED'
+    size_bytes BIGINT NOT NULL DEFAULT 0,
+    storage_location VARCHAR(255) NOT NULL,
+    rpo_drift_seconds INTEGER NOT NULL DEFAULT 0,
+    checksum_sha256 VARCHAR(64),
+    notes TEXT,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_system_backups_status ON system_backups(status);
+CREATE INDEX idx_system_backups_created ON system_backups(created_at DESC);
+```
+
+### 3.23.3 `system_health_snapshots` Table
+Periodic high-water mark telemetry and composite subsystem health records:
+```sql
+CREATE TABLE system_health_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    status VARCHAR(50) NOT NULL DEFAULT 'HEALTHY',       -- 'HEALTHY', 'DEGRADED', 'CRITICAL'
+    cpu_percent NUMERIC(5, 2) NOT NULL DEFAULT 0.0,
+    memory_percent NUMERIC(5, 2) NOT NULL DEFAULT 0.0,
+    disk_percent NUMERIC(5, 2) NOT NULL DEFAULT 0.0,
+    active_requests INTEGER NOT NULL DEFAULT 0,
+    subsystems JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_system_health_created ON system_health_snapshots(created_at DESC);
+```
+
+### 3.23.4 `system_audit_logs` Table
+Centralized operational diagnostic and security audit event store:
+```sql
+CREATE TABLE system_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    service_name VARCHAR(100) NOT NULL,
+    severity VARCHAR(30) NOT NULL DEFAULT 'INFO',        -- 'INFO', 'WARN', 'ERROR', 'FATAL'
+    message TEXT NOT NULL,
+    trace_id VARCHAR(100),
+    metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_system_audit_service_severity ON system_audit_logs(service_name, severity);
+CREATE INDEX idx_system_audit_trace ON system_audit_logs(trace_id);
+CREATE INDEX idx_system_audit_created ON system_audit_logs(created_at DESC);
+```

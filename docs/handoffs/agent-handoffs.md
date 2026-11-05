@@ -5965,3 +5965,70 @@ COMPLETED ✓
 
 
 
+
+---
+
+## Entry #078: Phase 3.6 — Production Infrastructure, Scalability, Observability & High Availability Architecture Baseline
+
+### Date
+2026-11-06
+
+### Author Agent
+Member 1 (Project Lead & AI Architect)
+
+### Status
+COMPLETED ✓
+
+### Implemented Features
+1. **Master Architecture Specification (`docs/Architecture/production-infrastructure-scalability-observability.md`)**:
+   - Detailed cloud-native Kubernetes topology, microservices isolation matrix (Frontend, Backend API, AI Worker, Ingestion Worker, Embedding Worker, Notification Service, Scheduler).
+   - High Availability guidelines with Multi-AZ pod scheduling, Pod Anti-Affinity, and Pod Disruption Budgets (`minAvailable: 1`).
+   - Multi-tier Redis 7 caching architecture covering 6 namespaces (`keep:session:`, `keep:auth:`, `keep:ai:resp:`, `keep:vector:q:`, `keep:dashboard:`, `keep:rate_limit:`).
+   - Enterprise Disaster Recovery specification establishing RPO $\le$ 1 hour and RTO $\le$ 4 hours, continuous PostgreSQL WAL replication, S3/MinIO bucket replication, and automated SHA-256 integrity verification.
+   - Declarative Blue-Green and Rolling deployment strategies with automated rollback gating when error rate $> 1.0\%$ or health probes fail.
+   - Centralized observability stack specifications including Prometheus metrics, Loki structured JSON logging, and distributed OpenTelemetry tracing.
+2. **Architecture Decision Records (`docs/decisions/decisions.md`)**:
+   - `ADR-062`: Cloud-Native High Availability, Kubernetes Orchestration & Zero-Downtime Blue-Green Deployment.
+   - `ADR-063`: Multi-Layer Redis Caching Architecture, Invalidation Strategies & Distributed Rate Limiting.
+   - `ADR-064`: Enterprise Observability, OpenTelemetry Tracing, Prometheus Telemetry & Automated Disaster Recovery.
+3. **REST API Contract Updates (`docs/api/api-contract.md`)**:
+   - Added Section 18 specifying all Phase 3.6 endpoints:
+     - `GET /api/v1/system/health`: Aggregated platform health diagnostics.
+     - `GET /api/v1/system/metrics`: Performance telemetry and resource utilization.
+     - `GET /api/v1/system/logs`: Centralized audit and operational log query endpoint.
+     - `POST /api/v1/system/deploy`: Trigger or schedule rolling/blue-green deployment.
+     - `GET /api/v1/system/version`: Release version, build git commit SHA, and environment information.
+     - `GET /api/v1/system/status`: Microservices operational status and replica metrics.
+     - `GET /api/v1/system/backups`: Disaster recovery snapshot inventory and RPO/RTO metrics.
+     - `POST /api/v1/system/backups/create`: Trigger immediate manual backup snapshot.
+     - `POST /api/v1/system/cache/flush`: Administrative cache flush across designated namespaces.
+4. **Database Schema Updates (`docs/database/database-schema.md`)**:
+   - Section 3.23 specifying tables: `system_deployments`, `system_backups`, `system_health_snapshots`, `system_audit_logs`.
+5. **Typed Domain Contracts & Reference Algorithms (`backend/app/services/infrastructure/`)**:
+   - Enums: `DeploymentStrategy`, `DeploymentStatus`, `ServiceHealthStatus`, `MicroserviceState`, `BackupType`, `BackupStatus`, `LogLevel`, `CacheNamespace`.
+   - Core Engines: `HealthScoringEngine`, `DisasterRecoveryEvaluator`, `MultiTierCacheManager`, `DeploymentOrchestrator`.
+   - Granular RBAC Permissions in `backend/app/services/ai/interfaces.py`: `SYSTEM_VIEW`, `SYSTEM_MANAGE`, `SYSTEM_DEPLOY`, `SYSTEM_BACKUP`.
+6. **Dedicated Unit Test Suite (`tests/unit/test_infrastructure_contracts.py`)**:
+   - 13 comprehensive unit tests validating composite health scoring, latency penalties, critical database vetoes, RPO drift compliance, checksum verification, cache namespace hashing, and deployment rollback simulations (100% pass rate).
+
+### Files Modified / Created
+- `docs/Architecture/production-infrastructure-scalability-observability.md` (Created)
+- `docs/decisions/decisions.md` (Modified)
+- `docs/api/api-contract.md` (Modified)
+- `docs/database/database-schema.md` (Modified)
+- `backend/app/services/ai/interfaces.py` (Modified)
+- `backend/app/services/infrastructure/__init__.py` (Created)
+- `backend/app/services/infrastructure/contracts.py` (Created)
+- `tests/unit/test_infrastructure_contracts.py` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Target Receiving Agent
+- **Member 2 (Backend & Database Lead)**
+
+#### Required Action for Receiving Agent
+1. Implement SQLAlchemy ORM models in `backend/app/models/infrastructure.py` matching Section 3.23.
+2. Author and verify clean Alembic migration revision chained from `f4a5b6c7d8e9` to `0a1b2c3d4e5f`.
+3. Implement Pydantic v2 schemas in `backend/app/schemas/infrastructure.py` matching Section 18.
+4. Implement `EnterpriseInfrastructureService` in `backend/app/services/infrastructure/service.py`.
+5. Implement FastAPI REST routes in `backend/app/api/v1/system.py` and register in `backend/app/api/v1/router.py`.
+6. Author backend unit and integration test suites.
