@@ -6032,3 +6032,84 @@ COMPLETED ✓
 4. Implement `EnterpriseInfrastructureService` in `backend/app/services/infrastructure/service.py`.
 5. Implement FastAPI REST routes in `backend/app/api/v1/system.py` and register in `backend/app/api/v1/router.py`.
 6. Author backend unit and integration test suites.
+
+---
+
+## Entry #079: Phase 3.6 — Backend Models, Migrations, Infrastructure Services & Operations REST APIs
+
+### Date
+2026-11-06
+
+### Author Agent
+Member 2 (Backend & Database Lead)
+
+### Status
+COMPLETED ✓
+
+### Implemented Features
+1. **SQLAlchemy ORM Models (`backend/app/models/infrastructure.py`)**:
+   - `SystemDeployment`: tracks deployment execution records, strategies (ROLLING, BLUE_GREEN, CANARY), versions, statuses (PENDING, IN_PROGRESS, SUCCESS, FAILED, ROLLED_BACK), rollback version tracking, and audit metadata.
+   - `SystemBackup`: records point-in-time disaster recovery snapshots, archive sizes, storage URIs (S3/local), cryptographic SHA-256 integrity checksums, RPO drift, and verification timestamps.
+   - `SystemHealthSnapshot`: persists periodic high-water mark telemetry, composite reliability scores, and granular subsystem diagnostic reports.
+   - `SystemAuditLog`: stores centralized operational logs, severity ratings, trace correlation IDs, and structured diagnostic attributes.
+   - Re-exported all four models in `backend/app/models/__init__.py`.
+2. **Alembic Database Schema Migration (`backend/migrations/versions/0a1b2c3d4e5f_phase_3_6_production_infrastructure_operations.py`)**:
+   - Clean linear schema revision chained from `f4a5b6c7d8e9` to `0a1b2c3d4e5f (head)`.
+   - Provisioned composite indexes: `idx_system_deployments_env_status`, `idx_system_deployments_started`, `idx_system_backups_status`, `idx_system_backups_created`, `idx_system_health_created`, `idx_system_audit_service_severity`, `idx_system_audit_trace`, `idx_system_audit_created`.
+   - Updated `tests/integration/test_db_migrations.py` (4/4 tests passed).
+3. **Pydantic v2 Validation Schemas (`backend/app/schemas/infrastructure.py`)**:
+   - Implemented schemas for all Phase 3.6 endpoints matching Section 18: `SystemHealthData`, `SystemMetricsData`, `SystemLogEntryData`, `DeployTriggerRequest`, `DeployTriggerData`, `SystemVersionData`, `MicroserviceStatusData`, `SystemBackupsData`, `CreateBackupRequest`, `CreateBackupData`, `CacheFlushRequest`, `CacheFlushData`.
+   - Re-exported in `backend/app/schemas/__init__.py`.
+4. **Enterprise Infrastructure Service (`backend/app/services/infrastructure/service.py`)**:
+   - `get_system_health`: evaluates live database, Redis cluster, pgvector HNSW index, storage disk headroom, and AI worker pools using `HealthScoringEngine`.
+   - `get_system_metrics`: captures hardware CPU/RAM/Disk/Network via `psutil` and application throughput/latency quantiles.
+   - `get_system_logs`: query filtering by service, severity, search query, with automatic baseline log seeding.
+   - `trigger_deployment`: executes automated rollout with rollback safeguard and audit logging.
+   - `get_system_version`: exposes release version ("3.6.0"), git commit SHA, environment, and runtime versions.
+   - `get_services_status`: returns complete microservice operational status matrix.
+   - `get_system_backups` & `create_backup`: point-in-time snapshots, SHA-256 verification, and RPO drift calculation.
+   - `flush_cache`: selective Redis namespace invalidation.
+5. **FastAPI REST Endpoints (`backend/app/api/v1/system.py`)**:
+   - Mounted at `/api/v1/system`:
+     - `GET /api/v1/system/health`
+     - `GET /api/v1/system/metrics`
+     - `GET /api/v1/system/logs`
+     - `POST /api/v1/system/deploy`
+     - `GET /api/v1/system/version`
+     - `GET /api/v1/system/status`
+     - `GET /api/v1/system/backups`
+     - `POST /api/v1/system/backups/create`
+     - `POST /api/v1/system/cache/flush`
+   - Registered in `backend/app/api/v1/router.py`.
+6. **Backend Test Suites**:
+   - `tests/unit/test_infrastructure_services.py`: 8 tests (100% pass rate).
+   - `tests/integration/test_system_endpoints.py`: 8 tests (100% pass rate).
+   - `tests/integration/test_db_migrations.py`: 4 tests (100% pass rate).
+   - Total backend tests passing for Phase 3.6: 33 tests. Ruff linter clean (0 errors, 0 warnings).
+
+### Files Modified / Created
+- `backend/app/models/infrastructure.py` (Created)
+- `backend/app/models/__init__.py` (Modified)
+- `backend/migrations/versions/0a1b2c3d4e5f_phase_3_6_production_infrastructure_operations.py` (Created)
+- `tests/integration/test_db_migrations.py` (Modified)
+- `backend/app/schemas/infrastructure.py` (Created)
+- `backend/app/schemas/__init__.py` (Modified)
+- `backend/app/services/infrastructure/service.py` (Created)
+- `backend/app/api/v1/system.py` (Created)
+- `backend/app/api/v1/router.py` (Modified)
+- `tests/unit/test_infrastructure_services.py` (Created)
+- `tests/integration/test_system_endpoints.py` (Created)
+- `docs/handoffs/agent-handoffs.md` (Modified)
+
+### Target Receiving Agent
+- **Member 3 (Frontend & UI Lead)**
+
+#### Required Action for Receiving Agent
+1. Implement TypeScript interfaces and types in `frontend/src/types/system.ts` and update `frontend/src/types/permission.ts` and `frontend/src/types/index.ts`.
+2. Implement Axios API client methods in `frontend/src/services/systemService.ts` and re-export in `frontend/src/services/index.ts`.
+3. Implement `useSystemOperations` custom React hook in `frontend/src/hooks/useSystemOperations.ts`.
+4. Build modular UI feature components in `frontend/src/features/system/` (Metrics KPI cards, Services matrix, Logs viewer, Deploy modal, Backups list & create modal, Cache flush modal).
+5. Build master `SystemOperationsPage` in `frontend/src/pages/SystemOperationsPage.tsx`.
+6. Configure routes in `frontend/src/routes/paths.ts` and `frontend/src/routes/index.tsx`.
+7. Update navigation in `frontend/src/components/common/Sidebar.tsx` with `System Operations` link, `Activity` / `Server` icon, and `Phase 3.6` badge.
+8. Author frontend Vitest unit & component tests in `frontend/src/tests/systemService.test.ts` and `frontend/src/tests/systemComponents.test.tsx`.

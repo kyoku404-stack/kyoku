@@ -26,6 +26,12 @@ from backend.app.models.connector import (
 from backend.app.models.department import Department
 from backend.app.models.document import Document
 from backend.app.models.document_version import DocumentVersion
+from backend.app.models.infrastructure import (
+    SystemAuditLog,
+    SystemBackup,
+    SystemDeployment,
+    SystemHealthSnapshot,
+)
 from backend.app.models.ingestion_job import IngestionJob
 from backend.app.models.invitation import Invitation
 from backend.app.models.knowledge import DocumentChunk, KgEntity, KgRelationship
@@ -111,6 +117,10 @@ __all__ = [
     "SecurityErasureRequest",
     "SecurityMFACredential",
     "SecurityThreatAlert",
+    "SystemAuditLog",
+    "SystemBackup",
+    "SystemDeployment",
+    "SystemHealthSnapshot",
     "Task",
     "Team",
     "User",
