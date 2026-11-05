@@ -154,6 +154,10 @@ class AIPermission(str, Enum):
     SYSTEM_DEPLOY = "system.deploy"
     SYSTEM_BACKUP = "system.backup"
 
+    # Phase 3.7 Final QA, Security Audit, Documentation & Production Release
+    RELEASE_VIEW = "release.view"
+    RELEASE_DEPLOY = "release.deploy"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -192,6 +196,8 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.PLUGIN_VIEW.value,
     # Phase 3.6 system permissions
     AIPermission.SYSTEM_VIEW.value,
+    # Phase 3.7 release permissions
+    AIPermission.RELEASE_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -290,6 +296,8 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     # Phase 3.6 system permissions
     AIPermission.SYSTEM_MANAGE.value,
     AIPermission.SYSTEM_DEPLOY.value,
+    # Phase 3.7 release permissions
+    AIPermission.RELEASE_DEPLOY.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
