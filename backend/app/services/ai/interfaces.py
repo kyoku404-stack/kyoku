@@ -148,6 +148,12 @@ class AIPermission(str, Enum):
     PLUGIN_INSTALL = "plugin.install"
     PLUGIN_EXECUTE = "plugin.execute"
 
+    # Phase 3.6 Production Infrastructure, Scalability, Observability & High Availability
+    SYSTEM_VIEW = "system.view"
+    SYSTEM_MANAGE = "system.manage"
+    SYSTEM_DEPLOY = "system.deploy"
+    SYSTEM_BACKUP = "system.backup"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -184,6 +190,8 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.NOTIFICATION_VIEW.value,
     # Phase 3.5 plugin permissions
     AIPermission.PLUGIN_VIEW.value,
+    # Phase 3.6 system permissions
+    AIPermission.SYSTEM_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -240,6 +248,8 @@ PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
     AIPermission.WORKFLOW_APPROVE.value,
     # Phase 3.5 plugin permissions
     AIPermission.PLUGIN_INSTALL.value,
+    # Phase 3.6 system permissions
+    AIPermission.SYSTEM_BACKUP.value,
 }
 
 ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
@@ -277,6 +287,9 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.WORKFLOW_MANAGE.value,
     # Phase 3.5 plugin permissions
     AIPermission.PLUGIN_MANAGE.value,
+    # Phase 3.6 system permissions
+    AIPermission.SYSTEM_MANAGE.value,
+    AIPermission.SYSTEM_DEPLOY.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {

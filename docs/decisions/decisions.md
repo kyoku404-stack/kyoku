@@ -2002,3 +2002,107 @@ ACCEPTED
 
 
 
+
+---
+
+### ADR-062 — Cloud-Native High Availability, Kubernetes Orchestration & Zero-Downtime Blue-Green Deployment
+
+#### Date
+2026-11-06
+
+#### Context
+`devdocs/p3/p3.6.txt` (Chapters 3, 4, 5, 6, 14) requires enterprise KEEP production deployments to operate with zero single points of failure, resilient horizontal autoscaling under peak AI and OCR loads, and zero-downtime updates without dropping active API requests.
+
+#### Decision
+1. **Multi-Replica Kubernetes Deployment**:
+   - Split application tiers into independently autoscalable deployments (`keep-backend-api`, `keep-frontend`, `keep-ai-worker`, `keep-ingestion-worker`, `keep-embedding-worker`, `keep-notification-srv`).
+   - Mandate minimum 2 replicas per stateless service across multiple Availability Zones with Pod Anti-Affinity rules and Pod Disruption Budgets (`minAvailable: 1`).
+2. **Horizontal Pod Autoscaling (HPA v2)**:
+   - Configure HPA policies targeting CPU utilization >= 75%, RAM >= 80%, or active queue lengths.
+3. **Deployment Strategy Orchestration**:
+   - Provide declarative Rolling Updates (`maxSurge: 25%`, `maxUnavailable: 0%`) and Blue-Green traffic routing via Ingress service selector mutations.
+   - Enforce automated rollback triggers when post-deployment error rates exceed 1.0% or readiness checks fail within 120 seconds.
+
+#### Alternatives Considered
+- Monolithic single-node container deployment: Rejected due to inability to scale AI GPU/CPU workloads independently and catastrophic failure exposure.
+- Manual cluster scaling: Rejected due to unpredictable enterprise traffic spikes.
+
+#### Reason
+Kubernetes orchestration with HPA and Pod Disruption Budgets guarantees uninterrupted availability, automated failure recovery, and cost-efficient elastic scaling.
+
+#### Impact
+Member 1 specifies deployment contracts and schemas. Member 2 implements deployment REST APIs. Member 3 builds the deployment control center UI. Member 4 creates Kubernetes manifests, Helm charts, and CI/CD workflows.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-063 — Multi-Layer Redis Caching Architecture, Invalidation Strategies & Distributed Rate Limiting
+
+#### Date
+2026-11-06
+
+#### Context
+`devdocs/p3/p3.6.txt` (Chapters 7, 13) mandates low latency and reduced database/LLM compute load through multi-tier caching, along with protection against DDoS and abuse through distributed rate limiting.
+
+#### Decision
+1. **Multi-Tier Redis Partitioning**:
+   - Structure Redis caches into distinct namespaces with deterministic TTLs:
+     - `keep:session:` (24h) for web sessions.
+     - `keep:auth:` (token lifetime) for revoked token denylists.
+     - `keep:ai:resp:` (6h) for deterministic LLM prompt responses.
+     - `keep:vector:q:` (2h) for repeated vector search queries.
+     - `keep:dashboard:` (5m) for tenant analytics and health summaries.
+     - `keep:rate_limit:` (60s) for sliding window request rate tracking.
+2. **Cache-Aside Pattern with Selective Invalidation**:
+   - Read queries check cache first; on cache miss, read from PostgreSQL and write-back with TTL.
+   - Mutations trigger targeted namespace invalidations (e.g., document ingestion invalidates `keep:vector:q:` and `keep:dashboard:`).
+3. **Cache Administration Endpoints**:
+   - Expose administrative cache flush endpoints (`/api/v1/system/cache/flush`) permitting authorized operations personnel to selectively purge namespaces or flush all transient data.
+
+#### Alternatives Considered
+- In-memory process caching (e.g. `functools.lru_cache`): Rejected because cache states are not shared across multiple horizontal backend replicas.
+- No caching layer: Rejected due to prohibitive database latency and duplicate LLM token generation costs.
+
+#### Reason
+A centralized Redis cluster provides microsecond cache lookups, synchronizes rate limits across horizontal pods, and prevents redundant LLM and vector calculations.
+
+#### Impact
+Member 1 provides cache contracts and TTL policies. Member 2 implements cache manager services and flush APIs. Member 3 adds cache metrics and cache clearing controls to the UI. Member 4 provisions Redis in Docker Compose and Kubernetes.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-064 — Enterprise Observability, OpenTelemetry Tracing, Prometheus Telemetry & Automated Disaster Recovery
+
+#### Date
+2026-11-06
+
+#### Context
+`devdocs/p3/p3.6.txt` (Chapters 9, 10, 11, 12) requires continuous platform observability, structured audit logging, automated alerting, and a robust disaster recovery framework meeting RPO <= 1 hour and RTO <= 4 hours.
+
+#### Decision
+1. **Unified Observability Architecture**:
+   - Instrument backend endpoints with Prometheus metrics (request counters, latency histograms, error rates, queue depths, cache hit ratios).
+   - Standardize JSON application logging containing `trace_id`, `service`, `level`, and `timestamp` for centralized aggregation in Promtail / Loki.
+   - Configure alert rules for High CPU, Memory Exhaustion, Database Latency, and Deployment Failures.
+2. **Disaster Recovery & Continuous Backup**:
+   - Implement continuous PostgreSQL Write-Ahead Log (WAL) archiving and scheduled encrypted database snapshots.
+   - Record backup catalog metadata in `system_backups` with calculated SHA-256 checksums, storage locations, and RPO drift tracking.
+   - Provide an automated backup verification routine that tests snapshot integrity and reports health status to the administrative API.
+
+#### Alternatives Considered
+- Ad-hoc unmonitored bash backup scripts: Rejected due to lack of audit trail and unverified recoverability.
+- Standalone logging without trace IDs: Rejected due to impossibility of diagnosing distributed AI microservice workflows.
+
+#### Reason
+Standardized Prometheus metrics, structured logs, and verified automated backups guarantee production visibility and ensure rapid, dependable disaster recovery.
+
+#### Impact
+Member 1 defines observability contracts and backup schemas. Member 2 implements system health, metrics, logs, and backup APIs. Member 3 builds the System Operations dashboard. Member 4 provisions Prometheus, Grafana, and backup automations.
+
+#### Status
+ACCEPTED
