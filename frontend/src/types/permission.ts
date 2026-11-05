@@ -77,6 +77,12 @@ export const Permission = {
   PLUGIN_INSTALL: 'plugin.install',
   PLUGIN_EXECUTE: 'plugin.execute',
 
+  // Production Infrastructure & Operations (Phase 3.6)
+  SYSTEM_VIEW: 'system.view',
+  SYSTEM_MANAGE: 'system.manage',
+  SYSTEM_DEPLOY: 'system.deploy',
+  SYSTEM_BACKUP: 'system.backup',
+
   // Analytics & Audit
   ANALYTICS_VIEW: 'analytics.view',
   ANALYTICS_EXPORT: 'analytics.export',
@@ -117,6 +123,7 @@ export const VIEWER_PERMISSIONS: Set<string> = new Set([
   Permission.WORKFLOW_VIEW,
   Permission.NOTIFICATION_VIEW,
   Permission.PLUGIN_VIEW,
+  Permission.SYSTEM_VIEW,
 ]);
 
 /**
@@ -153,6 +160,7 @@ export const MANAGER_PERMISSIONS: Set<string> = new Set([
   Permission.WORKFLOW_MANAGE,
   Permission.WORKFLOW_APPROVE,
   Permission.PLUGIN_INSTALL,
+  Permission.SYSTEM_BACKUP,
 ]);
 
 /**
@@ -177,6 +185,8 @@ export const ORG_ADMIN_PERMISSIONS: Set<string> = new Set([
   Permission.AUDIT_READ,
   Permission.CONNECTOR_MANAGE,
   Permission.PLUGIN_MANAGE,
+  Permission.SYSTEM_MANAGE,
+  Permission.SYSTEM_DEPLOY,
 ]);
 
 /**

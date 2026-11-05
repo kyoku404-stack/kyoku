@@ -45,6 +45,8 @@ export const ROUTES = {
   NOTIFICATIONS: '/notifications',
   PLUGINS: '/plugins',
   MARKETPLACE: '/marketplace',
+  SYSTEM: '/system',
+  SYSTEM_OPERATIONS: '/system/operations',
   NOT_FOUND: '*',
 } as const;
 

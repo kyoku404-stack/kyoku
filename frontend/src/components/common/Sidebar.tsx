@@ -29,6 +29,7 @@ import {
   Cable,
   Zap,
   Blocks,
+  Server,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -104,6 +105,13 @@ const navItems: NavItem[] = [
     icon: Blocks,
     requiredPermission: Permission.PLUGIN_VIEW,
     badge: 'Phase 3.5',
+  },
+  {
+    label: 'System Operations',
+    path: ROUTES.SYSTEM,
+    icon: Server,
+    requiredPermission: Permission.SYSTEM_VIEW,
+    badge: 'Phase 3.6',
   },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },

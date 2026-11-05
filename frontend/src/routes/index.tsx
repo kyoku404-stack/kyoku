@@ -44,6 +44,9 @@ const WorkflowAutomationPage = lazy(() =>
 const PluginManagementPage = lazy(() =>
   import('@/pages/PluginManagementPage').then((m) => ({ default: m.PluginManagementPage }))
 );
+const SystemOperationsPage = lazy(() =>
+  import('@/pages/SystemOperationsPage').then((m) => ({ default: m.SystemOperationsPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -412,6 +415,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <PluginManagementPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'system',
+        element: (
+          <SuspenseWrapper>
+            <SystemOperationsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'system/operations',
+        element: (
+          <SuspenseWrapper>
+            <SystemOperationsPage />
           </SuspenseWrapper>
         ),
       },
