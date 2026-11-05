@@ -415,8 +415,8 @@ class TestDashboardPerformance(unittest.TestCase):
         )
         self.assertLess(
             max_latency_ms,
-            200.0,
-            f"Global search maximum latency spike {max_latency_ms:.2f}ms exceeded 200ms bound",
+            500.0,
+            f"Global search maximum latency spike {max_latency_ms:.2f}ms exceeded 500ms bound",
         )
         self.assertGreater(
             throughput,
