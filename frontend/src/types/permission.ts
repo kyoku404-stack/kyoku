@@ -83,6 +83,10 @@ export const Permission = {
   SYSTEM_DEPLOY: 'system.deploy',
   SYSTEM_BACKUP: 'system.backup',
 
+  // Production Release & Quality Assurance (Phase 3.7)
+  RELEASE_VIEW: 'release.view',
+  RELEASE_DEPLOY: 'release.deploy',
+
   // Analytics & Audit
   ANALYTICS_VIEW: 'analytics.view',
   ANALYTICS_EXPORT: 'analytics.export',
@@ -124,6 +128,7 @@ export const VIEWER_PERMISSIONS: Set<string> = new Set([
   Permission.NOTIFICATION_VIEW,
   Permission.PLUGIN_VIEW,
   Permission.SYSTEM_VIEW,
+  Permission.RELEASE_VIEW,
 ]);
 
 /**
@@ -187,6 +192,7 @@ export const ORG_ADMIN_PERMISSIONS: Set<string> = new Set([
   Permission.PLUGIN_MANAGE,
   Permission.SYSTEM_MANAGE,
   Permission.SYSTEM_DEPLOY,
+  Permission.RELEASE_DEPLOY,
 ]);
 
 /**

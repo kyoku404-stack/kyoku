@@ -30,6 +30,7 @@ import {
   Zap,
   Blocks,
   Server,
+  Award,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -112,6 +113,13 @@ const navItems: NavItem[] = [
     icon: Server,
     requiredPermission: Permission.SYSTEM_VIEW,
     badge: 'Phase 3.6',
+  },
+  {
+    label: 'Release & QA',
+    path: ROUTES.SYSTEM_RELEASE,
+    icon: Award,
+    requiredPermission: Permission.RELEASE_VIEW,
+    badge: 'Phase 3.7',
   },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },

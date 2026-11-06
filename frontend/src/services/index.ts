@@ -36,3 +36,5 @@ export * from './workflowService';
 export * from './pluginService';
 
 export * from './systemService';
+
+export * from './releaseService';

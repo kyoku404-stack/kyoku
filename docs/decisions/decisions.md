@@ -2106,3 +2106,121 @@ Member 1 defines observability contracts and backup schemas. Member 2 implements
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-065 — Production Release Tagging, Version Freeze & Release Candidate Governance
+
+#### Date
+2026-11-06
+
+#### Context
+`devdocs/p3/p3.7.txt` (Chapters 1, 2, 13, 14, 15, 18, 19) mandates the final transition of the KEEP platform into a production-grade v1.0.0 release. The platform requires formal semantic versioning, immutable release manifests, changelog attribution, and release candidate lifecycle governance for academic submission and enterprise deployment.
+
+#### Decision
+1. **Semantic Versioning & Immutable Releases**:
+   - Adopt strict SemVer 2.0.0 (`MAJOR.MINOR.PATCH`).
+   - The final capstone release is codified as `v1.0.0`.
+   - Each production release record is immutably persisted in `production_releases` with:
+     - `release_id`: Unique tracking identifier (`rel-{uuid}`).
+     - `version`: Target semantic version (e.g., `1.0.0`).
+     - `git_commit`: Short Git commit SHA (`8767c08`).
+     - `release_tag`: Git release tag (e.g., `v1.0.0`).
+     - `changelog`: Markdown formatted summary of capabilities, enhancements, and operational guidelines.
+     - `artifacts_json`: Manifest containing SHA-256 cryptographic hashes of container images, database migrations, and frontend production bundles.
+     - `preflight_score`: Historical pre-flight readiness score at deployment execution.
+2. **Release Execution Workflow**:
+   - A release cannot be triggered unless all pre-flight readiness checks evaluate to `PASSED` with a composite score $R \ge 0.90$.
+   - The deployment workflow captures an audit trail linking the administrator's credentials (`deployed_by`), timestamp, and execution logs.
+
+#### Alternatives Considered
+- Manual Git tags without database records: Rejected — fails enterprise auditability and lacks runtime version verification.
+- Continuous rolling releases without formal SemVer: Rejected — does not meet academic deliverables requirements or enterprise SLA contracts.
+
+#### Reason
+Immutable release manifests linked to Git commits and cryptographic checksums ensure reproducibility, compliance, and transparent traceability across enterprise and academic evaluations.
+
+#### Impact
+Member 1 establishes release contracts and schemas. Member 2 implements release models, services, and `/api/v1/system/release` endpoints. Member 3 builds the Production Release Command Center. Member 4 packages release artifacts and verifies CI pipelines.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-066 — Enterprise Security Audit Baseline, Automated SAST/DAST & Vulnerability Remediation
+
+#### Date
+2026-11-06
+
+#### Context
+`devdocs/p3/p3.7.txt` (Chapters 7, 14, 18) mandates a comprehensive enterprise security audit covering authentication, authorization, multi-tenant isolation, data encryption, API security, audit logging, and AI prompt security.
+
+#### Decision
+1. **Automated Security Audit Evaluation Engine**:
+   - Provide a deterministic security audit evaluator (`SecurityAuditEvaluator`) assessing 10 core enterprise security controls:
+     1. `SQL_INJECTION`: 100% parameterization via SQLAlchemy 2.0 ORM; strict prevention of raw string formatting.
+     2. `XSS_PROTECTION`: Automatic escaping in React JSX and DOMPurify sanitization of AI markdown.
+     3. `CSRF_DEFENSE`: SameSite cookie attributes and Bearer JWT authentication tokens.
+     4. `BROKEN_AUTHENTICATION`: Bcrypt password hashing (cost factor 12) and JWT signature verification.
+     5. `BROKEN_ACCESS_CONTROL`: Explicit 7-step RBAC evaluation on all endpoints with tenant boundary filtering.
+     6. `AI_PROMPT_INJECTION`: Guardrails screening delimiters, adversarial pattern heuristics, and system prompt isolation.
+     7. `SENSITIVE_DATA_EXPOSURE`: AES-256-GCM encryption for credentials, TLS 1.3 in-transit, and password redaction in logs.
+     8. `SECURITY_LOGGING_AUDIT`: Centralized append-only audit trail for all authentication and administrative actions.
+     9. `DEPENDENCY_VULNERABILITY`: Automated automated dependency review ensuring zero high/critical CVEs.
+     10. `RATE_LIMITING_DOS`: Distributed Redis sliding window rate limiters protecting against denial-of-service.
+2. **Audit Reporting & Historical Persistence**:
+   - Expose `GET /api/v1/system/security/audit` returning a comprehensive security audit score (0–100%), compliance checklist, and detected vulnerability findings.
+   - Persist audit summaries in `security_audit_records` for compliance verification.
+
+#### Alternatives Considered
+- External manual PDF audits only: Rejected — prevents real-time health-gating in CI/CD pipelines.
+- Relying exclusively on third-party SaaS scanners: Rejected — unable to evaluate AI prompt injection and domain-specific multi-tenant isolation rules.
+
+#### Reason
+An integrated, automated security audit engine ensures continuous compliance with enterprise standards and OWASP Top 10 guidelines, preventing regressions.
+
+#### Impact
+Member 1 specifies security audit contracts. Member 2 implements security audit endpoints and database models. Member 3 provides security scorecards in the UI. Member 4 integrates security scans into CI/CD.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-067 — Automated Pre-Flight Readiness Probing & Production Verification Gateways
+
+#### Date
+2026-11-06
+
+#### Context
+`devdocs/p3/p3.7.txt` (Chapters 3, 4, 5, 11, 15) mandates that every subsystem must be rigorously validated before release approval. Deployments must be blocked if any critical prerequisite (database schema, storage permissions, vector store, AI models) is degraded.
+
+#### Decision
+1. **Deterministic 7-Point Pre-Flight Gateway**:
+   - Evaluate all core infrastructure pillars prior to deployment:
+     - `database_migrations`: Confirms Alembic migration revision is exactly at `head`.
+     - `database_pool`: Confirms PostgreSQL connection pool latency < 50ms and headroom > 15%.
+     - `redis_cache`: Confirms Redis cluster responsiveness, hit ratio > 85%, and TTL active.
+     - `storage_headroom`: Confirms read/write permissions on multi-tenant storage root and disk headroom > 10%.
+     - `vector_database`: Confirms pgvector extension is functional and HNSW indexing is ready.
+     - `ai_model_cache`: Confirms SentenceTransformers embedding weights are pre-warmed in local cache.
+     - `security_audit`: Confirms no unresolved critical security vulnerabilities.
+2. **Hard Veto Policy**:
+   - Failures in `database_migrations` or `vector_database` immediately trigger a hard veto: composite readiness score is capped at 0.40 and the release deployment endpoint rejects calls with HTTP 412 (Precondition Failed: `RELEASE_GATEWAY_BLOCKED`).
+3. **Readiness Probe Endpoint**:
+   - Expose `GET /api/v1/system/readiness` returning structured evaluation status for each check, composite score (0.0 to 1.0), and a boolean `is_ready` gate flag.
+
+#### Alternatives Considered
+- Manual subjective checklist: Rejected — prone to human error and inconsistent release environments.
+- Post-deployment smoke testing only: Rejected — deploying with missing migrations or unreachable vector stores causes immediate user-facing downtime.
+
+#### Reason
+Automated pre-flight readiness probing enforces zero-downtime release safety and prevents corrupted or incomplete deployments.
+
+#### Impact
+Member 1 implements pre-flight contracts and algorithms. Member 2 exposes readiness API endpoints. Member 3 builds the pre-flight readiness gauge widget. Member 4 incorporates readiness gates into CI/CD release scripts.
+
+#### Status
+ACCEPTED
+

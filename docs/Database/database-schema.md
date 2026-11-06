@@ -1661,3 +1661,75 @@ CREATE INDEX idx_system_audit_service_severity ON system_audit_logs(service_name
 CREATE INDEX idx_system_audit_trace ON system_audit_logs(trace_id);
 CREATE INDEX idx_system_audit_created ON system_audit_logs(created_at DESC);
 ```
+
+---
+
+## 3.24 Phase 3.7 — Production Release & Security Audit Tables
+
+Specification Reference: `devdocs/p3/p3.7.txt` (Chapters 1–20)  
+Architect: Member 1 | Implementer: Member 2  
+
+### 3.24.1 `production_releases` Table
+Immutable historical catalog of production releases, semantic versions, Git commit references, pre-flight readiness scores, and deployment manifests:
+```sql
+CREATE TABLE production_releases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    release_id VARCHAR(100) NOT NULL UNIQUE,
+    version VARCHAR(50) NOT NULL,                      -- e.g. '1.0.0'
+    release_tag VARCHAR(50) NOT NULL,                  -- e.g. 'v1.0.0'
+    git_commit VARCHAR(50) NOT NULL,
+    changelog TEXT NOT NULL,
+    environment VARCHAR(50) NOT NULL DEFAULT 'production',
+    status VARCHAR(50) NOT NULL DEFAULT 'COMPLETED',   -- 'PENDING', 'DEPLOYING', 'COMPLETED', 'FAILED', 'ROLLED_BACK'
+    preflight_score NUMERIC(4, 2) NOT NULL DEFAULT 1.0,
+    artifacts_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    deployed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_releases_version ON production_releases(version);
+CREATE INDEX idx_releases_tag ON production_releases(release_tag);
+CREATE INDEX idx_releases_created ON production_releases(created_at DESC);
+```
+
+### 3.24.2 `release_checklists` Table
+Granular pre-flight verification items evaluated prior to release deployment:
+```sql
+CREATE TABLE release_checklists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    release_id VARCHAR(100) NOT NULL REFERENCES production_releases(release_id) ON DELETE CASCADE,
+    check_name VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,                     -- 'PERSISTENCE', 'CACHE', 'STORAGE', 'AI_INFRA', 'GOVERNANCE'
+    status VARCHAR(50) NOT NULL DEFAULT 'PASSED',      -- 'PASSED', 'FAILED', 'WARNING', 'SKIPPED'
+    score NUMERIC(4, 2) NOT NULL DEFAULT 1.0,
+    details_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    verified_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_checklist_release_cat ON release_checklists(release_id, category);
+CREATE INDEX idx_checklist_verified ON release_checklists(verified_at DESC);
+```
+
+### 3.24.3 `security_audit_records` Table
+Point-in-time compliance benchmarks, OWASP Top 10 control ratings, and vulnerability assessments:
+```sql
+CREATE TABLE security_audit_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    audit_type VARCHAR(80) NOT NULL DEFAULT 'OWASP_TOP_10',
+    compliance_standard VARCHAR(100) NOT NULL DEFAULT 'OWASP_TOP_10_AND_LLM_TOP_10',
+    total_controls INTEGER NOT NULL DEFAULT 10,
+    passed_controls INTEGER NOT NULL DEFAULT 10,
+    failed_controls INTEGER NOT NULL DEFAULT 0,
+    overall_score NUMERIC(5, 2) NOT NULL DEFAULT 100.0,
+    controls_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    findings_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    auditor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_security_audit_score ON security_audit_records(overall_score DESC);
+CREATE INDEX idx_security_audit_created ON security_audit_records(created_at DESC);
+```
+
