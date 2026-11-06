@@ -1,7 +1,7 @@
 """KEEP Enterprise Platform — Release & Security Audit Services Package.
 
 Phase: 3.7
-Role: Member 1 (Project Lead & AI Architect)
+Roles: Member 1 (Project Lead & AI Architect) & Member 2 (Backend & Database Lead)
 """
 
 from backend.app.services.release.contracts import (
@@ -22,10 +22,15 @@ from backend.app.services.release.contracts import (
     SecurityComplianceStandard,
     SystemReadinessReport,
 )
+from backend.app.services.release.service import (
+    EnterpriseReleaseService,
+    release_service,
+)
 
 __all__ = [
     "AuditSeverity",
     "CheckStatus",
+    "EnterpriseReleaseService",
     "PreflightCheckCategory",
     "PreflightCheckResult",
     "PreflightReadinessEvaluator",
@@ -40,4 +45,5 @@ __all__ = [
     "SecurityAuditReport",
     "SecurityComplianceStandard",
     "SystemReadinessReport",
+    "release_service",
 ]

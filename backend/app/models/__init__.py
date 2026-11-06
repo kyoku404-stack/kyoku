@@ -48,6 +48,11 @@ from backend.app.models.plugin import (
 )
 from backend.app.models.project import Project, project_users
 from backend.app.models.rag import RAGFeedback, RAGQuery
+from backend.app.models.release import (
+    ProductionRelease,
+    ReleaseChecklist,
+    SecurityAuditRecord,
+)
 from backend.app.models.security import (
     SecurityAIGovernanceLog,
     SecurityAuditLog,
@@ -106,11 +111,14 @@ __all__ = [
     "PluginInstallation",
     "PluginManifestModel",
     "PluginPermission",
+    "ProductionRelease",
     "Project",
     "RAGFeedback",
     "RAGQuery",
+    "ReleaseChecklist",
     "SecurityAIGovernanceLog",
     "SecurityAuditLog",
+    "SecurityAuditRecord",
     "SecurityCompliancePolicy",
     "SecurityDataClassification",
     "SecurityDataRetentionRule",
