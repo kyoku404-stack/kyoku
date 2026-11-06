@@ -664,3 +664,39 @@ groups:
           summary: "Distributed Redis cache hit ratio degraded below 85%"
           description: "Cache hit ratio is {{ $value | printf \"%.2f\" }}% over 5m window, indicating cache thrashing or key invalidation storm."
           runbook_url: "docs/Deployment/observability-monitoring-runbook.md#rediscachehitratiodegraded"
+
+      # ------------------------------------------------------------------------
+      # Phase 3.7: Production Release & Security Audit Alerts
+      # ------------------------------------------------------------------------
+      - alert: SystemPreflightCheckFailed
+        expr: system_preflight_readiness_score < 0.90 or system_preflight_critical_failed > 0
+        for: 1m
+        labels:
+          severity: CRITICAL
+          tier: release
+        annotations:
+          summary: "Platform pre-flight deployment readiness gate failed"
+          description: "System pre-flight score is {{ $value | printf \"%.2f\" }} or critical check failed. Production release deployments are blocked."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#systempreflightcheckfailed"
+
+      - alert: SecurityAuditComplianceDegraded
+        expr: security_audit_compliance_percent < 95.0
+        for: 2m
+        labels:
+          severity: CRITICAL
+          tier: security
+        annotations:
+          summary: "OWASP Top 10 security compliance rating degraded below 95%"
+          description: "Enterprise security audit score dropped to {{ $value | printf \"%.1f\" }}% compliance. Potential security vulnerability detected."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#securityauditcompliancedegraded"
+
+      - alert: ProductionReleaseFailure
+        expr: sum(increase(production_releases_total{status="FAILED"}[10m])) > 0
+        for: 1m
+        labels:
+          severity: CRITICAL
+          tier: release
+        annotations:
+          summary: "Production release deployment execution failed"
+          description: "One or more production release deployments failed during execution and was aborted or rolled back."
+          runbook_url: "docs/Deployment/observability-monitoring-runbook.md#productionreleasefailure"
