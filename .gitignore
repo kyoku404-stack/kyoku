@@ -107,6 +107,7 @@ Thumbs.db
 !.vscode/launch.json
 !.vscode/extensions.json
 .idea/
+.gemini/
 *.sublime-project
 *.sublime-workspace
 *.swp
