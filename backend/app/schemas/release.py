@@ -152,3 +152,4 @@ class SecurityAuditResponse(BaseModel):
     success: bool = True
     message: str = "Enterprise security audit completed successfully."
     data: SecurityAuditData
+

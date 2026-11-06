@@ -279,3 +279,4 @@ export const ReleaseReadinessGauge: React.FC<ReleaseReadinessGaugeProps> = ({
     </div>
   );
 };
+

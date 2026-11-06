@@ -143,3 +143,4 @@ describe('Phase 3.7 Release Service API Client', () => {
     expect(res.data.passed_controls).toBe(10);
   });
 });
+
