@@ -47,6 +47,9 @@ const PluginManagementPage = lazy(() =>
 const SystemOperationsPage = lazy(() =>
   import('@/pages/SystemOperationsPage').then((m) => ({ default: m.SystemOperationsPage }))
 );
+const ProductionReleasePage = lazy(() =>
+  import('@/pages/ProductionReleasePage').then((m) => ({ default: m.ProductionReleasePage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -431,6 +434,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <SystemOperationsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'system/release',
+        element: (
+          <SuspenseWrapper>
+            <ProductionReleasePage />
           </SuspenseWrapper>
         ),
       },

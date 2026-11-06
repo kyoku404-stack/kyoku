@@ -1,6 +1,6 @@
 /**
  * Centralized strongly-typed route definitions.
- * Updated for Phase 1.5 Organization & Workspace Management.
+ * Updated for Phase 1.5 Organization & Workspace Management, Phase 3.6 Infrastructure, and Phase 3.7 Release Operations.
  */
 
 export const ROUTES = {
@@ -47,8 +47,10 @@ export const ROUTES = {
   MARKETPLACE: '/marketplace',
   SYSTEM: '/system',
   SYSTEM_OPERATIONS: '/system/operations',
+  SYSTEM_RELEASE: '/system/release',
   NOT_FOUND: '*',
 } as const;
 
+export const PATHS = ROUTES;
 
 export type RouteKey = keyof typeof ROUTES;
