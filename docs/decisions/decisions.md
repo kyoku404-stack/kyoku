@@ -2349,3 +2349,56 @@ LangGraph checkpoints store internal graph node state for resume/recovery, where
 
 #### Status
 ACCEPTED
+
+
+---
+
+### ADR-074: Mandatory Phase 4.2 AgentRuntime Boundary for Orchestration Graph Nodes
+
+#### Date
+2026-11-18
+
+#### Context
+Phase 4.3 introduces multi-agent workflows coordinating sequential, conditional, and parallel agent nodes. Calling `agent.invoke()` directly inside graph nodes would bypass Phase 4.2's execution records, concurrency limits, per-agent timeouts, retries, and observability metrics.
+
+#### Decision
+All orchestration graph nodes MUST invoke agents exclusively via `RuntimeNodeInvoker` backed by KEEP's Phase 4.2 `AgentRuntime.submit(..., mode="sync")`. Every node execution produces a durable `agent_executions` record linked to its parent workflow via `agent_workflow_steps` sharing the workflow's `correlation_id`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-075: Version-Pinned Approved Workflow Registry vs. Client-Supplied Graphs
+
+#### Date
+2026-11-18
+
+#### Context
+Multi-agent workflows orchestrate sensitive tenant knowledge and specialist agents. Accepting arbitrary client-supplied Python callables or unconstrained graph definitions introduces remote code execution and policy bypass risks.
+
+#### Decision
+1. Maintain a dedicated `WorkflowRegistry` separate from Phase 4.1's `AgentRegistry`, storing only server-approved `(workflow_id, version)` definitions and compiled graph factories.
+2. Validate declared agent capabilities against `AgentRegistry` at registration/startup time.
+3. Pin every `WorkflowExecutionRecord` to its exact `(workflow_id, workflow_version)` so disabling a workflow or deploying a new version never alters in-flight runs.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-076: Explicit Partial-Success Policies & Re-Authorized Checkpoint Recovery
+
+#### Date
+2026-11-18
+
+#### Context
+Multi-agent parallel workflows can experience optional branch failures, worker crashes, or permission revocations between checkpoint save and workflow resume. Conflating agent failure with workflow failure or blindly replaying checkpoints can either discard useful work or repeat unsafe side effects.
+
+#### Decision
+1. Separate `WorkflowStatus` (`PENDING`, `RUNNING`, `SUCCEEDED`, `PARTIALLY_SUCCEEDED`, `FAILED`, `CANCELLED`, `TIMED_OUT`) from individual agent execution states and determine final outcome via explicit `WorkflowFailureHandler` rules (`required` vs `optional` step roles).
+2. Store secret-safe graph checkpoints via `KeepGraphCheckpointStore` scoped strictly by `wf:{tenant_id}:{workflow_execution_id}`.
+3. Require `WorkflowRecoveryManager.resume_workflow()` to re-verify the caller's current RBAC permissions and block automatic replay of non-idempotent side-effecting nodes.
+
+#### Status
+ACCEPTED

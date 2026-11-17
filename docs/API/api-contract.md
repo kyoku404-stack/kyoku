@@ -5147,3 +5147,76 @@ All Phase 4.2 runtime endpoints are mounted under `/api/v1`, authenticated via K
 - **Endpoint:** `POST /api/v1/executions/{execution_id}/retry`
 - **Permission:** `agent.invoke`
 - **Behavior:** Validates retry eligibility (transient failure / timeout / cancelled within max attempts) and creates a new linked execution record (`attempt_number + 1`, `parent_execution_id = execution_id`). Returns `409 Conflict` if non-retryable or still active.
+
+
+
+---
+
+## Section 22: Phase 4.3 Agent Orchestration Engine API
+
+All Phase 4.3 orchestration endpoints are mounted under `/api/v1`, authenticated via KEEP Bearer JWT, strictly tenant-scoped (foreign tenant workflow execution IDs return `404 Not Found` for concealment), and return KEEP's canonical `ApiResponse` envelope.
+
+### 22.1 List Approved Multi-Agent Workflows
+- **Endpoint:** `GET /api/v1/orchestration/workflows`
+- **Permission:** `agent.view`
+- **Query Parameters:** `task_type` (optional), `include_disabled` (admin-only boolean)
+
+### 22.2 Inspect Approved Workflow Definition
+- **Endpoint:** `GET /api/v1/orchestration/workflows/{workflow_id}`
+- **Permission:** `agent.view`
+- **Query Parameters:** `version` (optional; resolves latest enabled version if omitted)
+
+### 22.3 Enable or Disable Workflow Definition (Admin)
+- **Endpoint:** `PATCH /api/v1/orchestration/workflows/{workflow_id}/status`
+- **Permission:** `agent.manage` (`OrgAdmin` / `SuperAdmin`)
+- **Request Body:** `{ "enabled": false, "version": "1.0.0" }`
+
+### 22.4 Submit Multi-Agent Workflow Execution
+- **Endpoint:** `POST /api/v1/workflows/{workflow_id}/executions`
+- **Permission:** `agent.invoke`
+- **Headers:** `Idempotency-Key` (`string`, optional — scoped to `(tenant_id, user_id, key)`)
+- **Request Body:**
+```json
+{
+  "goal": "Find project decisions and summarize outstanding risks",
+  "input": { "project_id": "project-123" },
+  "version": "1.0.0",
+  "mode": "async",
+  "timeout_seconds": 120
+}
+```
+- **Responses:** `202 Accepted` (`mode == "async"`), `200 OK` (`mode == "sync"`), `404 Not Found`, `409 Conflict` (disabled workflow or idempotency conflict), `429 Too Many Requests` (concurrency/budget cap).
+
+### 22.5 List Tenant Workflow Executions
+- **Endpoint:** `GET /api/v1/workflow-executions`
+- **Permission:** `agent.view`
+- **Query Parameters:** `workflow_id`, `status`, `limit` (default `50`, max `200`)
+
+### 22.6 Workflow Orchestration Observability Metrics
+- **Endpoint:** `GET /api/v1/workflow-executions/metrics`
+- **Permission:** `agent.view`
+- **Response (`200 OK`):** Aggregated workflow completion/failure/partial-success counts, average duration, average agents invoked per workflow, step durations, retry/cancellation/recovery counters, and secret-safe recent lifecycle events.
+
+### 22.7 Retrieve Workflow Execution Status
+- **Endpoint:** `GET /api/v1/workflow-executions/{workflow_execution_id}`
+- **Permission:** `agent.view` (tenant-scoped; `404` for foreign tenants)
+
+### 22.8 Retrieve Workflow Execution Result
+- **Endpoint:** `GET /api/v1/workflow-executions/{workflow_execution_id}/result`
+- **Permission:** `agent.view`
+- **Responses:** `200 OK` (validated final or permitted partial output, deduplicated `EvidenceReference` list, participating `execution_ids`, warnings), `404 Not Found`, `409 Conflict` (workflow not yet terminal).
+
+### 22.9 List Participating Agent Execution Steps
+- **Endpoint:** `GET /api/v1/workflow-executions/{workflow_execution_id}/steps`
+- **Permission:** `agent.view`
+- **Response (`200 OK`):** Ordered list of `WorkflowStepLink` records linking each graph node to its Phase 4.2 `agent_execution_id`, agent ID, role (`required`/`optional`), status, duration, and error code.
+
+### 22.10 Request Workflow Cancellation
+- **Endpoint:** `POST /api/v1/workflow-executions/{workflow_execution_id}/cancel`
+- **Permission:** `agent.invoke`
+- **Behavior:** Atomically cancels `PENDING` workflows, signals cooperative cancellation (propagating to active child Phase 4.2 executions) for `RUNNING` workflows, and returns `409 Conflict` for already-terminal runs.
+
+### 22.11 Resume Workflow From Persisted Checkpoint
+- **Endpoint:** `POST /api/v1/workflow-executions/{workflow_execution_id}/resume`
+- **Permission:** `agent.invoke` (re-verifies current caller RBAC & agent capabilities before resuming)
+- **Behavior:** Loads latest tenant-scoped checkpoint, skips already-succeeded idempotent nodes, rejects unsafe side-effect replay, and completes remaining nodes.

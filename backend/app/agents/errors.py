@@ -61,6 +61,20 @@ class AgentErrorCode(str, Enum):
     EXECUTION_INPUT_TOO_LARGE = "EXECUTION_INPUT_TOO_LARGE"
     EXECUTION_NOT_RETRYABLE = "EXECUTION_NOT_RETRYABLE"
     EXECUTION_RESULT_NOT_READY = "EXECUTION_RESULT_NOT_READY"
+    # Phase 4.3 Agent Orchestration Engine error codes
+    WORKFLOW_NOT_FOUND = "WORKFLOW_NOT_FOUND"
+    WORKFLOW_DISABLED = "WORKFLOW_DISABLED"
+    WORKFLOW_ALREADY_REGISTERED = "WORKFLOW_ALREADY_REGISTERED"
+    WORKFLOW_DEPENDENCY_MISSING = "WORKFLOW_DEPENDENCY_MISSING"
+    WORKFLOW_EXECUTION_NOT_FOUND = "WORKFLOW_EXECUTION_NOT_FOUND"
+    WORKFLOW_INVALID_TRANSITION = "WORKFLOW_INVALID_TRANSITION"
+    WORKFLOW_IDEMPOTENCY_CONFLICT = "WORKFLOW_IDEMPOTENCY_CONFLICT"
+    WORKFLOW_TIMEOUT = "WORKFLOW_TIMEOUT"
+    WORKFLOW_CANCELLED = "WORKFLOW_CANCELLED"
+    WORKFLOW_BUDGET_EXCEEDED = "WORKFLOW_BUDGET_EXCEEDED"
+    WORKFLOW_RESULT_NOT_READY = "WORKFLOW_RESULT_NOT_READY"
+    WORKFLOW_RECOVERY_NOT_ALLOWED = "WORKFLOW_RECOVERY_NOT_ALLOWED"
+    WORKFLOW_STEP_FAILED = "WORKFLOW_STEP_FAILED"
 
 
 class AgentErrorDetail(BaseModel):
@@ -289,4 +303,161 @@ class ExecutionResultNotReadyError(AgentLayerError, ValueError):
             code=AgentErrorCode.EXECUTION_RESULT_NOT_READY,
             http_status=409,
             details={"execution_id": execution_id, "status": status},
+        )
+
+
+
+class WorkflowNotFoundError(AgentLayerError, LookupError):
+    """Raised when a workflow definition or version is not registered."""
+
+    def __init__(self, workflow_id: str, version: str | None = None) -> None:
+        suffix = f" (version={version})" if version else ""
+        super().__init__(
+            f"Workflow not found: {workflow_id}{suffix}",
+            code=AgentErrorCode.WORKFLOW_NOT_FOUND,
+            http_status=404,
+            details={"workflow_id": workflow_id, **({"version": version} if version else {})},
+        )
+
+
+class WorkflowDisabledError(AgentLayerError, PermissionError):
+    """Raised when attempting to submit a disabled workflow definition."""
+
+    def __init__(self, workflow_id: str, version: str) -> None:
+        super().__init__(
+            f"Workflow '{workflow_id}' v{version} is currently disabled.",
+            code=AgentErrorCode.WORKFLOW_DISABLED,
+            http_status=409,
+            details={"workflow_id": workflow_id, "version": version},
+        )
+
+
+class WorkflowAlreadyRegisteredError(AgentLayerError, ValueError):
+    """Raised on duplicate (workflow_id, version) registration."""
+
+    def __init__(self, workflow_id: str, version: str) -> None:
+        super().__init__(
+            f"Workflow already registered: {workflow_id}@{version}",
+            code=AgentErrorCode.WORKFLOW_ALREADY_REGISTERED,
+            http_status=409,
+            details={"workflow_id": workflow_id, "version": version},
+        )
+
+
+class WorkflowDependencyMissingError(AgentLayerError, ValueError):
+    """Raised when a workflow requires agent capabilities or agent IDs absent from AgentRegistry."""
+
+    def __init__(self, workflow_id: str, missing: list[str]) -> None:
+        super().__init__(
+            f"Workflow '{workflow_id}' has unresolved agent dependencies: {', '.join(missing)}",
+            code=AgentErrorCode.WORKFLOW_DEPENDENCY_MISSING,
+            http_status=422,
+            details={"workflow_id": workflow_id, "missing": missing},
+        )
+
+
+class WorkflowExecutionNotFoundError(AgentLayerError, LookupError):
+    """Raised when a workflow_execution_id does not exist or belongs to another tenant."""
+
+    def __init__(self, workflow_execution_id: str) -> None:
+        super().__init__(
+            f"Workflow execution not found: {workflow_execution_id}",
+            code=AgentErrorCode.WORKFLOW_EXECUTION_NOT_FOUND,
+            http_status=404,
+            details={"workflow_execution_id": workflow_execution_id},
+        )
+
+
+class InvalidWorkflowTransitionError(AgentLayerError, ValueError):
+    """Raised on an illegal workflow execution lifecycle transition."""
+
+    def __init__(self, workflow_execution_id: str, current_status: str, target_status: str) -> None:
+        super().__init__(
+            f"Invalid lifecycle transition for workflow '{workflow_execution_id}': "
+            f"{current_status} -> {target_status}.",
+            code=AgentErrorCode.WORKFLOW_INVALID_TRANSITION,
+            http_status=409,
+            details={
+                "workflow_execution_id": workflow_execution_id,
+                "current_status": current_status,
+                "target_status": target_status,
+            },
+        )
+
+
+class WorkflowIdempotencyConflictError(AgentLayerError, ValueError):
+    """Raised when a workflow Idempotency-Key is reused with a different request fingerprint."""
+
+    def __init__(self, idempotency_key: str) -> None:
+        super().__init__(
+            f"Workflow Idempotency-Key '{idempotency_key}' was already used with a different request payload.",
+            code=AgentErrorCode.WORKFLOW_IDEMPOTENCY_CONFLICT,
+            http_status=409,
+            details={"idempotency_key": idempotency_key},
+        )
+
+
+class WorkflowTimeoutError(AgentLayerError, TimeoutError):
+    """Raised when a multi-agent workflow exceeds its overall deadline."""
+
+    def __init__(self, workflow_execution_id: str, timeout_seconds: float) -> None:
+        super().__init__(
+            f"Workflow '{workflow_execution_id}' exceeded deadline ({timeout_seconds:.1f}s).",
+            code=AgentErrorCode.WORKFLOW_TIMEOUT,
+            http_status=504,
+            retryable=True,
+            details={
+                "workflow_execution_id": workflow_execution_id,
+                "timeout_seconds": timeout_seconds,
+            },
+        )
+
+
+class WorkflowCancelledError(AgentLayerError):
+    """Raised when a workflow execution is cooperatively cancelled."""
+
+    def __init__(self, workflow_execution_id: str) -> None:
+        super().__init__(
+            f"Workflow '{workflow_execution_id}' was cancelled.",
+            code=AgentErrorCode.WORKFLOW_CANCELLED,
+            http_status=409,
+            retryable=True,
+            details={"workflow_execution_id": workflow_execution_id},
+        )
+
+
+class WorkflowBudgetExceededError(AgentLayerError):
+    """Raised when a workflow exceeds agent invocation budget or tenant concurrency cap."""
+
+    def __init__(self, reason: str, *, limit: int | None = None) -> None:
+        super().__init__(
+            reason,
+            code=AgentErrorCode.WORKFLOW_BUDGET_EXCEEDED,
+            http_status=429,
+            retryable=True,
+            details={"limit": limit} if limit is not None else {},
+        )
+
+
+class WorkflowResultNotReadyError(AgentLayerError, ValueError):
+    """Raised when requesting results for a non-terminal workflow execution."""
+
+    def __init__(self, workflow_execution_id: str, status: str) -> None:
+        super().__init__(
+            f"Workflow '{workflow_execution_id}' result is not available yet (current status: {status}).",
+            code=AgentErrorCode.WORKFLOW_RESULT_NOT_READY,
+            http_status=409,
+            details={"workflow_execution_id": workflow_execution_id, "status": status},
+        )
+
+
+class WorkflowRecoveryNotAllowedError(AgentLayerError, ValueError):
+    """Raised when checkpoint resume is blocked due to terminal state or unsafe side effects."""
+
+    def __init__(self, workflow_execution_id: str, reason: str) -> None:
+        super().__init__(
+            f"Workflow '{workflow_execution_id}' cannot be resumed: {reason}",
+            code=AgentErrorCode.WORKFLOW_RECOVERY_NOT_ALLOWED,
+            http_status=409,
+            details={"workflow_execution_id": workflow_execution_id, "reason": reason},
         )

@@ -1794,3 +1794,66 @@ Stores LangGraph graph state snapshots scoped strictly by tenant and execution I
 | `step_number` | `INTEGER` | NOT NULL | Monotonic step index |
 | `state_json` | `JSONB` | NOT NULL | Serialized graph state snapshot |
 | `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
+
+
+
+---
+
+### 3.26 Multi-Agent Workflow Orchestration Tables (Phase 4.3)
+
+#### Table: `agent_workflow_executions`
+Stores durable business-level orchestration records for multi-agent workflows separately from individual Phase 4.2 `agent_executions`.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `workflow_execution_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | External workflow execution identifier (`wfexec_*`) |
+| `workflow_id` | `VARCHAR(64)` | NOT NULL, INDEX | Approved workflow identifier |
+| `workflow_version` | `VARCHAR(32)` | NOT NULL | Pinned semantic version of workflow definition |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary (`organization_id`) |
+| `requested_by` | `VARCHAR(128)` | NOT NULL, INDEX | Authenticated KEEP user ID |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `PENDING`, `RUNNING`, `SUCCEEDED`, `PARTIALLY_SUCCEEDED`, `FAILED`, `CANCELLED`, `TIMED_OUT` |
+| `mode` | `VARCHAR(16)` | NOT NULL | `sync` or `async` |
+| `goal` | `TEXT` | NOT NULL | Complex multi-agent goal |
+| `input_json` | `JSONB` | NOT NULL | Validated structured workflow input |
+| `result_json` | `JSONB` | NULL | Aggregated final or partial result payload |
+| `result_ref` | `VARCHAR(256)` | NULL | Optional reference to externalized result artifact |
+| `warnings_json` | `JSONB` | NOT NULL | Structured workflow-level warnings |
+| `error_code` | `VARCHAR(128)` | NULL | Sanitized workflow-level error code |
+| `error_message` | `VARCHAR(512)` | NULL | Sanitized workflow-level error summary |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Shared trace correlation ID across workflow & child agent executions |
+| `idempotency_key` | `VARCHAR(128)` | NULL | Scoped idempotency key `(tenant_id, requested_by, idempotency_key)` |
+| `request_fingerprint` | `VARCHAR(64)` | NULL | SHA-256 request fingerprint for conflict detection |
+| `checkpoint_ref` | `VARCHAR(128)` | NULL | Latest scoped graph checkpoint thread/ID reference |
+| `cancel_requested` | `BOOLEAN` | NOT NULL, DEFAULT `false` | Cooperative cancellation signal |
+| `started_at` / `completed_at` / `deadline_at` | `TIMESTAMPTZ` | NULL | Lifecycle timestamps |
+| `duration_ms` | `INTEGER` | NULL | Total workflow runtime in milliseconds |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
+
+- **Unique Constraints & Indexes:**
+  - `uq_agent_wf_exec_idempotency`: `UNIQUE (tenant_id, requested_by, idempotency_key)`
+  - `idx_agent_wf_exec_tenant_status`: `(tenant_id, status)`
+  - `idx_agent_wf_exec_tenant_created`: `(tenant_id, created_at)`
+
+#### Table: `agent_workflow_steps`
+Links each orchestrated graph node execution to its corresponding Phase 4.2 `agent_executions.execution_id`.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `step_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique step record identifier (`wfstep_*`) |
+| `workflow_execution_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent workflow execution identifier |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `node_name` | `VARCHAR(128)` | NOT NULL | Graph node identifier (e.g. `retrieve`, `extract_decisions`) |
+| `agent_id` | `VARCHAR(64)` | NOT NULL | Invoked Phase 4.1 registered agent ID |
+| `agent_execution_id` | `VARCHAR(128)` | NOT NULL, INDEX | Linked Phase 4.2 `agent_executions.execution_id` |
+| `role` | `VARCHAR(32)` | NOT NULL | `required` or `optional` |
+| `status` | `VARCHAR(32)` | NOT NULL | Individual step outcome (`SUCCEEDED`, `FAILED`, `TIMED_OUT`, `CANCELLED`) |
+| `attempt_number` | `INTEGER` | NOT NULL, DEFAULT `1` | Attempt index |
+| `duration_ms` | `INTEGER` | NULL | Step duration in milliseconds |
+| `error_code` | `VARCHAR(128)` | NULL | Sanitized step failure code if failed |
+| `started_at` / `completed_at` | `TIMESTAMPTZ` | NULL | Step execution timestamps |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
+
+- **Indexes:**
+  - `idx_agent_wf_step_exec_tenant`: `(workflow_execution_id, tenant_id)`
