@@ -6558,3 +6558,24 @@ COMPLETED ✓
 - Harden `backend/app/agents/contracts.py` (strict identifiers, versioning, warnings, evidence references, secret sanitization).
 - Implement `backend/app/agents/errors.py` and `backend/app/agents/messages.py` (inter-agent communication envelopes).
 - Add comprehensive contract validation & serialization unit tests in `tests/unit/test_phase4_1_contracts.py`.
+
+
+---
+
+### Handoff — Phase 4.1 Stage 2 (Member 2: Agent Contracts & Communication)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 2 (Agent Contracts & Communication Lead)
+- **Target Receiving Agent:** Member 3 (Security, Permissions & Governance)
+- **Branch:** `agent/ai-lead/feature/phase-4.1-multi-agent-architecture`
+
+#### Summary of Completed Work
+1. Implemented `backend/app/agents/errors.py` with `AgentErrorCode`, secret-redacting `sanitize_error_message()`, `AgentErrorDetail`, and typed exception hierarchy (`AgentNotFoundError`, `AgentDisabledError`, `AgentAlreadyRegisteredError`, `AgentContractValidationError`, `AgentAuthorizationError`, `AgentTenantIsolationError`, `AgentPromptInjectionError`).
+2. Hardened `backend/app/agents/contracts.py` with strict Pydantic v2 validation, contract versioning (`SUPPORTED_SCHEMA_VERSIONS = {"1.0"}`), `EvidenceReference`, status consistency checks, failure factory, and example payloads.
+3. Implemented `backend/app/agents/messages.py` with `AgentMessageEnvelope`, `AgentParticipant`, `AgentHandoffPayload`, `MessageType`, `MessagePriority`, and `create_reply()` lineage tracking for Phase 4.3/4.8 readiness.
+4. Upgraded `backend/app/agents/registry.py` to emit typed `Agent*Error` exceptions and re-exported public contracts in `backend/app/agents/__init__.py`.
+5. Verified `tests/unit/test_phase4_1_registry.py` + `tests/unit/test_phase4_1_contracts.py` (20/20 passed) and Ruff (0 errors).
+
+#### Required Action for Member 3
+- Implement `backend/app/services/security/agent_permissions.py` and `backend/app/services/security/agent_policy.py` extending KEEP's existing security module.
+- Enforce trusted `AgentContext` construction from KEEP JWT `AuthenticatedUser`, capability-tier authorization (`read`/`write`/`sensitive`), strict tenant isolation, prompt-injection & untrusted content safeguards, and audit event emission.
+- Add comprehensive security unit tests in `tests/unit/test_phase4_1_security.py`.

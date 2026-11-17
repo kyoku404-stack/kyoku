@@ -13,6 +13,11 @@ import inspect
 from typing import Any
 
 from backend.app.agents.base import BaseAgent
+from backend.app.agents.errors import (
+    AgentAlreadyRegisteredError,
+    AgentDisabledError,
+    AgentNotFoundError,
+)
 from backend.app.agents.metadata import AgentMetadata, CapabilityAccess
 
 
@@ -55,7 +60,7 @@ class AgentRegistry:
         validated_meta = self._validate_agent(agent)
         agent_id = validated_meta.agent_id
         if agent_id in self._agents:
-            raise ValueError(f"Agent already registered: {agent_id}")
+            raise AgentAlreadyRegisteredError(agent_id)
         self._agents[agent_id] = agent
         self._enabled_overrides[agent_id] = validated_meta.enabled
         return validated_meta
@@ -64,7 +69,7 @@ class AgentRegistry:
         """Removes an agent from the registry."""
         normalized_id = agent_id.strip().lower()
         if normalized_id not in self._agents:
-            raise LookupError(f"Unknown agent: {agent_id}")
+            raise AgentNotFoundError(agent_id)
         del self._agents[normalized_id]
         self._enabled_overrides.pop(normalized_id, None)
 
@@ -77,7 +82,7 @@ class AgentRegistry:
         normalized_id = agent_id.strip().lower()
         agent = self._agents.get(normalized_id)
         if agent is None:
-            raise LookupError(f"Unknown agent: {agent_id}")
+            raise AgentNotFoundError(agent_id)
         override = self._enabled_overrides.get(normalized_id)
         if override is not None:
             return override
@@ -88,7 +93,7 @@ class AgentRegistry:
         normalized_id = agent_id.strip().lower()
         agent = self._agents.get(normalized_id)
         if agent is None:
-            raise LookupError(f"Unknown agent: {agent_id}")
+            raise AgentNotFoundError(agent_id)
         self._enabled_overrides[normalized_id] = bool(enabled)
         return self.get_metadata(normalized_id)
 
@@ -101,13 +106,13 @@ class AgentRegistry:
         return self.set_enabled(agent_id, False)
 
     def get(self, agent_id: str) -> BaseAgent:
-        """Returns an enabled agent by ID; raises LookupError if missing or ValueError if disabled."""
+        """Returns an enabled agent by ID; raises AgentNotFoundError if missing or AgentDisabledError if disabled."""
         normalized_id = agent_id.strip().lower()
         agent = self._agents.get(normalized_id)
         if agent is None:
-            raise LookupError(f"Unknown agent: {agent_id}")
+            raise AgentNotFoundError(agent_id)
         if not self.is_enabled(normalized_id):
-            raise ValueError(f"Agent is disabled: {normalized_id}")
+            raise AgentDisabledError(normalized_id)
         return agent
 
     def get_metadata(self, agent_id: str) -> AgentMetadata:
@@ -115,7 +120,7 @@ class AgentRegistry:
         normalized_id = agent_id.strip().lower()
         agent = self._agents.get(normalized_id)
         if agent is None:
-            raise LookupError(f"Unknown agent: {agent_id}")
+            raise AgentNotFoundError(agent_id)
         effective_enabled = self.is_enabled(normalized_id)
         return agent.metadata.model_copy(update={"enabled": effective_enabled})
 
