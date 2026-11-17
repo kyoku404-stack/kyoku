@@ -440,7 +440,7 @@ class KeepOrchestrationService:
                 completed_at=completed_at,
                 duration_ms=duration_ms,
                 error_code=err.code.value,
-                error_message=err.message,
+                error_message=str(err),
             )
             self.observer.record_event("workflow.timed_out", record=failed)
             return failed
@@ -472,7 +472,7 @@ class KeepOrchestrationService:
                 completed_at=completed_at,
                 duration_ms=duration_ms,
                 error_code=exc.code.value,
-                error_message=exc.message,
+                error_message=str(exc),
             )
             self.observer.record_event(
                 "workflow.failed",

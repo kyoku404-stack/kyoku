@@ -6777,3 +6777,26 @@ COMPLETED ✓
 - Implement `backend/app/agents/orchestration/failure_handling.py` (`FailureDisposition`, `WorkflowFailureHandler`, required vs optional failure rules, non-idempotent side-effect replay guard).
 - Implement `backend/app/agents/orchestration/recovery.py` (`WorkflowRecoveryManager` with stale workflow reconciliation, checkpoint resume, and mandatory re-authorization on resume).
 - Author comprehensive reliability & security unit tests in `tests/unit/test_phase4_3_reliability_security.py`.
+
+
+---
+
+### Handoff — Phase 4.3 Stage 3 (Member 3: Workflow Reliability, Security & Recovery)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 3 (Workflow Reliability, Security & Recovery Lead)
+- **Target Receiving Agent:** Member 4 (FastAPI Integration, Persistence & End-to-End QA)
+- **Branch:** `agent/ai-lead/feature/phase-4.3-agent-orchestration-engine`
+
+#### Summary of Completed Work
+1. Added `can_invoke_agent()` helper on KEEP's canonical `AgentPermissionEvaluator` (`backend/app/services/security/agent_permissions.py`).
+2. Implemented `backend/app/agents/orchestration/policies.py` (`WorkflowBudgetConfig`, `KeepWorkflowPolicyEngine` enforcing RBAC submission/step/resume authorization, spoofed identity rejection, prompt-injection screening via KEEP's Phase 3.3 `DefaultAIGuardrailEngine`, payload size limits, timeout clamping, and global/per-tenant workflow concurrency caps).
+3. Implemented `backend/app/agents/orchestration/failure_handling.py` (`FailureDisposition`, `StepFailureDecision`, `WorkflowFailureHandler`) distinguishing required vs optional branch failures, transient retries, partial-success resolution, and non-idempotent side-effect replay blocking.
+4. Implemented `backend/app/agents/orchestration/recovery.py` (`StaleReconciliationReport`, `WorkflowRecoveryManager`) for worker-crash reconciliation, safe checkpoint resume validation, and mandatory re-authorization on resume (ADR-076).
+5. Verified `tests/unit/test_phase4_3_reliability_security.py` + Stages 1–2 unit tests (**15/15 passed**) and Ruff (**0 errors**).
+
+#### Required Action for Member 4
+- Implement SQLAlchemy ORM models `AgentWorkflowExecution` & `AgentWorkflowStep` (`backend/app/models/agent_workflow.py`) and Alembic migration revision `3d4e5f6a7b8c`.
+- Implement `backend/app/agents/persistence/workflow_repository.py` (`InMemoryWorkflowRepository`, `SQLAlchemyWorkflowRepository`) and `backend/app/agents/persistence/graph_checkpoints.py` (`KeepGraphCheckpointStore`).
+- Implement `backend/app/agents/observability/workflow_tracing.py` (`WorkflowLifecycleEvent`, `WorkflowMetricsCollector`).
+- Expose all Phase 4.3 REST endpoints in `backend/app/api/v1/agent_workflows.py`, mount in `backend/app/api/v1/router.py`, register orchestration specialist agents via `build_orchestration_agent_registry`, and wire lifespan initialization in `backend/app/main.py`.
+- Author end-to-end integration tests (`tests/integration/test_phase4_3_orchestration_integration.py`) proving all 11 Phase 4.3 Acceptance Checklist items and run full backend verification & Phase 1–4.2 regression checks.

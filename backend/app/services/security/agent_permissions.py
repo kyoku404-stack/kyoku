@@ -86,6 +86,10 @@ class AgentPermissionEvaluator:
             or any(role in ADMIN_AGENT_ROLES for role in context.roles)
         )
 
+    def can_invoke_agent(self, context: AgentContext) -> bool:
+        """Checks whether the verified caller holds permission to invoke agents or workflows."""
+        return AIPermission.AGENT_INVOKE.value in context.permissions
+
     def evaluate_capability(
         self,
         capability: AgentCapability,
