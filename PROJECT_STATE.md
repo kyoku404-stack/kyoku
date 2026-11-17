@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.2 — Agent Runtime & Execution Engine (100% COMPLETE ✓)
+Phase 4.3 — Agent Orchestration Engine (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -15,6 +15,35 @@ Phase 2 (Phase 2.1 through Phase 2.5) is 100% COMPLETE across all four member ro
 Phase 3 (Phase 3.1 through Phase 3.7) is 100% COMPLETE across all four member roles.
 Phase 4.1 (Multi-Agent Architecture) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.2 (Agent Runtime & Execution Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+Phase 4.3 (Agent Orchestration Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+
+Phase 4.3 Member 1 (Orchestration Architecture & Workflow Registry) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.3-agent-orchestration-engine.md`), ADRs `ADR-074`–`ADR-076` (`docs/decisions/decisions.md`), REST API Section 22 (`docs/API/api-contract.md`), and Schema Section 3.26 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 13 Phase 4.3 typed error codes and exceptions (`WorkflowNotFoundError`, `WorkflowDisabledError`, `WorkflowAlreadyRegisteredError`, `WorkflowDependencyMissingError`, `WorkflowExecutionNotFoundError`, `InvalidWorkflowTransitionError`, `WorkflowIdempotencyConflictError`, `WorkflowTimeoutError`, `WorkflowCancelledError`, `WorkflowBudgetExceededError`, `WorkflowResultNotReadyError`, `WorkflowRecoveryNotAllowedError`).
+- Implemented `backend/app/agents/orchestration/` (`workflow_contracts.py`, `workflow_registry.py`, `service.py`) defining `WorkflowStatus`, `WorkflowDefinition`, `WorkflowRequest`, `WorkflowStepLink`, `WorkflowResult`, `WorkflowExecutionRecord`, version-pinned `WorkflowRegistry`, and `KeepOrchestrationService`.
+- Authored unit tests `tests/unit/test_phase4_3_workflow_registry.py` (5/5 passed).
+
+Phase 4.3 Member 2 (Graph State, Routing & Workflow Execution) deliverables are COMPLETED:
+- Implemented typed `WorkflowState`, intermediate output validators (`ValidatedRetrievalOutput`, `ValidatedAnalysisOutput`, `ValidatedBranchOutput`), parallel-safe reducers (`merge_workflow_state`), and secret-safe checkpoint redaction (`sanitize_checkpoint_state`) in `backend/app/agents/orchestration/state.py`.
+- Implemented LangGraph-compatible state-graph adapter (`KeepStateGraph`, `CompiledKeepWorkflowGraph`) in `backend/app/agents/adapters/langgraph_orchestrator.py` supporting sequential edges, structured conditional routing, and concurrent `asyncio.gather` parallel fan-out/fan-in.
+- Implemented `RuntimeNodeInvoker` (`backend/app/agents/orchestration/nodes/runtime_bridge.py`) routing all graph node invocations strictly through Phase 4.2 `AgentRuntime` (ADR-074), reusable nodes (`retrieval.py`, `analysis.py`, `aggregation.py`), 4 specialist agents (`specialist_agents.py`), and predefined workflows (`knowledge_analysis`, `parallel_project_review`) in `backend/app/agents/orchestration/graphs/`.
+- Authored unit tests `tests/unit/test_phase4_3_graphs.py` (6/6 passed).
+
+Phase 4.3 Member 3 (Workflow Reliability, Security & Recovery) deliverables are COMPLETED:
+- Extended `AgentPermissionEvaluator` (`backend/app/services/security/agent_permissions.py`) with `can_invoke_agent()`.
+- Implemented `KeepWorkflowPolicyEngine` & `WorkflowBudgetConfig` (`backend/app/agents/orchestration/policies.py`), `WorkflowFailureHandler` & `FailureDisposition` (`backend/app/agents/orchestration/failure_handling.py`), and `WorkflowRecoveryManager` (`backend/app/agents/orchestration/recovery.py`) enforcing RBAC/capability re-authorization on submission, step, and checkpoint resume, spoofed-identity rejection, prompt-injection screening, explicit required vs optional partial-success policies, non-idempotent side-effect replay guards, and worker-crash stale reconciliation.
+- Authored unit tests `tests/unit/test_phase4_3_reliability_security.py` (4/4 passed).
+
+Phase 4.3 Member 4 (FastAPI Integration, Persistence & End-to-End QA) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models `AgentWorkflowExecution` and `AgentWorkflowStep` in `backend/app/models/agent_workflow.py` and Alembic migration `3d4e5f6a7b8c_phase_4_3_agent_orchestration.py` (`2c3d4e5f6a7b` → `3d4e5f6a7b8c (head)`).
+- Implemented `InMemoryWorkflowRepository` & `SQLAlchemyWorkflowRepository` (`backend/app/agents/persistence/workflow_repository.py`), `KeepGraphCheckpointStore` (`backend/app/agents/persistence/graph_checkpoints.py`), and `WorkflowMetricsCollector` (`backend/app/agents/observability/workflow_tracing.py`).
+- Added `build_orchestration_agent_registry()` in `backend/app/agents/service.py`, exposed all 11 Phase 4.3 REST endpoints in `backend/app/api/v1/agent_workflows.py` mounted in `backend/app/api/v1/router.py`, and initialized lifespan-managed `orchestration_service` & `workflow_worker` in `backend/app/main.py`.
+- Authored end-to-end integration test suite `tests/integration/test_phase4_3_orchestration_integration.py` (4/4 passed).
+- Empirical Verification Gate: `ruff check backend/ tests/` (**0 errors**), `alembic heads` (**`3d4e5f6a7b8c (head)`**), `pytest tests/unit/` (**504/504 passed**), Phase 4.3 + Phase 4.2 + Phase 4.1 + Alembic Migrations + Auth/Tenant/RBAC security regression suites (**60/60 passed**).
+
+---
+
+### Previous Milestone Archive (Phase 4.2)
 
 Phase 4.2 Member 1 (Runtime Architecture & Execution Lifecycle) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/phase-4.2-agent-runtime-execution-engine.md`), ADRs `ADR-071`–`ADR-073` (`docs/decisions/decisions.md`), REST API Section 21 (`docs/api/api-contract.md`), and Schema Section 3.25 (`docs/database/database-schema.md`).
