@@ -6663,3 +6663,24 @@ COMPLETED ✓
 #### Required Action for Member 3
 - Implement `backend/app/agents/runtime/cancellation.py`, `backend/app/agents/runtime/limits.py`, and `backend/app/agents/runtime/policies.py` (default/max timeouts, cooperative cancellation registry, global/agent/tenant concurrency limits, input size guards, and bounded transient-only retry policy).
 - Add safety & failure-handling unit tests in `tests/unit/test_phase4_2_safety.py`.
+
+
+---
+
+### Handoff — Phase 4.2 Stage 3 (Member 3: Execution Safety & Resource Control)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 3 (Execution Safety & Resource Control Lead)
+- **Target Receiving Agent:** Member 4 (FastAPI Integration, Monitoring & End-to-End QA)
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Implemented `backend/app/agents/runtime/cancellation.py` (`CancellationToken`, `CancellationRegistry`) for cooperative cancellation and active task binding.
+2. Implemented `backend/app/agents/runtime/limits.py` (`ExecutionLimitsConfig`, `ConcurrencyLimiter` enforcing global/per-agent/per-tenant caps with `finally` slot release, and `validate_input_size`).
+3. Implemented `backend/app/agents/runtime/policies.py` (`RetryPolicy` with bounded transient-only eligibility & deterministic exponential backoff + jitter; `KeepExecutionPolicy` wrapping Phase 4.1 `KeepAgentPolicyEngine`, timeout clamping, concurrency slot reservation, and timeout-vs-cancellation isolation).
+4. Verified `tests/unit/test_phase4_2_safety.py` + Stages 1–2 unit tests (18/18 passed) and Ruff (0 errors).
+
+#### Required Action for Member 4
+- Implement `backend/app/agents/observability/telemetry.py` (structured lifecycle events & `RuntimeMetricsCollector`) and `backend/app/agents/workers/execution_worker.py` (`DurableExecutionWorker`).
+- Upgrade `backend/app/agents/adapters/langgraph_adapter.py` with `KeepCheckpointStore` integration + deterministic 2-step graph proof-of-concept (`research-graph` agent registered alongside `reference`).
+- Implement `backend/app/api/v1/agent_executions.py`, mount in `backend/app/api/v1/router.py`, and initialize lifespan-managed runtime + worker in `backend/app/main.py`.
+- Author end-to-end integration tests (`tests/integration/test_phase4_2_runtime_integration.py`) proving all 10 Phase 4.2 Acceptance Checklist items and run full backend regression gate.
