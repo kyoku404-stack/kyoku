@@ -1,4 +1,4 @@
-"""KEEP Phase 4.1 — Agent Service & Framework Adapters."""
+"""KEEP Phase 4.1 / 4.2 — Agent Service & Framework Adapters."""
 
 from backend.app.agents.adapters.keep_services import (
     KeepDocumentAdapter,
@@ -7,6 +7,8 @@ from backend.app.agents.adapters.keep_services import (
 from backend.app.agents.adapters.langgraph_adapter import (
     LangGraphAgentAdapter,
     LangGraphRunnable,
+    TwoStepResearchGraph,
+    build_research_graph_agent,
 )
 
 __all__ = [
@@ -14,4 +16,6 @@ __all__ = [
     "KeepKnowledgeAdapter",
     "LangGraphAgentAdapter",
     "LangGraphRunnable",
+    "TwoStepResearchGraph",
+    "build_research_graph_agent",
 ]

@@ -2300,3 +2300,52 @@ Member 3 implements `agent_permissions.py` and `agent_policy.py` inside `backend
 
 #### Status
 ACCEPTED
+
+
+---
+
+### ADR-071: Immutable Terminal Execution States & Atomic Compare-and-Set Persistence Transitions
+
+#### Context
+Concurrent background workers, timeout timers, and user cancellation requests can race to update the status of a running agent execution. Unprotected read-modify-write updates risk overwriting a `SUCCEEDED` result with `CANCELLED` or corrupting audit history.
+
+#### Decision
+1. Define six canonical lifecycle states in `ExecutionStatus`: `PENDING`, `RUNNING`, `SUCCEEDED`, `FAILED`, `TIMED_OUT`, `CANCELLED`.
+2. Enforce transition legality (`PENDING -> RUNNING|CANCELLED|FAILED`, `RUNNING -> SUCCEEDED|FAILED|TIMED_OUT|CANCELLED`, terminal states immutable) both in domain logic (`lifecycle.py`) and via atomic compare-and-set SQL updates (`UPDATE agent_executions SET ... WHERE execution_id = :id AND status = :expected_status`).
+3. Implement retries as linked new `agent_executions` records (`parent_execution_id`, `attempt_number + 1`) rather than mutating terminal rows.
+
+#### Alternatives Considered
+- Overwriting status in place on retry: Rejected — destroys auditability and historical failure diagnostics.
+- Python-only locking without DB compare-and-set: Rejected — fails under multi-worker or multi-process deployments.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-072: Principal-Scoped Idempotency Keys with SHA-256 Request Fingerprinting
+
+#### Context
+Network drops during execution submission can cause clients to retry identical `POST /api/v1/agents/{id}/executions` requests, risking duplicate executions and wasted LLM/compute cost.
+
+#### Decision
+1. Support optional `Idempotency-Key` header (or request field) scoped strictly to `(tenant_id, requested_by, idempotency_key)` with a database unique constraint.
+2. Persist a deterministic SHA-256 `request_fingerprint` over `(agent_id, goal, canonical_json(input))`.
+3. When an existing key matches the same fingerprint and passes current authorization checks, return the existing `ExecutionRecord`; if the fingerprint differs, reject with HTTP `409 Conflict` (`EXECUTION_IDEMPOTENCY_CONFLICT`).
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-073: Separation of KEEP Execution Records and LangGraph Checkpoints
+
+#### Context
+LangGraph checkpoints store internal graph node state for resume/recovery, whereas KEEP execution records govern tenant ownership, authorization, status APIs, and compliance auditing.
+
+#### Decision
+1. Store business-level execution metadata in `agent_executions` and graph state snapshots separately in `agent_checkpoints` linked by `(execution_id, thread_id, tenant_id)`.
+2. Never expose raw checkpoint identifiers as authorization tokens; always re-verify `KeepAgentPolicyEngine.authorize_invocation` and tenant boundaries before resuming any saved checkpoint.
+
+#### Status
+ACCEPTED

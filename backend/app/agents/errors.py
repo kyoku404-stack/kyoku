@@ -51,6 +51,16 @@ class AgentErrorCode(str, Enum):
     AGENT_PROMPT_INJECTION_BLOCKED = "AGENT_PROMPT_INJECTION_BLOCKED"
     AGENT_TOOL_UNAUTHORIZED = "AGENT_TOOL_UNAUTHORIZED"
     AGENT_EXECUTION_FAILED = "AGENT_EXECUTION_FAILED"
+    # Phase 4.2 Agent Runtime & Execution Engine error codes
+    EXECUTION_NOT_FOUND = "EXECUTION_NOT_FOUND"
+    EXECUTION_INVALID_TRANSITION = "EXECUTION_INVALID_TRANSITION"
+    EXECUTION_IDEMPOTENCY_CONFLICT = "EXECUTION_IDEMPOTENCY_CONFLICT"
+    EXECUTION_TIMED_OUT = "EXECUTION_TIMED_OUT"
+    EXECUTION_CANCELLED = "EXECUTION_CANCELLED"
+    EXECUTION_CONCURRENCY_LIMIT = "EXECUTION_CONCURRENCY_LIMIT"
+    EXECUTION_INPUT_TOO_LARGE = "EXECUTION_INPUT_TOO_LARGE"
+    EXECUTION_NOT_RETRYABLE = "EXECUTION_NOT_RETRYABLE"
+    EXECUTION_RESULT_NOT_READY = "EXECUTION_RESULT_NOT_READY"
 
 
 class AgentErrorDetail(BaseModel):
@@ -175,4 +185,108 @@ class AgentPromptInjectionError(AgentAuthorizationError):
         super().__init__(
             message,
             code=AgentErrorCode.AGENT_PROMPT_INJECTION_BLOCKED,
+        )
+
+
+class ExecutionNotFoundError(AgentLayerError, LookupError):
+    """Raised when an execution_id does not exist or is concealed from a foreign tenant."""
+
+    def __init__(self, execution_id: str) -> None:
+        super().__init__(
+            f"Execution not found: {execution_id}",
+            code=AgentErrorCode.EXECUTION_NOT_FOUND,
+            http_status=404,
+            details={"execution_id": execution_id},
+        )
+
+
+class InvalidExecutionTransitionError(AgentLayerError, ValueError):
+    """Raised when an illegal lifecycle state transition is attempted."""
+
+    def __init__(self, execution_id: str, current_status: str, target_status: str) -> None:
+        super().__init__(
+            f"Invalid lifecycle transition for execution '{execution_id}': "
+            f"{current_status} -> {target_status}.",
+            code=AgentErrorCode.EXECUTION_INVALID_TRANSITION,
+            http_status=409,
+            details={
+                "execution_id": execution_id,
+                "current_status": current_status,
+                "target_status": target_status,
+            },
+        )
+
+
+class IdempotencyConflictError(AgentLayerError, ValueError):
+    """Raised when an Idempotency-Key is reused with a different request payload."""
+
+    def __init__(self, idempotency_key: str) -> None:
+        super().__init__(
+            f"Idempotency-Key '{idempotency_key}' was already used with a different request payload.",
+            code=AgentErrorCode.EXECUTION_IDEMPOTENCY_CONFLICT,
+            http_status=409,
+            details={"idempotency_key": idempotency_key},
+        )
+
+
+class ExecutionTimeoutError(AgentLayerError, TimeoutError):
+    """Raised when an agent execution exceeds its enforced deadline."""
+
+    def __init__(self, execution_id: str, timeout_seconds: float) -> None:
+        super().__init__(
+            f"Execution '{execution_id}' exceeded deadline ({timeout_seconds:.1f}s).",
+            code=AgentErrorCode.EXECUTION_TIMED_OUT,
+            http_status=504,
+            retryable=True,
+            details={"execution_id": execution_id, "timeout_seconds": timeout_seconds},
+        )
+
+
+class ExecutionCancelledError(AgentLayerError):
+    """Raised when an execution is cooperatively cancelled."""
+
+    def __init__(self, execution_id: str) -> None:
+        super().__init__(
+            f"Execution '{execution_id}' was cancelled.",
+            code=AgentErrorCode.EXECUTION_CANCELLED,
+            http_status=409,
+            retryable=True,
+            details={"execution_id": execution_id},
+        )
+
+
+class ConcurrencyLimitExceededError(AgentLayerError):
+    """Raised when global, per-agent, or per-tenant active execution limits are saturated."""
+
+    def __init__(self, scope: str, limit: int) -> None:
+        super().__init__(
+            f"Active execution concurrency limit exceeded for {scope} (limit={limit}).",
+            code=AgentErrorCode.EXECUTION_CONCURRENCY_LIMIT,
+            http_status=429,
+            retryable=True,
+            details={"scope": scope, "limit": limit},
+        )
+
+
+class ExecutionNotRetryableError(AgentLayerError, ValueError):
+    """Raised when a caller requests a retry on an ineligible execution."""
+
+    def __init__(self, execution_id: str, reason: str) -> None:
+        super().__init__(
+            f"Execution '{execution_id}' cannot be retried: {reason}",
+            code=AgentErrorCode.EXECUTION_NOT_RETRYABLE,
+            http_status=409,
+            details={"execution_id": execution_id, "reason": reason},
+        )
+
+
+class ExecutionResultNotReadyError(AgentLayerError, ValueError):
+    """Raised when requesting a result for an execution that has not reached a terminal state."""
+
+    def __init__(self, execution_id: str, status: str) -> None:
+        super().__init__(
+            f"Execution '{execution_id}' result is not available yet (current status: {status}).",
+            code=AgentErrorCode.EXECUTION_RESULT_NOT_READY,
+            http_status=409,
+            details={"execution_id": execution_id, "status": status},
         )

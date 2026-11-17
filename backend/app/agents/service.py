@@ -36,6 +36,19 @@ def build_default_agent_registry() -> AgentRegistry:
     return registry
 
 
+def build_runtime_agent_registry(
+    *,
+    checkpoint_store=None,
+    policy: AgentPolicyInterface | None = None,
+) -> AgentRegistry:
+    """Initializes KEEP's Phase 4.2 registry with ReferenceAgent and the LangGraph PoC agent."""
+    from backend.app.agents.adapters.langgraph_adapter import build_research_graph_agent
+
+    registry = build_default_agent_registry()
+    registry.register(build_research_graph_agent(checkpoint_store=checkpoint_store, policy=policy))
+    return registry
+
+
 class KeepAgentService:
     """Policy-enforced service facade over KEEP's AgentRegistry and BaseAgent contracts."""
 

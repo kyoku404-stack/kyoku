@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.1 — Multi-Agent Architecture (100% COMPLETE ✓)
+Phase 4.2 — Agent Runtime & Execution Engine (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -14,6 +14,41 @@ Phase 1 (Phase 1.1 through Phase 1.10) is 100% COMPLETE across all four member r
 Phase 2 (Phase 2.1 through Phase 2.5) is 100% COMPLETE across all four member roles.
 Phase 3 (Phase 3.1 through Phase 3.7) is 100% COMPLETE across all four member roles.
 Phase 4.1 (Multi-Agent Architecture) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.2 (Agent Runtime & Execution Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+
+Phase 4.2 Member 1 (Runtime Architecture & Execution Lifecycle) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.2-agent-runtime-execution-engine.md`), ADRs `ADR-071`–`ADR-073` (`docs/decisions/decisions.md`), REST API Section 21 (`docs/api/api-contract.md`), and Schema Section 3.25 (`docs/database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 9 Phase 4.2 typed error codes and exceptions (`ExecutionNotFoundError`, `ExecutionConflictError`, `IdempotencyConflictError`, `ExecutionTimeoutError`, `ExecutionCancelledError`, `ConcurrencyLimitExceededError`, `InputLimitExceededError`, `RetryNotAllowedError`, `ExecutionResultNotReadyError`).
+- Implemented `backend/app/agents/runtime/` (`lifecycle.py`, `context.py`, `interfaces.py`, `executor.py`) defining `ExecutionStatus` (`PENDING` → `QUEUED` → `RUNNING` → terminal states), immutable terminal transition enforcement, `ExecutionRecord`, `RuntimeExecutionContext`, `AgentRuntimeInterface`, and `AgentRuntime`.
+- Authored unit tests `tests/unit/test_phase4_2_runtime_lifecycle.py` (7/7 passed).
+
+Phase 4.2 Member 2 (Execution State, Persistence & Result Management) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models `AgentExecution` and `AgentCheckpoint` in `backend/app/models/agent_execution.py` and re-exported in `backend/app/models/__init__.py`.
+- Authored and verified Alembic migration `backend/migrations/versions/2c3d4e5f6a7b_phase_4_2_agent_runtime_executions.py` chained cleanly from `1b2c3d4e5f6a` → `2c3d4e5f6a7b (head)` (`tests/integration/test_db_migrations.py` 4/4 passed).
+- Implemented `SQLAlchemyExecutionRepository` and `InMemoryExecutionRepository` (`backend/app/agents/persistence/execution_repository.py`) with atomic SQL compare-and-set transitions, scoped `(tenant_id, requested_by, idempotency_key)` deduplication, and strict tenant-isolated reads.
+- Implemented tenant-isolated `KeepCheckpointStore` (`backend/app/agents/persistence/checkpoints.py`).
+- Authored unit tests `tests/unit/test_phase4_2_persistence.py` (5/5 passed).
+
+Phase 4.2 Member 3 (Execution Safety & Resource Control) deliverables are COMPLETED:
+- Implemented `CancellationToken` & `CancellationRegistry` (`backend/app/agents/runtime/cancellation.py`), `ExecutionLimitsConfig`, `ConcurrencyLimiter`, & `validate_input_size` (`backend/app/agents/runtime/limits.py`), and `RetryPolicy` & `KeepExecutionPolicy` (`backend/app/agents/runtime/policies.py`).
+- Authored unit tests `tests/unit/test_phase4_2_safety.py` (6/6 passed).
+
+Phase 4.2 Member 4 (FastAPI Integration, Monitoring & End-to-End QA) deliverables are COMPLETED:
+- Implemented secret-safe observability & KPI telemetry (`backend/app/agents/observability/telemetry.py`: `ExecutionLifecycleEvent`, `RuntimeMetricsCollector`) and durable background execution worker (`backend/app/agents/workers/execution_worker.py`: `DurableExecutionWorker`).
+- Upgraded `backend/app/agents/adapters/langgraph_adapter.py` with `KeepCheckpointStore` integration, re-authorization checks on checkpoint load/resume, and 2-step deterministic proof-of-concept `TwoStepResearchGraph` (`research-graph` agent registered alongside `reference` via `build_runtime_agent_registry`).
+- Exposed all 7 Phase 4.2 REST endpoints in `backend/app/api/v1/agent_executions.py`, mounted in `backend/app/api/v1/router.py`, and initialized via FastAPI lifespan in `backend/app/main.py` with graceful worker shutdown.
+- Authored end-to-end integration test suite `tests/integration/test_phase4_2_runtime_integration.py` (5/5 passed).
+- Empirical Backend Verification Gate: `ruff check backend/ tests/` (**0 errors**), `pytest tests/unit/` (**489/489 passed**), Phase 4.2 + Phase 4.1 + Alembic migrations + Auth/Tenant/RBAC security regression suites (**56/56 passed**).
+
+Phase 4.2 Stage 5 (Frontend UI, Vitest & Playwright E2E) deliverables are COMPLETED:
+- Added `AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE` permissions to `frontend/src/types/permission.ts`; created typed contracts (`frontend/src/types/agentRuntime.ts`), API client (`frontend/src/services/agentRuntimeService.ts`), and React hook (`frontend/src/hooks/useAgentRuntime.ts`).
+- Built modular UI components in `frontend/src/features/agents/` (`RuntimeMetricsBanner`, `ExecuteAgentModal`, `ExecutionListTable`, `ExecutionResultDrawer`) and master page `frontend/src/pages/AgentRuntimePage.tsx`, mounted at `/agents` and `/agents/runtime` with `Agent Runtime` (`Phase 4.2`) Sidebar entry.
+- Authored Vitest tests (`frontend/src/tests/agentRuntimeService.test.ts` + `agentRuntimeComponents.test.tsx`, 10 new tests) and Playwright E2E spec (`tests/e2e/phase4_2_agent_runtime.spec.ts`, 5 E2E tests).
+- Empirical Frontend Verification Gate: `npm run build` (**0 errors**, 1,883 modules), `npm run lint` (**0 errors, 0 warnings**), `npx vitest run` (**48/48 files, 379/379 tests passed**), Playwright Chromium (`phase4_2_agent_runtime.spec.ts`: **5/5 passed**).
+
+---
+
+### Previous Milestone Archive (Phase 4.1)
 
 Phase 4.1 Member 1 (Architecture & Agent Registry) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/phase-4.1-multi-agent-architecture.md`) with layered architecture diagram, module boundaries, LangGraph adapter seam, security boundaries, and Phase 4.2 readiness criteria.

@@ -6622,3 +6622,115 @@ COMPLETED ✓
 
 #### Readiness for Phase 4.2
 - `BaseAgent`, `AgentMetadata`, `AgentRegistry`, `AgentRequest`, `AgentContext`, `AgentResult`, `AgentMessageEnvelope`, `KeepAgentPolicyEngine`, and `LangGraphAgentAdapter` are frozen and tested. Phase 4.2 (`Agent Runtime & Execution Engine`) can execute any registered agent without redesigning Phase 4.1.
+
+
+---
+
+### Handoff — Phase 4.2 Stage 1 (Member 1: Runtime Architecture & Execution Lifecycle)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 1 (Runtime Architecture & Execution Lifecycle Lead)
+- **Target Receiving Agent:** Member 2 (Execution State, Persistence & Result Management)
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Authored master architecture spec `docs/Architecture/phase-4.2-agent-runtime-execution-engine.md`, ADRs `ADR-071`–`ADR-073` (`docs/decisions/decisions.md`), API Section 21 (`docs/api/api-contract.md`), and Schema Section 3.25 (`docs/database/database-schema.md`).
+2. Added Phase 4.2 runtime error codes and typed exceptions in `backend/app/agents/errors.py`.
+3. Implemented `backend/app/agents/runtime/` (`lifecycle.py`, `context.py`, `interfaces.py`, `executor.py`) defining `ExecutionStatus`, immutable terminal state enforcement, `ExecutionRecord`, `RuntimeExecutionContext`, `AgentRuntimeInterface`, and `AgentRuntime`.
+4. Verified `tests/unit/test_phase4_2_runtime_lifecycle.py` (7/7 passed) and Ruff (0 errors).
+
+#### Required Action for Member 2
+- Implement SQLAlchemy ORM models `AgentExecution` & `AgentCheckpoint` (`backend/app/models/agent_execution.py`) and Alembic migration revision `2c3d4e5f6a7b`.
+- Implement `SQLAlchemyExecutionRepository` + `InMemoryExecutionRepository` (`backend/app/agents/persistence/execution_repository.py`) with atomic compare-and-set transitions and scoped idempotency uniqueness.
+- Implement `KeepCheckpointStore` (`backend/app/agents/persistence/checkpoints.py`) with tenant isolation & re-authorization.
+- Add persistence, concurrency, and idempotency unit tests in `tests/unit/test_phase4_2_persistence.py`.
+
+
+---
+
+### Handoff — Phase 4.2 Stage 2 (Member 2: Execution State, Persistence & Result Management)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 2 (Persistence Lead)
+- **Target Receiving Agent:** Member 3 (Execution Safety & Resource Control)
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Implemented SQLAlchemy ORM models `AgentExecution` and `AgentCheckpoint` in `backend/app/models/agent_execution.py` and re-exported in `backend/app/models/__init__.py`.
+2. Authored and verified Alembic migration `backend/migrations/versions/2c3d4e5f6a7b_phase_4_2_agent_runtime_executions.py` chained cleanly from `1b2c3d4e5f6a` → `2c3d4e5f6a7b (head)` (`tests/integration/test_db_migrations.py` 4/4 passed).
+3. Implemented `SQLAlchemyExecutionRepository` and `InMemoryExecutionRepository` (`backend/app/agents/persistence/execution_repository.py`) with atomic SQL compare-and-set state transitions, scoped `(tenant_id, requested_by, idempotency_key)` uniqueness, tenant-isolated reads, and stale running discovery.
+4. Implemented `KeepCheckpointStore` (`backend/app/agents/persistence/checkpoints.py`) with strict tenant boundary enforcement.
+5. Verified `tests/unit/test_phase4_2_persistence.py` + `test_phase4_2_runtime_lifecycle.py` (12/12 passed) and Ruff (0 errors).
+
+#### Required Action for Member 3
+- Implement `backend/app/agents/runtime/cancellation.py`, `backend/app/agents/runtime/limits.py`, and `backend/app/agents/runtime/policies.py` (default/max timeouts, cooperative cancellation registry, global/agent/tenant concurrency limits, input size guards, and bounded transient-only retry policy).
+- Add safety & failure-handling unit tests in `tests/unit/test_phase4_2_safety.py`.
+
+
+---
+
+### Handoff — Phase 4.2 Stage 3 (Member 3: Execution Safety & Resource Control)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 3 (Execution Safety & Resource Control Lead)
+- **Target Receiving Agent:** Member 4 (FastAPI Integration, Monitoring & End-to-End QA)
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Implemented `backend/app/agents/runtime/cancellation.py` (`CancellationToken`, `CancellationRegistry`) for cooperative cancellation and active task binding.
+2. Implemented `backend/app/agents/runtime/limits.py` (`ExecutionLimitsConfig`, `ConcurrencyLimiter` enforcing global/per-agent/per-tenant caps with `finally` slot release, and `validate_input_size`).
+3. Implemented `backend/app/agents/runtime/policies.py` (`RetryPolicy` with bounded transient-only eligibility & deterministic exponential backoff + jitter; `KeepExecutionPolicy` wrapping Phase 4.1 `KeepAgentPolicyEngine`, timeout clamping, concurrency slot reservation, and timeout-vs-cancellation isolation).
+4. Verified `tests/unit/test_phase4_2_safety.py` + Stages 1–2 unit tests (18/18 passed) and Ruff (0 errors).
+
+#### Required Action for Member 4
+- Implement `backend/app/agents/observability/telemetry.py` (structured lifecycle events & `RuntimeMetricsCollector`) and `backend/app/agents/workers/execution_worker.py` (`DurableExecutionWorker`).
+- Upgrade `backend/app/agents/adapters/langgraph_adapter.py` with `KeepCheckpointStore` integration + deterministic 2-step graph proof-of-concept (`research-graph` agent registered alongside `reference`).
+- Implement `backend/app/api/v1/agent_executions.py`, mount in `backend/app/api/v1/router.py`, and initialize lifespan-managed runtime + worker in `backend/app/main.py`.
+- Author end-to-end integration tests (`tests/integration/test_phase4_2_runtime_integration.py`) proving all 10 Phase 4.2 Acceptance Checklist items and run full backend regression gate.
+
+
+
+---
+
+### Handoff — Phase 4.2 Stage 4 (Member 4: FastAPI Integration, Monitoring & End-to-End QA)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 4 (FastAPI Integration, Monitoring & End-to-End QA Lead)
+- **Target Receiving Agent:** Stage 5 Frontend UI, Vitest & Playwright E2E Lead (`UI_MODE = YES`)
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Implemented secret-safe observability & lifecycle metrics collector in `backend/app/agents/observability/telemetry.py` (`ExecutionLifecycleEvent`, `RuntimeMetricsCollector`).
+2. Implemented in-process durable background worker `DurableExecutionWorker` in `backend/app/agents/workers/execution_worker.py` with bounded concurrency and graceful shutdown.
+3. Upgraded `backend/app/agents/adapters/langgraph_adapter.py` with `KeepCheckpointStore` integration, re-authorization checks on checkpoint load/resume, and deterministic 2-step proof-of-concept `TwoStepResearchGraph` (`build_research_graph_agent`, registered as `research-graph` via `build_runtime_agent_registry` while keeping `build_default_agent_registry` backwards-compatible for Phase 4.1).
+4. Exposed all 7 Phase 4.2 REST endpoints in `backend/app/api/v1/agent_executions.py` (`/agents/{agent_id}/executions`, `/executions`, `/executions/metrics`, `/executions/{id}`, `/executions/{id}/result`, `/executions/{id}/cancel`, `/executions/{id}/retry`), mounted in `backend/app/api/v1/router.py`, and initialized via FastAPI lifespan in `backend/app/main.py` with graceful `worker.stop()` on shutdown.
+5. Authored end-to-end integration test suite (`tests/integration/test_phase4_2_runtime_integration.py` — 5/5 passed) covering async/sync execution lifecycle, idempotency deduplication & conflict rejection, cooperative cancellation, retry lineage, timeout handling, LangGraph checkpointing (`research-graph`), cross-tenant isolation, RBAC enforcement, and runtime metrics.
+6. Empirical Backend Verification Gate:
+   - `ruff check backend/ tests/`: **0 errors**
+   - `pytest tests/unit/`: **489/489 passed (100%)**
+   - `pytest` (Phase 4.2 + Phase 4.1 + Alembic migrations + Auth/Tenant/RBAC security suites): **56/56 passed (100%)**
+
+#### Required Action for Stage 5 (UI_MODE = YES)
+- Build the Phase 4.2 Agent Runtime & Execution Engine UI (`AgentRuntimePage`, `RuntimeMetricsBanner`, `ExecuteAgentModal`, `ExecutionListTable`, `ExecutionResultDrawer`), typed client service, custom hook, RBAC permission updates (`AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE`), routes (`/agents`, `/agents/runtime`), Sidebar entry, Vitest unit/component tests, and Playwright E2E spec (`tests/e2e/phase4_2_agent_runtime.spec.ts`).
+
+
+---
+
+### Handoff — Phase 4.2 Stage 5 (Frontend UI, Vitest & Playwright E2E — FINAL)
+- **Date:** 2026-11-18
+- **Originating Agent:** Stage 5 Frontend UI & QA Lead (`UI_MODE = YES`)
+- **Target Receiving Agent:** Human Reviewer / Phase 4.3 Execution Lead
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Updated `frontend/src/types/permission.ts` with `AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE` permissions aligned with backend `AIPermission`.
+2. Created `frontend/src/types/agentRuntime.ts`, `frontend/src/services/agentRuntimeService.ts`, and `frontend/src/hooks/useAgentRuntime.ts`.
+3. Built modular UI components in `frontend/src/features/agents/` (`RuntimeMetricsBanner`, `ExecuteAgentModal`, `ExecutionListTable`, `ExecutionResultDrawer`) and master command center page `frontend/src/pages/AgentRuntimePage.tsx`, mounted at `/agents` and `/agents/runtime` with `Agent Runtime` (`Phase 4.2`) Sidebar entry.
+4. Authored Vitest tests (`frontend/src/tests/agentRuntimeService.test.ts` + `frontend/src/tests/agentRuntimeComponents.test.tsx`: 10 tests) and Playwright E2E spec (`tests/e2e/phase4_2_agent_runtime.spec.ts`: 5 E2E tests covering navigation, KPI banner, modal execution submission, result & citations drawer, cooperative cancellation, linked retry, status tab filtering, and Desktop/Tablet/Mobile viewports).
+5. Full Phase 4.2 Empirical Verification Gate:
+   - Backend Ruff: **0 errors**
+   - Backend Unit Tests: **489/489 passed**
+   - Backend Integration, Migrations & Security Regression: **56/56 passed**
+   - Frontend TypeScript + Vite Production Build: **0 errors** (1,883 modules)
+   - Frontend ESLint (`--max-warnings 0`): **0 errors, 0 warnings**
+   - Frontend Vitest Suite: **48/48 files, 379/379 tests passed**
+   - Playwright Chromium E2E (`phase4_2_agent_runtime.spec.ts`): **5/5 passed**
+
+#### Readiness for Phase 4.3
+- Phase 4.2 is 100% complete across all 4 backend member stages and Stage 5 Frontend UI. Awaiting human review & PR merge before initiating Phase 4.3 (`Agent Orchestration Engine`).

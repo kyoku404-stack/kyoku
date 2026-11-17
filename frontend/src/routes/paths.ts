@@ -48,6 +48,8 @@ export const ROUTES = {
   SYSTEM: '/system',
   SYSTEM_OPERATIONS: '/system/operations',
   SYSTEM_RELEASE: '/system/release',
+  AGENTS: '/agents',
+  AGENT_RUNTIME: '/agents/runtime',
   NOT_FOUND: '*',
 } as const;
 
