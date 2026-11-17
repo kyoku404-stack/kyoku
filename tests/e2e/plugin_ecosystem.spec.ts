@@ -226,7 +226,7 @@ test.describe('Phase 3.5 — Plugin SDK & Extension Framework E2E Suite', () => 
     const heading = page.locator('h1', { hasText: 'Plugin SDK & Ecosystem' });
     await expect(heading).toBeVisible();
 
-    const phaseBadge = page.locator('span', { hasText: 'Phase 3.5' });
+    const phaseBadge = page.getByRole('main').getByText('Phase 3.5');
     await expect(phaseBadge).toBeVisible();
   });
 
@@ -298,7 +298,8 @@ test.describe('Phase 3.5 — Plugin SDK & Extension Framework E2E Suite', () => 
     await expect(page.locator('text=execute_inference')).toBeVisible();
 
     // Close drawer
-    const closeBtn = page.locator('button').filter({ has: page.locator('svg.lucide-x') }).first();
+    const closeBtn = page.getByRole('button', { name: /close drawer/i });
+    await expect(closeBtn).toBeVisible();
     await closeBtn.click();
   });
 

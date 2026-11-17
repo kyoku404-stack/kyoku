@@ -93,7 +93,7 @@ export const VersionHistoryDrawer: React.FC<VersionHistoryDrawerProps> = ({
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Version History
+                  Document Version History
                 </h3>
                 <p className="text-xs text-slate-400 line-clamp-1">{documentTitle}</p>
               </div>
@@ -175,7 +175,7 @@ export const VersionHistoryDrawer: React.FC<VersionHistoryDrawerProps> = ({
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
                           <GitCommit className="w-3 h-3" />
-                          v{v.version_number}
+                          Version {v.version_number}
                         </span>
                         {isLatest && (
                           <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 border border-emerald-200/50">

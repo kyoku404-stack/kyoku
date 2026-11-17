@@ -15,17 +15,19 @@ import {
   Clock,
   Layers,
 } from 'lucide-react';
-import type { ActivityItem } from '@/types/collaboration';
+import type { ActivityItem, PresenceCollaborator } from '@/types/collaboration';
 
 interface ActivityFeedTimelineProps {
   activities: ActivityItem[];
   workspaceName?: string;
+  collaborators?: PresenceCollaborator[];
   onClose?: () => void;
 }
 
 export const ActivityFeedTimeline: React.FC<ActivityFeedTimelineProps> = ({
   activities,
   workspaceName,
+  collaborators,
   onClose,
 }) => {
   const [filter, setFilter] = useState<string>('ALL');
@@ -58,12 +60,39 @@ export const ActivityFeedTimeline: React.FC<ActivityFeedTimelineProps> = ({
 
   return (
     <div className="flex flex-col gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+      {/* Active Collaborators Roster */}
+      {collaborators && collaborators.length > 0 && (
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800 mb-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            Active Collaborators
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {collaborators.map((c) => (
+              <div key={c.user_id} className="flex items-center gap-2.5 p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center">
+                  {c.full_name.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                    {c.full_name}
+                  </div>
+                  <div className="text-[10px] text-slate-500 truncate">{c.email}</div>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                  {c.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header & Filter Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
         <div>
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-500" />
-            Activity Timeline {workspaceName && `· ${workspaceName}`}
+            Recent Workspace Activity {workspaceName && `· ${workspaceName}`}
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
             Real-time audit log of team actions and knowledge updates

@@ -40,23 +40,6 @@ export function useCollaboration(initialWorkspaceId?: string) {
   const [isSummarizing, setIsSummarizing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all workspaces
-  const fetchWorkspaces = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await collaborationService.listWorkspaces();
-      if (res.data) {
-        setWorkspaces(res.data.workspaces || []);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to fetch workspaces';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Select and load specific workspace
   const selectWorkspace = useCallback(async (workspaceId: string) => {
     try {
@@ -79,6 +62,27 @@ export function useCollaboration(initialWorkspaceId?: string) {
       setLoading(false);
     }
   }, []);
+
+  // Fetch all workspaces
+  const fetchWorkspaces = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await collaborationService.listWorkspaces();
+      if (res.data) {
+        const wsList = res.data.workspaces || [];
+        setWorkspaces(wsList);
+        if (wsList.length > 0) {
+          selectWorkspace(wsList[0].id);
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to fetch workspaces';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectWorkspace]);
 
   // Create workspace
   const createWorkspace = useCallback(async (payload: WorkspaceCreatePayload) => {

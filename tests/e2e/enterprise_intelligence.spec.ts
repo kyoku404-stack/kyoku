@@ -309,7 +309,7 @@ test.describe('Phase 2.5 — Enterprise Intelligence & Predictive Analytics E2E 
     // Verify main page elements
     await expect(page.locator('[data-testid="enterprise-intelligence-page"]')).toBeVisible();
     await expect(page.getByText('Enterprise Intelligence & Predictive Analytics')).toBeVisible();
-    await expect(page.getByText('Phase 2.5')).toBeVisible();
+    await expect(page.locator('[data-testid="enterprise-intelligence-page"]').getByText('Phase 2.5')).toBeVisible();
 
     // Verify Tab buttons
     await expect(page.locator('[data-testid="tab-overview"]')).toBeVisible();
@@ -349,7 +349,7 @@ test.describe('Phase 2.5 — Enterprise Intelligence & Predictive Analytics E2E 
     );
 
     // Verify core KPI indicators
-    await expect(page.getByText('42')).toBeVisible(); // Active contributors
+    await expect(page.locator('[data-testid="kpis-indicator-grid"]').getByText('42')).toBeVisible(); // Active contributors
     await expect(page.getByText('128 docs')).toBeVisible(); // Total documents
     await expect(page.getByText('450')).toBeVisible(); // AI queries
   });

@@ -433,7 +433,7 @@ test.describe('Phase 3.2 — Real-Time Collaboration & Team Workspaces E2E', () 
     await page.goto('/collaboration');
 
     // Workspaces should be rendered in grid
-    await expect(page.getByText('Product Engineering Core')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product Engineering Core', exact: true })).toBeVisible();
     await expect(page.getByText('AI & Data Intelligence')).toBeVisible();
 
     // Open Create Workspace Modal

@@ -34,17 +34,35 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  token: localStorage.getItem('keep_auth_token'),
-  refreshToken: localStorage.getItem('keep_refresh_token'),
-  isAuthenticated: !!localStorage.getItem('keep_auth_token'),
+  user:
+    typeof window !== 'undefined' &&
+    (window as unknown as { __MOCK_USER__?: UserProfileResponse }).__MOCK_USER__
+      ? (window as unknown as { __MOCK_USER__: UserProfileResponse }).__MOCK_USER__
+      : (() => {
+          try {
+            const stored = typeof window !== 'undefined' ? localStorage.getItem('keep_user') : null;
+            return stored ? JSON.parse(stored) : null;
+          } catch {
+            return null;
+          }
+        })(),
+  token: typeof window !== 'undefined' ? localStorage.getItem('keep_auth_token') : null,
+  refreshToken: typeof window !== 'undefined' ? localStorage.getItem('keep_refresh_token') : null,
+  isAuthenticated:
+    typeof window !== 'undefined'
+      ? !!localStorage.getItem('keep_auth_token') ||
+        !!(window as unknown as { __MOCK_USER__?: UserProfileResponse }).__MOCK_USER__
+      : false,
   isLoading: false,
   simulatedRole: null,
 
   setAuth: (user, token, refreshToken) => {
-    localStorage.setItem('keep_auth_token', token);
-    if (refreshToken) {
-      localStorage.setItem('keep_refresh_token', refreshToken);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('keep_auth_token', token);
+      localStorage.setItem('keep_user', JSON.stringify(user));
+      if (refreshToken) {
+        localStorage.setItem('keep_refresh_token', refreshToken);
+      }
     }
     set({
       user,
@@ -57,12 +75,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setUser: (user) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('keep_user', JSON.stringify(user));
+    }
     set({ user });
   },
 
   clearAuth: () => {
-    localStorage.removeItem('keep_auth_token');
-    localStorage.removeItem('keep_refresh_token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('keep_auth_token');
+      localStorage.removeItem('keep_refresh_token');
+      localStorage.removeItem('keep_user');
+      delete (window as unknown as { __MOCK_USER__?: UserProfileResponse }).__MOCK_USER__;
+    }
     set({
       user: null,
       token: null,
@@ -117,7 +142,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initializeSession: async () => {
-    const token = localStorage.getItem('keep_auth_token');
+    if (
+      typeof window !== 'undefined' &&
+      (window as unknown as { __MOCK_USER__?: UserProfileResponse }).__MOCK_USER__
+    ) {
+      set({
+        user: (window as unknown as { __MOCK_USER__: UserProfileResponse }).__MOCK_USER__,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      return;
+    }
+    const token = typeof window !== 'undefined' ? localStorage.getItem('keep_auth_token') : null;
     if (!token) {
       set({ isAuthenticated: false, user: null });
       return;
@@ -127,6 +163,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await authService.getCurrentUser();
       if (response.success && response.data) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('keep_user', JSON.stringify(response.data));
+        }
         set({
           user: response.data,
           isAuthenticated: true,

@@ -201,10 +201,11 @@ export const CreateWorkflowModal: React.FC<CreateWorkflowModalProps> = ({
           {/* Workflow General Info */}
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" htmlFor="workflow-name">
                 Workflow Name *
               </label>
               <input
+                id="workflow-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}

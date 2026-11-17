@@ -259,12 +259,12 @@ test.describe('Phase 3.1 Enterprise Integrations & Connector Framework E2E Workf
     await page.goto('/integrations');
 
     // Title and badge
-    await expect(page.getByText('Enterprise Integrations')).toBeVisible();
-    await expect(page.getByText('Phase 3.1')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Enterprise Integrations' })).toBeVisible();
+    await expect(page.getByRole('main').getByText('Phase 3.1')).toBeVisible();
 
     // Check KPI counters
     await expect(page.getByText('2,260')).toBeVisible(); // 1420 + 840 docs
-    await expect(page.getByText('Active Connectors')).toBeVisible();
+    await expect(page.getByText('Total Connectors')).toBeVisible();
 
     // Verify configured connectors are displayed
     await expect(page.getByText('Corporate Google Drive')).toBeVisible();
@@ -327,7 +327,7 @@ test.describe('Phase 3.1 Enterprise Integrations & Connector Framework E2E Workf
     await page.goto('/integrations');
 
     // Click Sync button on card
-    const syncBtn = page.getByRole('button', { name: /Sync/i }).first();
+    const syncBtn = page.getByRole('main').getByRole('button', { name: /^Sync$/i }).first();
     await syncBtn.click();
 
     // Verify button feedback or toast confirmation
@@ -338,7 +338,7 @@ test.describe('Phase 3.1 Enterprise Integrations & Connector Framework E2E Workf
     await page.goto('/integrations');
 
     // Click Status button
-    const statusBtn = page.getByRole('button', { name: /Status/i }).first();
+    const statusBtn = page.getByRole('main').getByRole('button', { name: /^Status$/i }).first();
     await statusBtn.click();
 
     // Slide-out drawer opens
@@ -357,7 +357,7 @@ test.describe('Phase 3.1 Enterprise Integrations & Connector Framework E2E Workf
     await page.goto('/integrations');
 
     // Switch tab to Sync History / Audit Logs
-    const auditTabBtn = page.getByRole('button', { name: /Sync Audit Logs/i });
+    const auditTabBtn = page.getByRole('button', { name: /Synchronization History/i });
     await auditTabBtn.click();
 
     // Verify audit rows

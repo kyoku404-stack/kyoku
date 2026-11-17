@@ -55,7 +55,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {workspace?.name || 'Team Workspaces'}
+                {workspace?.name ? `Real-Time Collaboration: ${workspace.name}` : 'Real-Time Collaboration & Team Workspaces'}
               </h1>
               {workspace?.is_private ? (
                 <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-medium border border-amber-200/50">
@@ -68,8 +68,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               )}
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {workspace?.description ||
-                'Collaborative team workspaces for projects, discussions, and organizational knowledge.'}
+              Team workspaces, collaborative discussions, live presence & knowledge checkpoints.
             </p>
           </div>
         </div>
@@ -81,7 +80,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             <div className="flex items-center bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm mr-1">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-2 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live:
+                Collaborating Now
               </span>
               <div className="flex -space-x-2 overflow-hidden">
                 {collaborators.slice(0, 4).map((c) => (
@@ -133,7 +132,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/25 transition-all"
           >
             <Plus className="w-4 h-4" />
-            New Workspace
+            Create Workspace
           </button>
         </div>
       </div>

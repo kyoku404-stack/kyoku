@@ -50,9 +50,17 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request Interceptor: Inject JWT token & request tracing headers
+// Request Interceptor: Inject JWT token, normalize paths & request tracing headers
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Prevent double /api/v1 prefixing when baseURL already ends with /api/v1
+    if (
+      config.baseURL?.replace(/\/+$/, '').endsWith('/api/v1') &&
+      config.url?.startsWith('/api/v1/')
+    ) {
+      config.url = config.url.slice('/api/v1'.length);
+    }
+
     const token = localStorage.getItem('keep_auth_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;

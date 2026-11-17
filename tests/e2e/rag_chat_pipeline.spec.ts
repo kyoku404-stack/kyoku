@@ -289,7 +289,7 @@ test.describe('Phase 2.2 — RAG Engine & Semantic Search E2E Workflows', () => 
     // Wait for response
     await expect(page.getByText('Grounded Response')).toBeVisible();
     await expect(page.getByText(/95% confidence/)).toBeVisible();
-    await expect(page.getByText(/according to our enterprise policies/i)).toBeVisible();
+    await expect(page.getByText(/Full-time employees receive 20 days paid leave/i)).toBeVisible();
 
     // Citation Chip verification
     const citationChip = page.getByTestId('citation-chip-0');

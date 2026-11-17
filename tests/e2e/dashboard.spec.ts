@@ -270,7 +270,7 @@ test.describe('Phase 1.7 — Global Workspace Search', () => {
       await page.waitForTimeout(400);
 
       // Verify dropdown container appears
-      const dropdown = page.locator('.shadow-2xl, [role="listbox"], text=Searching across workspace');
+      const dropdown = page.locator('.shadow-2xl, [role="listbox"]').or(page.getByText('Searching across workspace'));
       const hasDropdown = (await dropdown.count()) > 0;
       expect(hasDropdown || (await searchInput.inputValue()) === 'AI').toBe(true);
     }

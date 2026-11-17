@@ -242,9 +242,9 @@ test.describe('Phase 2.1 — AI Ingestion Pipeline Command Center', () => {
     await expect(page.getByText('Phase 2.1').first()).toBeVisible();
 
     // Verify action buttons
-    await expect(page.getByTestId('live-polling-toggle')).toBeVisible();
-    await expect(page.getByTestId('manual-refresh-button')).toBeVisible();
-    await expect(page.getByTestId('start-ingestion-button')).toBeVisible();
+    await expect(page.getByTestId('toggle-polling-btn')).toBeVisible();
+    await expect(page.getByTestId('manual-refresh-btn')).toBeVisible();
+    await expect(page.getByTestId('page-start-ingestion-btn')).toBeVisible();
   });
 
   test('2. Renders executive KPI metrics cards accurately', async ({ page }) => {
@@ -276,8 +276,8 @@ test.describe('Phase 2.1 — AI Ingestion Pipeline Command Center', () => {
     await expect(page.getByText('Corrupted Scanned Invoice.png')).toBeVisible();
 
     // Status badges
-    await expect(page.getByText('COMPLETED')).toBeVisible();
-    await expect(page.getByText('FAILED')).toBeVisible();
+    await expect(page.getByTestId('job-row-job-0001-aaaa-1111').getByText('COMPLETED')).toBeVisible();
+    await expect(page.getByTestId('job-row-job-0003-cccc-3333').getByText('FAILED')).toBeVisible();
 
     // Search filter input
     const searchInput = page.getByTestId('ingestion-search-input');
@@ -299,19 +299,18 @@ test.describe('Phase 2.1 — AI Ingestion Pipeline Command Center', () => {
     await failedTab.click();
 
     // All tab restores full view
-    const allTab = page.getByTestId('filter-tab-all');
+    const allTab = page.getByTestId('filter-tab-all-jobs');
     await expect(allTab).toBeVisible();
     await allTab.click();
   });
 
   test('5. Start Ingestion Modal opens, displays configuration fields, and submits', async ({ page }) => {
-    const startButton = page.getByTestId('start-ingestion-button');
+    const startButton = page.getByTestId('page-start-ingestion-btn');
     await startButton.click();
 
     // Modal dialog visible
-    const modal = page.getByTestId('start-ingestion-modal');
+    const modal = page.getByTestId('start-ingestion-form');
     await expect(modal).toBeVisible();
-    await expect(page.getByTestId('start-ingestion-form')).toBeVisible();
 
     // Fill document ID
     const docInput = page.getByTestId('input-document-id');
@@ -378,6 +377,6 @@ test.describe('Phase 2.1 — AI Ingestion Pipeline Command Center', () => {
     // 3. Mobile Viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await expect(page.locator('#ingestion-dashboard-page')).toBeVisible();
-    await expect(page.getByTestId('start-ingestion-button')).toBeVisible();
+    await expect(page.getByTestId('page-start-ingestion-btn')).toBeVisible();
   });
 });

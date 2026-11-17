@@ -158,9 +158,10 @@ export const WorkflowAutomationPage: React.FC = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2" role="tablist">
         <button
           type="button"
+          role="tab"
           onClick={() => setActiveTab('workflows')}
           className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
             activeTab === 'workflows'
@@ -174,6 +175,7 @@ export const WorkflowAutomationPage: React.FC = () => {
 
         <button
           type="button"
+          role="tab"
           onClick={() => setActiveTab('approvals')}
           className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
             activeTab === 'approvals'
@@ -192,6 +194,7 @@ export const WorkflowAutomationPage: React.FC = () => {
 
         <button
           type="button"
+          role="tab"
           onClick={() => setActiveTab('templates')}
           className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
             activeTab === 'templates'
@@ -205,6 +208,7 @@ export const WorkflowAutomationPage: React.FC = () => {
 
         <button
           type="button"
+          role="tab"
           onClick={() => setActiveTab('analytics')}
           className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
             activeTab === 'analytics'

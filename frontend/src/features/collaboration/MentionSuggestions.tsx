@@ -14,6 +14,7 @@ interface MentionSuggestionsProps {
 }
 
 const COLLABORATOR_SUGGESTIONS = [
+  { username: 'team', name: 'All Workspace Collaborators', role: 'Team Notification' },
   { username: 'john.doe', name: 'John Doe', role: 'Engineering Lead' },
   { username: 'sarah.connor', name: 'Sarah Connor', role: 'Security & Compliance' },
   { username: 'alice.smith', name: 'Alice Smith', role: 'Product Manager' },
@@ -37,7 +38,7 @@ export const MentionSuggestions: React.FC<MentionSuggestionsProps> = ({
     <div className="w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden p-1.5 animate-in fade-in zoom-in-95 duration-100">
       <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
         <AtSign className="w-3 h-3 text-indigo-500" />
-        Mention Collaborator
+        Mention Teammate
       </div>
       <div className="mt-1 space-y-0.5">
         {filtered.map((c) => (

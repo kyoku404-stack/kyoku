@@ -7,7 +7,7 @@ import { ErrorBoundary } from '@/components/feedback/ErrorBoundary';
 
 export const RootLayout: React.FC = () => {
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground overflow-x-hidden">
       <Header />
       <div className="flex flex-1">
         <Sidebar />

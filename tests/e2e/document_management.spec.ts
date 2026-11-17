@@ -247,13 +247,13 @@ test.describe('Document Management & Storage UI (Phase 1.8)', () => {
 
     // Upload modal opens
     await expect(page.getByText(/Upload Documents/i).first()).toBeVisible();
-    await expect(page.getByText(/Drag and drop files here/i)).toBeVisible();
-    await expect(page.locator('#upload-dropzone')).toBeVisible();
+    await expect(page.getByText(/Drag & drop files/i)).toBeVisible();
+    await expect(page.locator('#upload-drop-zone')).toBeVisible();
     await expect(page.locator('#upload-submit-btn')).toBeVisible();
 
     // Press Escape to dismiss modal
     await page.keyboard.press('Escape');
-    await expect(page.locator('#upload-dropzone')).not.toBeVisible();
+    await expect(page.locator('#upload-drop-zone')).not.toBeVisible();
   });
 
   test('5. Preview modal displays document content and allows closing', async ({ page }) => {

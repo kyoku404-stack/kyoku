@@ -103,6 +103,7 @@ export const PluginExecutionLogsDrawer: React.FC<PluginExecutionLogsDrawerProps>
               </button>
               <button
                 onClick={onClose}
+                aria-label="Close Drawer"
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />

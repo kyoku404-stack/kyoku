@@ -50,8 +50,9 @@ export function useWorkflow() {
       setError(null);
       const res = await workflowService.getWorkflows(params);
       if (res.data) {
-        setWorkflows(res.data.items || []);
-        setTotalWorkflows(res.data.total || 0);
+        const items = Array.isArray(res.data) ? res.data : (res.data.items || []);
+        setWorkflows(items);
+        setTotalWorkflows(Array.isArray(res.data) ? res.data.length : (res.data.total || items.length));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch workflows';
@@ -191,7 +192,8 @@ export function useWorkflow() {
     try {
       const res = await workflowService.getPendingApprovals();
       if (res.data) {
-        setPendingApprovals(res.data.items || []);
+        const items = Array.isArray(res.data) ? res.data : (res.data.items || []);
+        setPendingApprovals(items);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch pending approvals';
@@ -228,7 +230,8 @@ export function useWorkflow() {
     try {
       const res = await workflowService.getWorkflowTemplates();
       if (res.data) {
-        setTemplates(res.data.items || []);
+        const items = Array.isArray(res.data) ? res.data : (res.data.items || []);
+        setTemplates(items);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch workflow templates';
@@ -256,8 +259,13 @@ export function useWorkflow() {
     try {
       const res = await workflowService.getNotifications(params);
       if (res.data) {
-        setNotifications(res.data.items || []);
-        setUnreadNotificationsCount(res.data.unread_count || 0);
+        const items = Array.isArray(res.data) ? res.data : (res.data.items || []);
+        setNotifications(items);
+        setUnreadNotificationsCount(
+          Array.isArray(res.data)
+            ? res.data.filter((n: { is_read: boolean }) => !n.is_read).length
+            : (res.data.unread_count || 0)
+        );
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch notifications';
@@ -297,7 +305,8 @@ export function useWorkflow() {
     try {
       const res = await workflowService.getNotificationPreferences();
       if (res.data) {
-        setPreferences(res.data.items || []);
+        const items = Array.isArray(res.data) ? res.data : (res.data.items || []);
+        setPreferences(items);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch notification preferences';

@@ -3,7 +3,7 @@
  * Phase 1.8: Drag-and-drop file uploader with validation, metadata form, and progress tracking.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   X,
   UploadCloud,
@@ -95,6 +95,15 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const newEntries: QueuedFile[] = [];

@@ -83,7 +83,7 @@ async function setupWorkflowApiMocks(page: Page): Promise<void> {
   });
 
   // 2. Workflows List & Create Mock
-  await page.route('**/api/v1/workflows', async (route) => {
+  await page.route(/.*\/api\/v1\/workflows(\?.*)?$/, async (route) => {
     const method = route.request().method();
     if (method === 'GET') {
       await route.fulfill({
@@ -347,7 +347,7 @@ test.describe('Phase 3.4: Workflow Automation, Human-in-the-Loop & Notifications
     // Sidebar should present the Workflows entry
     const sidebarLink = page.locator('nav, aside').locator('a[href="/workflows"]');
     await expect(sidebarLink.first()).toBeVisible();
-    await expect(page.getByText('Workflows & Automation')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Workflow Automation/i })).toBeVisible();
   });
 
   test('02. KPI Metrics Banner: Displays enterprise performance indicators', async ({ page }) => {
@@ -356,7 +356,7 @@ test.describe('Phase 3.4: Workflow Automation, Human-in-the-Loop & Notifications
     // Verify presence of primary metric cards
     await expect(page.getByText('Total Executions')).toBeVisible();
     await expect(page.getByText('Success Rate')).toBeVisible();
-    await expect(page.getByText('Avg Latency')).toBeVisible();
+    await expect(page.getByText('Active Workflows')).toBeVisible();
     await expect(page.getByText('Pending Approvals')).toBeVisible();
     await expect(page.getByText('98.4%')).toBeVisible();
   });
@@ -389,7 +389,7 @@ test.describe('Phase 3.4: Workflow Automation, Human-in-the-Loop & Notifications
     await nameInput.first().fill('Security Incident Auto-Remediation');
 
     // Submit workflow
-    const submitBtn = page.getByRole('button', { name: /save workflow|create/i }).last();
+    const submitBtn = page.getByRole('button', { name: /save.*deploy|save.*workflow|create/i }).last();
     await expect(submitBtn).toBeVisible();
     await submitBtn.click();
   });
@@ -398,7 +398,7 @@ test.describe('Phase 3.4: Workflow Automation, Human-in-the-Loop & Notifications
     await page.goto('/workflows');
 
     // Switch to Approvals tab
-    const approvalsTab = page.getByRole('tab', { name: /approvals/i }).or(page.getByText(/pending approvals/i));
+    const approvalsTab = page.getByRole('tab', { name: /approvals/i });
     if (await approvalsTab.isVisible()) {
       await approvalsTab.click();
       await expect(page.getByText('High-Value Invoice Approval Escalation')).toBeVisible();
@@ -414,8 +414,8 @@ test.describe('Phase 3.4: Workflow Automation, Human-in-the-Loop & Notifications
   test('06. Notification Center: Opens drawer and views notifications', async ({ page }) => {
     await page.goto('/workflows');
 
-    // Open notifications drawer / modal if present
-    const notifBtn = page.getByRole('button', { name: /notifications|inbox/i }).first();
+    // Open notifications drawer / modal via the main area Inbox button
+    const notifBtn = page.getByRole('main').getByRole('button', { name: /inbox/i });
     if (await notifBtn.isVisible()) {
       await notifBtn.click();
       await expect(page.getByText(/approval required/i)).toBeVisible();
@@ -440,7 +440,7 @@ test.describe('Phase 3.4: Workflow Automation, Human-in-the-Loop & Notifications
     await page.goto('/workflows');
 
     // Switch to Templates tab
-    const templatesTab = page.getByRole('tab', { name: /templates/i }).or(page.getByText(/template gallery/i));
+    const templatesTab = page.getByRole('tab', { name: /templates/i });
     if (await templatesTab.isVisible()) {
       await templatesTab.click();
       await expect(page.getByText('Document Review & Human Sign-off')).toBeVisible();
@@ -452,14 +452,14 @@ test.describe('Phase 3.4: Workflow Automation, Human-in-the-Loop & Notifications
     // Desktop Viewport
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/workflows');
-    await expect(page.getByText('Workflows & Automation')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Workflow Automation/i })).toBeVisible();
 
     // Tablet Viewport
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.getByText('Workflows & Automation')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Workflow Automation/i })).toBeVisible();
 
     // Mobile Viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await expect(page.getByText('Workflows & Automation')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Workflow Automation/i })).toBeVisible();
   });
 });

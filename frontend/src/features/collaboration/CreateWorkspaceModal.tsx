@@ -84,7 +84,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Create Team Workspace
+                Create New Workspace
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Establish an isolated collaborative boundary for your team
@@ -108,10 +108,11 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5" htmlFor="workspace-name">
               Workspace Name *
             </label>
             <input
+              id="workspace-name"
               type="text"
               required
               placeholder="e.g. Human Resources, Engineering, Legal"
@@ -122,7 +123,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5" htmlFor="workspace-slug">
               Workspace Slug *
             </label>
             <div className="flex rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950">
@@ -130,6 +131,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
                 /workspaces/
               </span>
               <input
+                id="workspace-slug"
                 type="text"
                 required
                 value={slug}
@@ -140,10 +142,11 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5" htmlFor="workspace-description">
               Description (Optional)
             </label>
             <textarea
+              id="workspace-description"
               rows={2}
               placeholder="What departmental assets and discussions will live here?"
               value={description}

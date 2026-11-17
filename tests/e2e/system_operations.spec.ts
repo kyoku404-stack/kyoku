@@ -110,7 +110,7 @@ async function setupSystemApiMocks(page: Page): Promise<void> {
   });
 
   // 3. Microservices Matrix Mock
-  await page.route('**/api/v1/system/services', async (route) => {
+  await page.route('**/api/v1/system/status', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -195,7 +195,7 @@ async function setupSystemApiMocks(page: Page): Promise<void> {
   });
 
   // 5. Disaster Recovery Backups Mock
-  await page.route('**/api/v1/system/backups', async (route) => {
+  await page.route('**/api/v1/system/backups**', async (route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
         status: 200,
@@ -324,7 +324,7 @@ test.describe('Phase 3.6 — Production Infrastructure & Observability E2E Workf
     await expect(page.getByText('Phase 3.6')).toBeVisible();
 
     // Verify Version header badge
-    await expect(page.getByText(/v3\.6\.0/i)).toBeVisible();
+    await expect(page.getByText(/v3\.6\.0 \(599b185\)/i)).toBeVisible();
   });
 
   test('TC-3.6-02: KPI Telemetry Metrics Banner Display', async ({ page }) => {
@@ -332,14 +332,14 @@ test.describe('Phase 3.6 — Production Infrastructure & Observability E2E Workf
     await page.waitForLoadState('domcontentloaded');
 
     // Health score
-    await expect(page.getByText('98.0%')).toBeVisible();
-    await expect(page.getByText('HEALTHY')).toBeVisible();
+    await expect(page.getByText('Score: 98%')).toBeVisible();
+    await expect(page.getByText('HEALTHY').first()).toBeVisible();
 
     // Compute metrics
     await expect(page.getByText('24.5%')).toBeVisible(); // CPU
     await expect(page.getByText('64.2%')).toBeVisible(); // RAM
     await expect(page.getByText('93.8%')).toBeVisible(); // Cache Hit Ratio
-    await expect(page.getByText('128')).toBeVisible();   // Active connections
+    await expect(page.getByText('95.2')).toBeVisible();  // Throughput RPS
   });
 
   test('TC-3.6-03: Microservices Grid & Diagnostics Slide-over Drawer', async ({ page }) => {
@@ -377,18 +377,18 @@ test.describe('Phase 3.6 — Production Infrastructure & Observability E2E Workf
     await deployBtn.click();
 
     // Verify modal header
-    await expect(page.getByRole('heading', { name: 'Deploy Microservice' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Trigger Service Deployment' })).toBeVisible();
 
     // Fill version
-    const versionInput = page.getByPlaceholder(/e\.g\. v3\.6\.1/i);
-    await versionInput.fill('v3.6.1');
+    const versionInput = page.getByPlaceholder(/e\.g\. 3\.6\.1-patch1/i);
+    await versionInput.fill('3.6.1');
 
     // Submit deployment
-    const submitBtn = page.getByRole('button', { name: /trigger rollout/i });
+    const submitBtn = page.getByRole('button', { name: /execute deployment/i });
     await submitBtn.click();
 
     // Success notification
-    await expect(page.getByText(/deployment triggered successfully/i)).toBeVisible();
+    await expect(page.getByText(/deployment for.*initiated/i)).toBeVisible();
   });
 
   test('TC-3.6-05: Disaster Recovery & Backups Tab Workflow', async ({ page }) => {
@@ -401,20 +401,24 @@ test.describe('Phase 3.6 — Production Infrastructure & Observability E2E Workf
     await drTab.click();
 
     // Verify SLA targets
-    await expect(page.getByText(/60 mins/i)).toBeVisible(); // RPO Target
-    await expect(page.getByText(/240 mins/i)).toBeVisible(); // RTO Target
+    await expect(page.getByText(/60m target/i)).toBeVisible(); // RPO Target
+    await expect(page.getByText(/4 hours/i)).toBeVisible(); // RTO Target
 
     // Verify backup inventory table
     await expect(page.getByText('backup-keep-prod-20261106-020000')).toBeVisible();
-    await expect(page.getByText('VERIFIED')).toBeVisible();
+    await expect(page.getByText('VERIFIED').first()).toBeVisible();
 
-    // Create Backup Snapshot
-    const createBackupBtn = page.getByRole('button', { name: /create backup/i });
-    await expect(createBackupBtn).toBeVisible();
-    await createBackupBtn.click();
+    // Open Create Snapshot modal & initiate backup
+    const createSnapshotBtn = page.getByRole('button', { name: /create snapshot/i });
+    await expect(createSnapshotBtn).toBeVisible();
+    await createSnapshotBtn.click();
+
+    const initiateBtn = page.getByRole('button', { name: /initiate snapshot/i });
+    await expect(initiateBtn).toBeVisible();
+    await initiateBtn.click();
 
     // Verify confirmation
-    await expect(page.getByText(/backup created successfully/i)).toBeVisible();
+    await expect(page.getByText(/backup snapshot created/i)).toBeVisible();
   });
 
   test('TC-3.6-06: Centralized Operational Logs Viewer', async ({ page }) => {
@@ -444,12 +448,13 @@ test.describe('Phase 3.6 — Production Infrastructure & Observability E2E Workf
     // Verify modal
     await expect(page.getByRole('heading', { name: 'Flush Redis Cache' })).toBeVisible();
 
-    // Select flush all or proceed
-    const confirmFlushBtn = page.getByRole('button', { name: /flush selected namespaces/i });
+    // Confirm flush inside modal form
+    const confirmFlushBtn = page.locator('form').getByRole('button', { name: /flush cache/i });
+    await expect(confirmFlushBtn).toBeVisible();
     await confirmFlushBtn.click();
 
     // Verify notification
-    await expect(page.getByText(/cache namespaces flushed successfully/i)).toBeVisible();
+    await expect(page.getByText(/flushed.*cache namespaces/i)).toBeVisible();
   });
 
   test('TC-3.6-08: Responsive Viewport Breakpoints (Desktop, Tablet, Mobile)', async ({ page }) => {

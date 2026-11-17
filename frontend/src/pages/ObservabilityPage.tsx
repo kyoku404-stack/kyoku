@@ -317,26 +317,26 @@ export const ObservabilityPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <SubsystemStatusCard
                 type="database"
-                status={compositeHealth?.dependencies.database?.status || 'healthy'}
-                dbData={dbHealth || compositeHealth?.dependencies.database}
+                status={compositeHealth?.dependencies?.database?.status || 'healthy'}
+                dbData={dbHealth || compositeHealth?.dependencies?.database}
                 loading={loading}
               />
               <SubsystemStatusCard
                 type="storage"
-                status={compositeHealth?.dependencies.storage?.status || 'healthy'}
-                storageData={storageHealth || compositeHealth?.dependencies.storage}
+                status={compositeHealth?.dependencies?.storage?.status || 'healthy'}
+                storageData={storageHealth || compositeHealth?.dependencies?.storage}
                 loading={loading}
               />
               <SubsystemStatusCard
                 type="api"
-                status={compositeHealth?.dependencies.api?.status || 'healthy'}
-                apiData={apiHealth || compositeHealth?.dependencies.api}
+                status={compositeHealth?.dependencies?.api?.status || 'healthy'}
+                apiData={apiHealth || compositeHealth?.dependencies?.api}
                 loading={loading}
               />
               <SubsystemStatusCard
                 type="auth"
-                status={compositeHealth?.dependencies.auth?.status || 'healthy'}
-                authData={authHealth || compositeHealth?.dependencies.auth}
+                status={compositeHealth?.dependencies?.auth?.status || 'healthy'}
+                authData={authHealth || compositeHealth?.dependencies?.auth}
                 loading={loading}
               />
             </div>
@@ -380,26 +380,26 @@ export const ObservabilityPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SubsystemStatusCard
               type="database"
-              status={compositeHealth?.dependencies.database?.status || 'healthy'}
-              dbData={dbHealth || compositeHealth?.dependencies.database}
+              status={compositeHealth?.dependencies?.database?.status || 'healthy'}
+              dbData={dbHealth || compositeHealth?.dependencies?.database}
               loading={loading}
             />
             <SubsystemStatusCard
               type="storage"
-              status={compositeHealth?.dependencies.storage?.status || 'healthy'}
-              storageData={storageHealth || compositeHealth?.dependencies.storage}
+              status={compositeHealth?.dependencies?.storage?.status || 'healthy'}
+              storageData={storageHealth || compositeHealth?.dependencies?.storage}
               loading={loading}
             />
             <SubsystemStatusCard
               type="api"
-              status={compositeHealth?.dependencies.api?.status || 'healthy'}
-              apiData={apiHealth || compositeHealth?.dependencies.api}
+              status={compositeHealth?.dependencies?.api?.status || 'healthy'}
+              apiData={apiHealth || compositeHealth?.dependencies?.api}
               loading={loading}
             />
             <SubsystemStatusCard
               type="auth"
-              status={compositeHealth?.dependencies.auth?.status || 'healthy'}
-              authData={authHealth || compositeHealth?.dependencies.auth}
+              status={compositeHealth?.dependencies?.auth?.status || 'healthy'}
+              authData={authHealth || compositeHealth?.dependencies?.auth}
               loading={loading}
             />
           </div>

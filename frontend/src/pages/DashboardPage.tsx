@@ -192,7 +192,7 @@ export const DashboardPageContent: React.FC = () => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border overflow-x-auto shrink-0">
+        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border overflow-x-auto min-w-0 max-w-full">
           <Button
             size="sm"
             variant={activeTab === 'overview' ? 'secondary' : 'ghost'}

@@ -241,7 +241,7 @@ test.describe('Phase 2.4 — Knowledge Graph & Enterprise Intelligence E2E Suite
 
     // Title and Header Check
     const heading = page.locator('h1');
-    await expect(heading).toContainText('Enterprise Knowledge Graph');
+    await expect(heading).toContainText('Knowledge Graph & Enterprise Intelligence');
 
     // Phase 2.4 Badge
     const phaseBadge = page.getByText('Phase 2.4');
@@ -304,13 +304,18 @@ test.describe('Phase 2.4 — Knowledge Graph & Enterprise Intelligence E2E Suite
     await expect(detailPanel).toContainText('Project Titan');
 
     // Verify blast radius trigger inside panel
-    const blastRadiusBtn = page.getByTestId('trigger-blast-radius-btn');
+    const blastRadiusBtn = page.getByTestId('btn-analyze-impact');
     await expect(blastRadiusBtn).toBeVisible();
   });
 
   test('KG-05: Downstream Impact Blast Radius Analysis View', async ({ page }) => {
     await page.goto('/graph');
     await page.waitForLoadState('networkidle');
+
+    // Select node first to compute impact
+    const titanNode = page.getByTestId('graph-node-node-proj');
+    await expect(titanNode).toBeVisible();
+    await titanNode.click();
 
     // Switch to Impact Tab
     const impactTab = page.getByTestId('tab-impact');
@@ -329,15 +334,15 @@ test.describe('Phase 2.4 — Knowledge Graph & Enterprise Intelligence E2E Suite
     await expertiseTab.click();
 
     // Verify Expertise view rendered
-    const topicInput = page.getByTestId('expertise-topic-input');
+    const topicInput = page.getByTestId('expertise-search-input');
     await expect(topicInput).toBeVisible();
 
     // Search topic
     await topicInput.fill('Cybersecurity');
-    await page.getByTestId('expertise-search-btn').click();
+    await page.keyboard.press('Enter');
 
     // Check specialist card rendered
-    await expect(page.getByTestId('expert-card-u-1')).toBeVisible();
+    await expect(page.getByTestId('expert-card-0')).toBeVisible();
     await expect(page.getByText('Alice Smith')).toBeVisible();
   });
 

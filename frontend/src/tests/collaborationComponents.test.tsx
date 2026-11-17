@@ -63,11 +63,11 @@ describe('Phase 3.2 Collaboration Feature Components', () => {
       />
     );
 
-    expect(screen.getByText('Engineering Workspace')).toBeInTheDocument();
+    expect(screen.getByText(/Engineering Workspace/i)).toBeInTheDocument();
     expect(screen.getByText('Shared')).toBeInTheDocument();
-    expect(screen.getByText('New Workspace')).toBeInTheDocument();
+    expect(screen.getByText('Create Workspace')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('New Workspace'));
+    fireEvent.click(screen.getByText('Create Workspace'));
     expect(onCreate).toHaveBeenCalledTimes(1);
   });
 
@@ -128,7 +128,7 @@ describe('Phase 3.2 Collaboration Feature Components', () => {
       />
     );
 
-    expect(screen.getByText('Create Team Workspace')).toBeInTheDocument();
+    expect(screen.getByText('Create New Workspace')).toBeInTheDocument();
 
     const nameInput = screen.getByPlaceholderText('e.g. Human Resources, Engineering, Legal');
     fireEvent.change(nameInput, { target: { value: 'Product Management' } });
@@ -188,6 +188,6 @@ describe('Phase 3.2 Collaboration Feature Components', () => {
     );
 
     expect(screen.getByText('Initial revision draft')).toBeInTheDocument();
-    expect(screen.getByText('v1')).toBeInTheDocument();
+    expect(screen.getByText('Version 1')).toBeInTheDocument();
   });
 });

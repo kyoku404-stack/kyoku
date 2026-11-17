@@ -41,7 +41,7 @@ export const workflowService = {
    * Create a new automated workflow definition.
    */
   async createWorkflow(payload: WorkflowCreatePayload): Promise<ApiResponse<WorkflowItem>> {
-    const response = await apiClient.post<ApiResponse<WorkflowItem>>('/api/v1/workflows', payload);
+    const response = await apiClient.post<ApiResponse<WorkflowItem>>('/workflows', payload);
     return response.data;
   },
 
@@ -49,7 +49,7 @@ export const workflowService = {
    * List workflows with optional active/trigger filters.
    */
   async getWorkflows(params?: WorkflowQueryParams): Promise<ApiResponse<{ items: WorkflowItem[]; total: number }>> {
-    const response = await apiClient.get<ApiResponse<{ items: WorkflowItem[]; total: number }>>('/api/v1/workflows', {
+    const response = await apiClient.get<ApiResponse<{ items: WorkflowItem[]; total: number }>>('/workflows', {
       params,
     });
     return response.data;
@@ -59,7 +59,7 @@ export const workflowService = {
    * Get workflow details by ID including ordered steps.
    */
   async getWorkflow(id: string): Promise<ApiResponse<WorkflowItem>> {
-    const response = await apiClient.get<ApiResponse<WorkflowItem>>(`/api/v1/workflows/${id}`);
+    const response = await apiClient.get<ApiResponse<WorkflowItem>>(`/workflows/${id}`);
     return response.data;
   },
 
@@ -67,7 +67,7 @@ export const workflowService = {
    * Update a workflow definition.
    */
   async updateWorkflow(id: string, payload: WorkflowUpdatePayload): Promise<ApiResponse<WorkflowItem>> {
-    const response = await apiClient.put<ApiResponse<WorkflowItem>>(`/api/v1/workflows/${id}`, payload);
+    const response = await apiClient.put<ApiResponse<WorkflowItem>>(`/workflows/${id}`, payload);
     return response.data;
   },
 
@@ -75,7 +75,7 @@ export const workflowService = {
    * Delete a workflow definition.
    */
   async deleteWorkflow(id: string): Promise<ApiResponse<{ success: boolean; message: string }>> {
-    const response = await apiClient.delete<ApiResponse<{ success: boolean; message: string }>>(`/api/v1/workflows/${id}`);
+    const response = await apiClient.delete<ApiResponse<{ success: boolean; message: string }>>(`/workflows/${id}`);
     return response.data;
   },
 
@@ -87,7 +87,7 @@ export const workflowService = {
     payload?: { context_data?: Record<string, unknown>; trigger_metadata?: Record<string, unknown> }
   ): Promise<ApiResponse<WorkflowExecutionItem>> {
     const response = await apiClient.post<ApiResponse<WorkflowExecutionItem>>(
-      `/api/v1/workflows/${id}/execute`,
+      `/workflows/${id}/execute`,
       payload || {}
     );
     return response.data;
@@ -101,7 +101,7 @@ export const workflowService = {
     params?: ExecutionQueryParams
   ): Promise<ApiResponse<{ items: WorkflowExecutionItem[]; total: number }>> {
     const response = await apiClient.get<ApiResponse<{ items: WorkflowExecutionItem[]; total: number }>>(
-      `/api/v1/workflows/${id}/executions`,
+      `/workflows/${id}/executions`,
       { params }
     );
     return response.data;
@@ -112,7 +112,7 @@ export const workflowService = {
    */
   async getExecutionDetails(executionId: string): Promise<ApiResponse<WorkflowExecutionItem>> {
     const response = await apiClient.get<ApiResponse<WorkflowExecutionItem>>(
-      `/api/v1/workflows/executions/${executionId}`
+      `/workflows/executions/${executionId}`
     );
     return response.data;
   },
@@ -122,7 +122,7 @@ export const workflowService = {
    */
   async getPendingApprovals(): Promise<ApiResponse<{ items: WorkflowApprovalItem[]; total: number }>> {
     const response = await apiClient.get<ApiResponse<{ items: WorkflowApprovalItem[]; total: number }>>(
-      '/api/v1/workflows/approvals/pending'
+      '/workflows/approvals/pending'
     );
     return response.data;
   },
@@ -135,7 +135,7 @@ export const workflowService = {
     payload: WorkflowApprovalDecisionPayload
   ): Promise<ApiResponse<WorkflowApprovalItem>> {
     const response = await apiClient.post<ApiResponse<WorkflowApprovalItem>>(
-      `/api/v1/workflows/approvals/${approvalId}/decide`,
+      `/workflows/approvals/${approvalId}/decide`,
       payload
     );
     return response.data;
@@ -146,7 +146,7 @@ export const workflowService = {
    */
   async getWorkflowTemplates(): Promise<ApiResponse<{ items: WorkflowTemplateItem[]; total: number }>> {
     const response = await apiClient.get<ApiResponse<{ items: WorkflowTemplateItem[]; total: number }>>(
-      '/api/v1/workflows/templates'
+      '/workflows/templates'
     );
     return response.data;
   },
@@ -155,7 +155,7 @@ export const workflowService = {
    * Get aggregated workflow analytics metrics.
    */
   async getWorkflowAnalytics(): Promise<ApiResponse<WorkflowAnalyticsData>> {
-    const response = await apiClient.get<ApiResponse<WorkflowAnalyticsData>>('/api/v1/workflows/analytics');
+    const response = await apiClient.get<ApiResponse<WorkflowAnalyticsData>>('/workflows/analytics');
     return response.data;
   },
 
@@ -166,7 +166,7 @@ export const workflowService = {
     params?: NotificationQueryParams
   ): Promise<ApiResponse<{ items: NotificationItem[]; total: number; unread_count: number }>> {
     const response = await apiClient.get<ApiResponse<{ items: NotificationItem[]; total: number; unread_count: number }>>(
-      '/api/v1/notifications',
+      '/notifications',
       { params }
     );
     return response.data;
@@ -176,7 +176,7 @@ export const workflowService = {
    * Mark a single notification as read.
    */
   async markNotificationRead(notificationId: string): Promise<ApiResponse<NotificationItem>> {
-    const response = await apiClient.post<ApiResponse<NotificationItem>>(`/api/v1/notifications/${notificationId}/read`);
+    const response = await apiClient.post<ApiResponse<NotificationItem>>(`/notifications/${notificationId}/read`);
     return response.data;
   },
 
@@ -185,7 +185,7 @@ export const workflowService = {
    */
   async markAllNotificationsRead(): Promise<ApiResponse<{ success: boolean; marked_count: number }>> {
     const response = await apiClient.post<ApiResponse<{ success: boolean; marked_count: number }>>(
-      '/api/v1/notifications/read-all'
+      '/notifications/read-all'
     );
     return response.data;
   },
@@ -195,7 +195,7 @@ export const workflowService = {
    */
   async getNotificationPreferences(): Promise<ApiResponse<{ items: NotificationPreferenceItem[] }>> {
     const response = await apiClient.get<ApiResponse<{ items: NotificationPreferenceItem[] }>>(
-      '/api/v1/notifications/preferences'
+      '/notifications/preferences'
     );
     return response.data;
   },
@@ -207,7 +207,7 @@ export const workflowService = {
     payload: NotificationPreferenceUpdatePayload
   ): Promise<ApiResponse<NotificationPreferenceItem>> {
     const response = await apiClient.post<ApiResponse<NotificationPreferenceItem>>(
-      '/api/v1/notifications/preferences',
+      '/notifications/preferences',
       payload
     );
     return response.data;

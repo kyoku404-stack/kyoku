@@ -69,7 +69,7 @@ test.describe('Phase 1.9 Observability — Page Hydration & Navigation', () => {
     const headerTitle = page.locator('h1', { hasText: 'System Observability & Monitoring' });
     await expect(headerTitle).toBeVisible();
 
-    const phaseBadge = page.locator('text=Phase 1.9');
+    const phaseBadge = page.getByRole('main').locator('text=/Phase 1\\.(9|10)/i').first();
     await expect(phaseBadge).toBeVisible();
 
     // Verify Polling Toggle Button
@@ -85,7 +85,7 @@ test.describe('Phase 1.9 Observability — Page Hydration & Navigation', () => {
     await expect(metricsButton).toBeVisible();
 
     // Verify Refresh Button
-    const refreshButton = page.locator('button', { hasText: 'Refresh' });
+    const refreshButton = page.locator('button', { hasText: 'Refresh' }).first();
     await expect(refreshButton).toBeVisible();
   });
 
@@ -98,7 +98,7 @@ test.describe('Phase 1.9 Observability — Page Hydration & Navigation', () => {
     await expect(headerTitle).toBeVisible();
 
     // Verify Platform Status Header
-    const platformStatus = page.locator('text=/System Operational|System Degraded|System Outage/');
+    const platformStatus = page.locator('text=/ALL SYSTEMS OPERATIONAL|SYSTEM DEGRADED|Platform Operational Status/i');
     await expect(platformStatus.first()).toBeVisible();
   });
 
@@ -140,9 +140,9 @@ test.describe('Phase 1.9 Observability — Multi-Tab Inspection', () => {
 
     // Verify Subsystem cards
     await expect(page.locator('text=PostgreSQL 16').first()).toBeVisible();
-    await expect(page.locator('text=Storage Footprint').first()).toBeVisible();
-    await expect(page.locator('text=API Gateway Engine').first()).toBeVisible();
-    await expect(page.locator('text=Authentication Service').first()).toBeVisible();
+    await expect(page.locator('text=Storage & File System').first()).toBeVisible();
+    await expect(page.locator('text=FastAPI Gateway').first()).toBeVisible();
+    await expect(page.locator('text=Authentication & Identity').first()).toBeVisible();
 
     // 3. Telemetry & Trends Tab
     const telemetryTabBtn = page.locator('button', { hasText: 'KPIs & Latency Trends' });
@@ -152,9 +152,9 @@ test.describe('Phase 1.9 Observability — Multi-Tab Inspection', () => {
 
     // Verify telemetry KPI cards
     await expect(page.locator('text=Throughput (RPS)').first()).toBeVisible();
-    await expect(page.locator('text=P95 Response Latency').first()).toBeVisible();
+    await expect(page.locator('text=P95 Latency').first()).toBeVisible();
     await expect(page.locator('text=HTTP Error Rate').first()).toBeVisible();
-    await expect(page.locator('text=Live Latency Trends').first()).toBeVisible();
+    await expect(page.locator('text=Real-Time API Latency Trend').first()).toBeVisible();
 
     // 4. Alerts Tab
     const alertsTabBtn = page.locator('button', { hasText: /Alerts & Triggers/ });
@@ -163,7 +163,7 @@ test.describe('Phase 1.9 Observability — Multi-Tab Inspection', () => {
     await page.waitForTimeout(200);
 
     // Verify Alert Panel
-    await expect(page.locator('text=System Alerts & Warnings').first()).toBeVisible();
+    await expect(page.locator('text=System Alerts & Diagnostic Triggers').first()).toBeVisible();
     const allPill = page.locator('button', { hasText: 'All' }).first();
     await expect(allPill).toBeVisible();
 
@@ -174,8 +174,8 @@ test.describe('Phase 1.9 Observability — Multi-Tab Inspection', () => {
     await page.waitForTimeout(200);
 
     // Verify Structured Log Viewer controls
-    await expect(page.locator('text=Structured Log Explorer').first()).toBeVisible();
-    const searchInput = page.locator('input[placeholder*="Search logs by message"]').first();
+    await expect(page.locator('text=Structured Application Logs & Request Traces').first()).toBeVisible();
+    const searchInput = page.locator('input[placeholder*="Search message"]').first();
     await expect(searchInput).toBeVisible();
   });
 });
@@ -194,15 +194,15 @@ test.describe('Phase 1.9 Observability — Diagnostic Test Suite Modal', () => {
     await diagBtn.click();
 
     // Verify Modal Appears
-    const modalTitle = page.locator('text=Subsystem Health Diagnostics');
+    const modalTitle = page.locator('text=System Health & Diagnostic Runner');
     await expect(modalTitle).toBeVisible();
 
     // Verify Diagnostic run button inside modal
-    const executeBtn = page.locator('button', { hasText: /Run Full Diagnostic Suite|Running Diagnostics/ });
+    const executeBtn = page.locator('button', { hasText: /Run Diagnostics|Running Probes/ }).last();
     await expect(executeBtn).toBeVisible();
 
     // Verify Close button dismisses modal
-    const closeBtn = page.locator('button', { hasText: 'Close' });
+    const closeBtn = page.locator('button', { hasText: 'Close' }).last();
     await expect(closeBtn).toBeVisible();
     await closeBtn.click();
 

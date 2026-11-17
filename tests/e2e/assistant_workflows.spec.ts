@@ -237,28 +237,28 @@ test.describe('Phase 2.3 — Enterprise AI Assistant & Agentic Workflows', () =>
 
     // Header validation
     await expect(page.locator('h1')).toContainText('Enterprise AI Assistant');
-    await expect(page.getByText('Autonomous agentic task execution')).toBeVisible();
+    await expect(page.getByText(/Agentic task execution/i)).toBeVisible();
 
     // Check KPI Banner
     await expect(page.getByText('Active Workflows')).toBeVisible();
-    await expect(page.getByText('Success Rate')).toBeVisible();
     await expect(page.getByText('Pending Approvals')).toBeVisible();
-    await expect(page.getByText('Synthesized Reports')).toBeVisible();
+    await expect(page.getByText('Automated Tasks')).toBeVisible();
+    await expect(page.getByText('Reports Generated')).toBeVisible();
 
     // Quick action buttons
-    await expect(page.getByRole('button', { name: /Run Compliance Audit/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Synthesize Report/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Run Quick Audit/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Generate Report/i })).toBeVisible();
   });
 
   test('02. Conversational Chat & Intent Pipeline', async ({ page }) => {
     await page.goto('/assistant');
 
-    const input = page.getByPlaceholder(/Ask the AI Assistant to plan a workflow/i);
+    const input = page.getByPlaceholder(/Ask a question, request a report/i);
     await expect(input).toBeVisible();
 
     // Type prompt and submit
     await input.fill('Verify security compliance policies');
-    await page.getByRole('button', { name: /Send/i }).click();
+    await page.getByRole('button', { name: /Send Message/i }).click();
 
     // Verify response message and tools used badges
     await expect(page.getByText('I analyzed our repository documents and verified all security policies')).toBeVisible();
@@ -270,7 +270,7 @@ test.describe('Phase 2.3 — Enterprise AI Assistant & Agentic Workflows', () =>
     await page.goto('/assistant');
 
     // Click quick audit action
-    await page.getByRole('button', { name: /Run Compliance Audit/i }).click();
+    await page.getByRole('button', { name: /Run Quick Audit/i }).click();
 
     // Verify DAG Workflow Visualizer shows steps
     await expect(page.getByText('Compliance Audit & Verification')).toBeVisible();
@@ -283,31 +283,32 @@ test.describe('Phase 2.3 — Enterprise AI Assistant & Agentic Workflows', () =>
     await page.goto('/assistant');
 
     // Open report generator
-    await page.getByRole('button', { name: /Synthesize Report/i }).click();
+    await page.getByRole('button', { name: /Generate Report/i }).first().click();
 
     // Verify modal title
     await expect(page.getByText('Enterprise Report Generator')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Generate Report/i })).toBeVisible();
+    const submitBtn = page.locator('form').getByRole('button', { name: /Generate Report/i });
+    await expect(submitBtn).toBeVisible();
 
     // Trigger report synthesis
-    await page.getByRole('button', { name: /Generate Report/i }).click();
+    await submitBtn.click();
 
     // Verify generated report preview
     await expect(page.getByText('# Weekly Operations Briefing')).toBeVisible();
     await expect(page.getByRole('button', { name: /Copy Markdown/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Download .md/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Download/i })).toBeVisible();
   });
 
   test('05. Proactive Recommendations Interaction', async ({ page }) => {
     await page.goto('/assistant');
 
     // Verify proactive recommendation cards
-    await expect(page.getByText('Proactive Recommendations')).toBeVisible();
+    await expect(page.getByText('Proactive AI Recommendations')).toBeVisible();
     await expect(page.getByText('Employee Handbook 2026')).toBeVisible();
     await expect(page.getByText('Remote Equipment Policy')).toBeVisible();
 
     // Test dismissal action on a recommendation
-    const dismissBtn = page.getByRole('button', { name: /Dismiss recommendation Employee Handbook 2026/i });
+    const dismissBtn = page.getByTitle('Dismiss recommendation').first();
     if (await dismissBtn.isVisible()) {
       await dismissBtn.click();
       await expect(page.getByText('Employee Handbook 2026')).not.toBeVisible();
@@ -319,12 +320,12 @@ test.describe('Phase 2.3 — Enterprise AI Assistant & Agentic Workflows', () =>
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/assistant');
     await expect(page.locator('h1')).toContainText('Enterprise AI Assistant');
-    await expect(page.getByPlaceholder(/Ask the AI Assistant/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/Ask a question, request a report/i)).toBeVisible();
 
     // 2. Mobile Viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/assistant');
     await expect(page.locator('h1')).toContainText('Enterprise AI Assistant');
-    await expect(page.getByRole('button', { name: /Run Compliance Audit/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Run Quick Audit/i })).toBeVisible();
   });
 });

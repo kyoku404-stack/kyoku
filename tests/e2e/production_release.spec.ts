@@ -258,7 +258,7 @@ test.describe('Phase 3.7 — Production Release & Quality Assurance E2E', () => 
     await expect(page.getByText('Phase 3.7 (v1.0.0)')).toBeVisible();
 
     // Verify Deploy Release action button is visible
-    await expect(page.getByRole('button', { name: /Deploy Release/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Deploy Release', exact: true })).toBeVisible();
   });
 
   test('2. Pre-Flight Readiness: Verify radial gauge, overall score, and subsystem checkpoints', async ({ page }) => {
@@ -268,13 +268,13 @@ test.describe('Phase 3.7 — Production Release & Quality Assurance E2E', () => 
     await expect(page.getByText('Pre-Flight Release Readiness Gate')).toBeVisible();
     await expect(page.getByText('Ready for Deployment')).toBeVisible();
     await expect(page.getByText('100%')).toBeVisible();
-    await expect(page.getByText('v1.0.0')).toBeVisible();
+    await expect(page.getByText('v1.0.0', { exact: true })).toBeVisible();
 
     // Verify Checkpoints
-    await expect(page.getByText('database migrations')).toBeVisible();
-    await expect(page.getByText('redis cache')).toBeVisible();
-    await expect(page.getByText('vector database')).toBeVisible();
-    await expect(page.getByText('security audit')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'database migrations' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'redis cache' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'vector database' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'security audit' })).toBeVisible();
   });
 
   test('3. Security Audit: Switch tab and verify OWASP Top 10 compliance scorecard', async ({ page }) => {
@@ -295,12 +295,12 @@ test.describe('Phase 3.7 — Production Release & Quality Assurance E2E', () => 
     await page.goto('/system/release');
 
     // Open deployment modal
-    await page.getByRole('button', { name: /Deploy Release/i }).click();
+    await page.getByRole('button', { name: 'Deploy Release', exact: true }).click();
 
     // Verify modal elements
     await expect(page.getByText('Dispatch Production Release')).toBeVisible();
-    await expect(page.getByDisplayValue('1.0.0')).toBeVisible();
-    await expect(page.getByDisplayValue('v1.0.0')).toBeVisible();
+    await expect(page.getByPlaceholder('1.0.0', { exact: true })).toHaveValue('1.0.0');
+    await expect(page.getByPlaceholder('v1.0.0', { exact: true })).toHaveValue('v1.0.0');
 
     // Safety checklist checkbox interaction
     const acknowledgeCheckbox = page.getByText(/I acknowledge that this action will freeze version/i);
@@ -323,7 +323,7 @@ test.describe('Phase 3.7 — Production Release & Quality Assurance E2E', () => 
 
     // Verify Release History elements
     await expect(page.getByText('Release Deployment History')).toBeVisible();
-    await expect(page.getByText('v1.0.0')).toBeVisible();
+    await expect(page.getByText('v1.0.0', { exact: true })).toBeVisible();
     await expect(page.getByText('Version 1.0.0')).toBeVisible();
     await expect(page.getByText('COMPLETED')).toBeVisible();
 

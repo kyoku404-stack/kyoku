@@ -127,4 +127,13 @@ storage/*
 !storage/.gitkeep
 uploads/*
 !uploads/.gitkeep
-
+
+
+# Synthetic Test Data & Browser Control Subagent Testing
+tests/synthetic_data/
+synthetic_data/
+*.synthetic.json
+*.synthetic.csv
+*.synthetic.sqlite
+screenshots/
+visual-regression-diffs/

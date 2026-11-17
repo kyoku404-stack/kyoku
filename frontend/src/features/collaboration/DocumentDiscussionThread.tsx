@@ -94,7 +94,7 @@ export const DocumentDiscussionThread: React.FC<DiscussionThreadProps> = ({
           className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white shadow-sm transition-all"
         >
           <Sparkles className={`w-3.5 h-3.5 ${isSummarizing ? 'animate-spin' : ''}`} />
-          {isSummarizing ? 'Synthesizing...' : 'AI Summarize Thread'}
+          {isSummarizing ? 'Synthesizing...' : 'AI Summarize Discussion'}
         </button>
       </div>
 
@@ -208,7 +208,7 @@ export const DocumentDiscussionThread: React.FC<DiscussionThreadProps> = ({
 
       {/* Main Comment Box for posting new thread */}
       <CommentBox
-        placeholder="Write a comment or question... Type @ to mention a teammate"
+        placeholder="Add a comment or observation... Type @ to mention a teammate"
         onSubmit={async (content, pageNum, highlight) => {
           await onAddComment({
             document_id: documentId,
