@@ -1,10 +1,10 @@
 # KEEP — Project State
 
 ## Current Phase
-Phase 3 — Enterprise Intelligence & Advanced Integration
+Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 3.7 — Final Quality Assurance, Security Audit, Documentation, Sponsor Demonstration & Production Release (100% COMPLETE ✓)
+Phase 4.1 — Multi-Agent Architecture (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -12,14 +12,37 @@ GREEN
 ## Overall Status
 Phase 1 (Phase 1.1 through Phase 1.10) is 100% COMPLETE across all four member roles.
 Phase 2 (Phase 2.1 through Phase 2.5) is 100% COMPLETE across all four member roles.
-Phase 3.1 (Enterprise Integrations & Connector Framework) is 100% COMPLETE across all four member roles.
-Phase 3.2 (Real-Time Collaboration, Team Workspaces & Knowledge Sharing) is 100% COMPLETE across all four member roles.
-Phase 3.3 (Enterprise Security, Compliance, Governance & Data Protection) is 100% COMPLETE across all four member roles.
-Phase 3.4 (Notifications, Workflow Automation & Event-Driven Intelligence) is 100% COMPLETE across all four member roles.
-Phase 3.5 (Plugin SDK, Extension Framework & Developer Ecosystem) is 100% COMPLETE across all four member roles.
-Phase 3.6 (Production Infrastructure, Scalability, Observability & High Availability) is 100% COMPLETE across all four member roles.
-Phase 3.7 (Final Quality Assurance, Security Audit, Documentation, Sponsor Demonstration & Production Release) is 100% COMPLETE across all four member roles.
-**MILESTONE ACHIEVED: Phase 3 (Enterprise Intelligence & Advanced Integration) is 100% COMPLETE across all sub-phases (3.1 - 3.7).**
+Phase 3 (Phase 3.1 through Phase 3.7) is 100% COMPLETE across all four member roles.
+Phase 4.1 (Multi-Agent Architecture) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+
+Phase 4.1 Member 1 (Architecture & Agent Registry) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.1-multi-agent-architecture.md`) with layered architecture diagram, module boundaries, LangGraph adapter seam, security boundaries, and Phase 4.2 readiness criteria.
+- Authored Architecture Decision Records `ADR-068`, `ADR-069`, and `ADR-070` in `docs/decisions/decisions.md`.
+- Updated `docs/api/api-contract.md` with Section 20 documenting `/api/v1/agents` discovery, inspection, contract-validation invoke, and admin status endpoints.
+- Added Phase 4.1 RBAC permissions (`AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE`) to `backend/app/services/ai/interfaces.py`.
+- Implemented `BaseAgent` Protocol (`backend/app/agents/base.py`), `AgentCapability` & `AgentMetadata` (`backend/app/agents/metadata.py`), and `AgentRegistry` (`backend/app/agents/registry.py`).
+- Authored unit tests `tests/unit/test_phase4_1_registry.py` (11 tests, 100% pass).
+
+Phase 4.1 Member 2 (Agent Contracts & Communication) deliverables are COMPLETED:
+- Implemented sanitized error codes and exception hierarchy in `backend/app/agents/errors.py` (`AgentErrorCode`, `AgentErrorDetail`, `sanitize_error_message`, `AgentLayerError` subclasses).
+- Hardened `backend/app/agents/contracts.py` (`AgentRequest`, `AgentContext`, `EvidenceReference`, `AgentResult`, schema versioning `1.0`, example payloads).
+- Implemented inter-agent communication contracts in `backend/app/agents/messages.py` (`AgentMessageEnvelope`, `AgentParticipant`, `AgentHandoffPayload`, `create_reply()` lineage tracking).
+- Authored unit tests `tests/unit/test_phase4_1_contracts.py` (9 tests, 100% pass).
+
+Phase 4.1 Member 3 (Security, Permissions & Governance) deliverables are COMPLETED:
+- Extended `backend/app/services/security/` with `agent_permissions.py` (`build_trusted_agent_context`, `AgentPermissionEvaluator`, `read`/`write`/`sensitive` tier policies) and `agent_policy.py` (`AgentPolicyInterface`, `KeepAgentPolicyEngine`, tenant boundary checks, spoofed-identity rejection, prompt-injection guardrail via Phase 3.3 `DefaultAIGuardrailEngine`, untrusted-content sanitization, tool authorization, audit trail).
+- Authored unit tests `tests/unit/test_phase4_1_security.py` (10 tests, 100% pass).
+
+Phase 4.1 Member 4 (KEEP Integration, Reference Agent & QA) deliverables are COMPLETED:
+- Implemented tenant-scoped KEEP service adapters (`backend/app/agents/adapters/keep_services.py`: `KeepKnowledgeAdapter`, `KeepDocumentAdapter`) and LangGraph adapter seam (`backend/app/agents/adapters/langgraph_adapter.py`: `LangGraphAgentAdapter`).
+- Implemented `ReferenceAgent` (`backend/app/agents/reference_agent.py`) and `KeepAgentService` (`backend/app/agents/service.py`).
+- Initialized lifespan-bound `app.state.agent_registry` and `app.state.agent_policy` in `backend/app/main.py` and mounted `/api/v1/agents` (`backend/app/api/v1/agents.py`) in `backend/app/api/v1/router.py`.
+- Authored integration test suite `tests/integration/test_phase4_1_agent_integration.py` (7 tests, 100% pass).
+- Full verification & Phase 1–3 regression gate: `ruff check backend/ tests/` (0 errors), `pytest tests/unit/` (**471/471 passed**), `tests/integration/test_phase4_1_agent_integration.py` + Phase 1–3 security suites (**47/47 passed**).
+
+---
+
+### Previous Milestone Archive (Phase 3.7)
 
 Phase 3.7 Member 1 (Project Lead & AI Architect) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/final-quality-assurance-security-audit-production-release.md`) detailing the v1.0.0 Production Release Gateway, automated 7-tier pre-flight readiness gate, enterprise security audit framework (OWASP Top 10 + LLM Top 10), immutable SemVer candidate packaging, and Sponsor Demonstration architecture.
