@@ -2224,3 +2224,79 @@ Member 1 implements pre-flight contracts and algorithms. Member 2 exposes readin
 #### Status
 ACCEPTED
 
+
+
+---
+
+### ADR-068: KEEP-Owned Agent Contracts & Protocol Interface vs. LangGraph Adapter Boundary
+
+#### Context
+Phase 4 introduces multi-agent intelligence across 18 sub-phases (`4.1`–`4.18`). Orchestration frameworks such as LangGraph provide state-graph execution and checkpointing, but coupling KEEP's agent registry, RBAC authorization, tenant boundaries, or API schemas directly to third-party framework classes creates brittle upgrades and vendor lock-in.
+
+#### Decision
+1. Define KEEP's canonical agent interface as a `@runtime_checkable` Python `Protocol` (`BaseAgent` in `backend/app/agents/base.py`) requiring only `metadata: AgentMetadata` and `async def invoke(request: AgentRequest, context: AgentContext) -> AgentResult`.
+2. Isolate LangGraph behind a dedicated adapter seam (`backend/app/agents/adapters/langgraph_adapter.py`) implementing `BaseAgent`.
+3. Keep all agent identity, capability declarations, request/result contracts, inter-agent message envelopes, and security policies owned by KEEP under `backend/app/agents/` and `backend/app/services/security/`.
+
+#### Alternatives Considered
+- Inheriting all agents from a LangGraph base class: Rejected — couples unit tests, registry lookup, and security policies to framework internals.
+- Independent agent microservices in Phase 4.1: Rejected — introduces premature network/deployment complexity before runtime semantics are stabilized in Phase 4.2.
+
+#### Reason
+Structural typing via `Protocol` guarantees framework independence, straightforward mockability, and seamless handoff to Phase 4.2's runtime and Phase 4.3's LangGraph orchestration graphs.
+
+#### Impact
+Member 1 owns `base.py`, `metadata.py`, and `registry.py`. Member 2 owns `contracts.py`, `messages.py`, and `errors.py`. Member 4 implements `LangGraphAgentAdapter` and `ReferenceAgent`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-069: Modular In-Memory Agent Registry with Lifespan Dependency Injection
+
+#### Context
+Phase 4.1 needs deterministic registration, lookup, duplicate-ID rejection, capability discovery, and enable/disable controls without introducing premature persistence schemas that belong to Phase 4.2/4.18.
+
+#### Decision
+1. Implement `AgentRegistry` (`backend/app/agents/registry.py`) as an explicit, contract-validating in-memory registry supporting `register`, `unregister`, `get`, `get_metadata`, `enable`, `disable`, `list_agents`, and `find_by_capability`.
+2. Initialize `app.state.agent_registry` inside FastAPI's `lifespan` hook (`backend/app/main.py`) and inject it via FastAPI dependencies (`get_agent_registry`) rather than scattering global singletons.
+3. Enforce authorization-aware listing: disabled or internal agent configurations are hidden from non-admin callers by default.
+
+#### Alternatives Considered
+- Module-level mutable global singleton: Rejected — leaks state across tests and impedes multi-instance isolation.
+- Database-backed versioned release registry in Phase 4.1: Rejected — deferred cleanly to Phase 4.18 per spec scope boundaries.
+
+#### Reason
+Lifespan-bound dependency injection keeps Phase 4.1 lightweight, testable, and cleanly extensible for database-backed release overlays in Phase 4.18.
+
+#### Impact
+Member 1 implements `AgentRegistry`; Member 4 wires lifespan initialization and FastAPI DI in `backend/app/main.py` and `backend/app/api/v1/agents.py`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-070: Zero-Trust Agent Identity Context & Capability Authorization Model
+
+#### Context
+Agents will inspect organizational knowledge, invoke tools, and trigger downstream actions. Declaring capabilities on `AgentMetadata` describes what an agent supports, NOT what a given caller is permitted to execute.
+
+#### Decision
+1. Construct `AgentContext` strictly from KEEP's verified JWT `AuthenticatedUser` (`backend/app/services/security/agent_permissions.py`) with `trusted_source="keep_jwt_auth"`. Client-supplied identity or tenant claims are never trusted.
+2. Categorize every `AgentCapability` by access tier (`read`, `write`, `sensitive`) and evaluate caller permissions through `KeepAgentPolicyEngine` (`backend/app/services/security/agent_policy.py`) mapped onto KEEP's canonical `ROLE_PERMISSIONS` matrix (`AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE`).
+3. Enforce strict tenant boundary isolation on all KEEP service adapters, screen inputs/retrieved excerpts against prompt injection, block unauthorized tool execution, emit structured audit events, and sanitize error details to prevent secret leakage.
+
+#### Alternatives Considered
+- Trusting `AgentMetadata.capabilities` alone as authorization: Rejected — violates least-privilege and allows privilege escalation by low-privileged callers.
+- Creating a parallel standalone `security/` package duplicating Phase 1.6/3.3 RBAC: Rejected — fragments authorization policy and risks tenant isolation drift.
+
+#### Reason
+Extending KEEP's established security layer guarantees uniform RBAC, tenant isolation, and auditability across both human and agentic traffic.
+
+#### Impact
+Member 3 implements `agent_permissions.py` and `agent_policy.py` inside `backend/app/services/security/`; Member 4 enforces the policy engine inside `KeepAgentService` and `/api/v1/agents`.
+
+#### Status
+ACCEPTED

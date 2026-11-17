@@ -9,6 +9,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
+from backend.app.agents.service import build_default_agent_registry
 from backend.app.api.middleware import (
     LoggingMiddleware,
     RequestIDMiddleware,
@@ -21,6 +22,7 @@ from backend.app.core.config import settings
 from backend.app.core.logging import get_logger, setup_logging
 from backend.app.core.metrics import metrics_registry
 from backend.app.db.session import close_async_engine
+from backend.app.services.security.agent_policy import KeepAgentPolicyEngine
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -64,6 +66,10 @@ OPENAPI_TAGS = [
         "name": "Analytics",
         "description": "Enterprise platform usage statistics, operational metrics, and telemetry.",
     },
+    {
+        "name": "Agents",
+        "description": "Phase 4.1 multi-agent discovery, capability metadata, and contract verification endpoints.",
+    },
 ]
 
 
@@ -88,6 +94,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Ensure storage directories exist
     os.makedirs(settings.STORAGE_ROOT, exist_ok=True)
     os.makedirs(settings.UPLOAD_STORAGE_PATH, exist_ok=True)
+
+    # Phase 4.1: Initialize lifespan-bound multi-agent registry and security policy engine
+    if getattr(app.state, "agent_registry", None) is None:
+        app.state.agent_registry = build_default_agent_registry()
+    if getattr(app.state, "agent_policy", None) is None:
+        app.state.agent_policy = KeepAgentPolicyEngine()
+    logger.info(
+        "Initialized KEEP AgentRegistry with %d registered agent(s)",
+        app.state.agent_registry.count(),
+    )
 
     yield
 

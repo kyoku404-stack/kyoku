@@ -6536,3 +6536,89 @@ COMPLETED ✓
 
 #### Required Action for Receiving Agent
 - Review and approve the Phase 3.7 Consolidated Completion Report and authorize merging into the integration baseline.
+
+
+---
+
+### Handoff — Phase 4.1 Stage 1 (Member 1: Architecture & Agent Registry)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 1 (Architecture & Agent Registry Lead)
+- **Target Receiving Agent:** Member 2 (Agent Contracts & Communication)
+- **Branch:** `agent/ai-lead/feature/phase-4.1-multi-agent-architecture`
+
+#### Summary of Completed Work
+1. Authored master Phase 4.1 Architecture Specification in `docs/Architecture/phase-4.1-multi-agent-architecture.md` (layered architecture diagram, module boundaries, LangGraph adapter seam, security invariants, Phase 4.2 readiness).
+2. Added `ADR-068`, `ADR-069`, and `ADR-070` to `docs/decisions/decisions.md`.
+3. Documented Section 20 (`/api/v1/agents`) in `docs/api/api-contract.md`.
+4. Added Phase 4.1 RBAC permissions (`AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE`) in `backend/app/services/ai/interfaces.py`.
+5. Implemented `BaseAgent` protocol (`backend/app/agents/base.py`), `AgentCapability` & `AgentMetadata` (`backend/app/agents/metadata.py`), baseline shared contracts (`backend/app/agents/contracts.py`), and `AgentRegistry` (`backend/app/agents/registry.py`).
+6. Verified `tests/unit/test_phase4_1_registry.py` (11/11 passed) and Ruff (0 errors).
+
+#### Required Action for Member 2
+- Harden `backend/app/agents/contracts.py` (strict identifiers, versioning, warnings, evidence references, secret sanitization).
+- Implement `backend/app/agents/errors.py` and `backend/app/agents/messages.py` (inter-agent communication envelopes).
+- Add comprehensive contract validation & serialization unit tests in `tests/unit/test_phase4_1_contracts.py`.
+
+
+---
+
+### Handoff — Phase 4.1 Stage 2 (Member 2: Agent Contracts & Communication)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 2 (Agent Contracts & Communication Lead)
+- **Target Receiving Agent:** Member 3 (Security, Permissions & Governance)
+- **Branch:** `agent/ai-lead/feature/phase-4.1-multi-agent-architecture`
+
+#### Summary of Completed Work
+1. Implemented `backend/app/agents/errors.py` with `AgentErrorCode`, secret-redacting `sanitize_error_message()`, `AgentErrorDetail`, and typed exception hierarchy (`AgentNotFoundError`, `AgentDisabledError`, `AgentAlreadyRegisteredError`, `AgentContractValidationError`, `AgentAuthorizationError`, `AgentTenantIsolationError`, `AgentPromptInjectionError`).
+2. Hardened `backend/app/agents/contracts.py` with strict Pydantic v2 validation, contract versioning (`SUPPORTED_SCHEMA_VERSIONS = {"1.0"}`), `EvidenceReference`, status consistency checks, failure factory, and example payloads.
+3. Implemented `backend/app/agents/messages.py` with `AgentMessageEnvelope`, `AgentParticipant`, `AgentHandoffPayload`, `MessageType`, `MessagePriority`, and `create_reply()` lineage tracking for Phase 4.3/4.8 readiness.
+4. Upgraded `backend/app/agents/registry.py` to emit typed `Agent*Error` exceptions and re-exported public contracts in `backend/app/agents/__init__.py`.
+5. Verified `tests/unit/test_phase4_1_registry.py` + `tests/unit/test_phase4_1_contracts.py` (20/20 passed) and Ruff (0 errors).
+
+#### Required Action for Member 3
+- Implement `backend/app/services/security/agent_permissions.py` and `backend/app/services/security/agent_policy.py` extending KEEP's existing security module.
+- Enforce trusted `AgentContext` construction from KEEP JWT `AuthenticatedUser`, capability-tier authorization (`read`/`write`/`sensitive`), strict tenant isolation, prompt-injection & untrusted content safeguards, and audit event emission.
+- Add comprehensive security unit tests in `tests/unit/test_phase4_1_security.py`.
+
+
+---
+
+### Handoff — Phase 4.1 Stage 3 (Member 3: Security, Permissions & Governance)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 3 (Security, Permissions & Governance Lead)
+- **Target Receiving Agent:** Member 4 (KEEP Integration, Reference Agent & QA)
+- **Branch:** `agent/ai-lead/feature/phase-4.1-multi-agent-architecture`
+
+#### Summary of Completed Work
+1. Extended KEEP's existing security layer (`backend/app/services/security/`) without duplicating packages:
+   - `backend/app/services/security/agent_permissions.py`: `build_trusted_agent_context()` strictly from KEEP's verified JWT `AuthenticatedUser`, `ACCESS_TIER_REQUIRED_PERMISSIONS`, `AgentPermissionDecision`, and `AgentPermissionEvaluator` (`read` / `write` / `sensitive` tier checks + admin disabled-agent visibility gating).
+   - `backend/app/services/security/agent_policy.py`: `AgentPolicyInterface` protocol, `AgentAuditEvent`, and `KeepAgentPolicyEngine` (trusted context verification, strict tenant boundary enforcement, spoofed `tenant_id`/`user_id` input rejection, prompt-injection screening via KEEP's Phase 3.3 `DefaultAIGuardrailEngine`, untrusted content sanitization, unauthorized tool call denial, and secret-safe audit trail).
+2. Verified `tests/unit/test_phase4_1_security.py` + prior Phase 4.1 unit tests (30/30 passed) and Ruff (0 errors).
+
+#### Required Action for Member 4
+- Implement KEEP service adapters (`backend/app/agents/adapters/keep_services.py`) and LangGraph adapter seam (`backend/app/agents/adapters/langgraph_adapter.py`).
+- Implement `ReferenceAgent` (`backend/app/agents/reference_agent.py`) and `KeepAgentService` (`backend/app/agents/service.py`).
+- Wire `app.state.agent_registry` in `backend/app/main.py` lifespan and expose `/api/v1/agents` via `backend/app/api/v1/agents.py` mounted in `backend/app/api/v1/router.py`.
+- Author integration & regression tests in `tests/integration/test_phase4_1_agent_integration.py` covering all 8 Phase 4.1 Acceptance Checklist items and run full backend verification & Phase 1–3 regression checks.
+
+
+---
+
+### Handoff — Phase 4.1 Stage 4 (Member 4: KEEP Integration, Reference Agent & QA)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 4 (KEEP Integration, Reference Agent & QA Lead)
+- **Target Receiving Agent:** Human Reviewer / Phase 4.2 Execution Lead
+- **Branch:** `agent/ai-lead/feature/phase-4.1-multi-agent-architecture`
+
+#### Summary of Completed Work
+1. Implemented tenant-scoped KEEP service adapters (`backend/app/agents/adapters/keep_services.py`: `KeepKnowledgeAdapter`, `KeepDocumentAdapter`) and LangGraph adapter seam (`backend/app/agents/adapters/langgraph_adapter.py`: `LangGraphRunnable`, `LangGraphAgentAdapter`).
+2. Implemented `ReferenceAgent` (`backend/app/agents/reference_agent.py`) conforming to `BaseAgent` Protocol and `KeepAgentService` (`backend/app/agents/service.py`).
+3. Initialized `app.state.agent_registry` and `app.state.agent_policy` in `backend/app/main.py` lifespan and mounted `/api/v1/agents` (`backend/app/api/v1/agents.py`) in `backend/app/api/v1/router.py` with KEEP JWT auth, RBAC permissions, and canonical `ApiResponse`/`AppException` envelopes.
+4. Authored end-to-end integration test suite (`tests/integration/test_phase4_1_agent_integration.py` — 7/7 passed) covering all 8 Phase 4.1 Acceptance Checklist items, multi-tenant isolation, RBAC boundaries, prompt-injection blocking, and Phase 4.2 LangGraph adapter readiness.
+5. Full empirical verification & regression gate:
+   - `ruff check backend/ tests/`: **0 errors**
+   - `pytest tests/unit/`: **471/471 passed** (30 new Phase 4.1 unit tests + 441 existing)
+   - `pytest tests/integration/test_phase4_1_agent_integration.py` + Phase 1–3 security suites: **47/47 passed** (7 new Phase 4.1 integration + 40 auth/tenant/RBAC regression)
+
+#### Readiness for Phase 4.2
+- `BaseAgent`, `AgentMetadata`, `AgentRegistry`, `AgentRequest`, `AgentContext`, `AgentResult`, `AgentMessageEnvelope`, `KeepAgentPolicyEngine`, and `LangGraphAgentAdapter` are frozen and tested. Phase 4.2 (`Agent Runtime & Execution Engine`) can execute any registered agent without redesigning Phase 4.1.

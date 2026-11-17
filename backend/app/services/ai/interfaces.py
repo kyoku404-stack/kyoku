@@ -158,6 +158,11 @@ class AIPermission(str, Enum):
     RELEASE_VIEW = "release.view"
     RELEASE_DEPLOY = "release.deploy"
 
+    # Phase 4.1 Multi-Agent Architecture & Discovery
+    AGENT_VIEW = "agent.view"
+    AGENT_INVOKE = "agent.invoke"
+    AGENT_MANAGE = "agent.manage"
+
 
 # Hierarchical Permission Mapping (Higher roles inherit lower permissions)
 VIEWER_PERMISSIONS: set[str] = {
@@ -198,6 +203,8 @@ VIEWER_PERMISSIONS: set[str] = {
     AIPermission.SYSTEM_VIEW.value,
     # Phase 3.7 release permissions
     AIPermission.RELEASE_VIEW.value,
+    # Phase 4.1 agent discovery permissions
+    AIPermission.AGENT_VIEW.value,
 }
 
 EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
@@ -228,6 +235,8 @@ EMPLOYEE_PERMISSIONS: set[str] = VIEWER_PERMISSIONS | {
     AIPermission.WORKFLOW_EXECUTE.value,
     # Phase 3.5 plugin permissions
     AIPermission.PLUGIN_EXECUTE.value,
+    # Phase 4.1 agent invocation permissions
+    AIPermission.AGENT_INVOKE.value,
 }
 
 PROJECT_MANAGER_PERMISSIONS: set[str] = EMPLOYEE_PERMISSIONS | {
@@ -298,6 +307,8 @@ ORG_ADMIN_PERMISSIONS: set[str] = PROJECT_MANAGER_PERMISSIONS | {
     AIPermission.SYSTEM_DEPLOY.value,
     # Phase 3.7 release permissions
     AIPermission.RELEASE_DEPLOY.value,
+    # Phase 4.1 agent management permissions
+    AIPermission.AGENT_MANAGE.value,
 }
 
 SUPER_ADMIN_PERMISSIONS: set[str] = ORG_ADMIN_PERMISSIONS | {
