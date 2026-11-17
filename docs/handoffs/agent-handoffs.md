@@ -6536,3 +6536,25 @@ COMPLETED ✓
 
 #### Required Action for Receiving Agent
 - Review and approve the Phase 3.7 Consolidated Completion Report and authorize merging into the integration baseline.
+
+
+---
+
+### Handoff — Phase 4.1 Stage 1 (Member 1: Architecture & Agent Registry)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 1 (Architecture & Agent Registry Lead)
+- **Target Receiving Agent:** Member 2 (Agent Contracts & Communication)
+- **Branch:** `agent/ai-lead/feature/phase-4.1-multi-agent-architecture`
+
+#### Summary of Completed Work
+1. Authored master Phase 4.1 Architecture Specification in `docs/Architecture/phase-4.1-multi-agent-architecture.md` (layered architecture diagram, module boundaries, LangGraph adapter seam, security invariants, Phase 4.2 readiness).
+2. Added `ADR-068`, `ADR-069`, and `ADR-070` to `docs/decisions/decisions.md`.
+3. Documented Section 20 (`/api/v1/agents`) in `docs/api/api-contract.md`.
+4. Added Phase 4.1 RBAC permissions (`AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE`) in `backend/app/services/ai/interfaces.py`.
+5. Implemented `BaseAgent` protocol (`backend/app/agents/base.py`), `AgentCapability` & `AgentMetadata` (`backend/app/agents/metadata.py`), baseline shared contracts (`backend/app/agents/contracts.py`), and `AgentRegistry` (`backend/app/agents/registry.py`).
+6. Verified `tests/unit/test_phase4_1_registry.py` (11/11 passed) and Ruff (0 errors).
+
+#### Required Action for Member 2
+- Harden `backend/app/agents/contracts.py` (strict identifiers, versioning, warnings, evidence references, secret sanitization).
+- Implement `backend/app/agents/errors.py` and `backend/app/agents/messages.py` (inter-agent communication envelopes).
+- Add comprehensive contract validation & serialization unit tests in `tests/unit/test_phase4_1_contracts.py`.

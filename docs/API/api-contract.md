@@ -5002,3 +5002,92 @@ Base Path: `/api/v1`
 }
 ```
 
+
+
+---
+
+## Section 20: Phase 4.1 Multi-Agent Architecture & Discovery API
+
+All Phase 4.1 agent endpoints are mounted under `/api/v1/agents`, authenticated via KEEP Bearer JWT, and return KEEP's canonical `ApiResponse` envelope. Full execution lifecycle tracking, background workers, timeouts, and cancellation are deferred to Phase 4.2.
+
+### 20.1 List Registered Agents
+- **Endpoint:** `GET /api/v1/agents`
+- **Permission:** `agent.view` (`Viewer` and above)
+- **Query Parameters:**
+  - `capability` (`string`, optional): Filter agents declaring a specific capability name.
+  - `include_disabled` (`boolean`, default `false`): Only honored for `OrgAdmin`/`SuperAdmin`; ignored or rejected for non-admins to avoid exposing disabled/internal agent configurations.
+- **Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "message": "Registered agents retrieved successfully.",
+  "data": {
+    "items": [
+      {
+        "agent_id": "reference",
+        "name": "Reference Agent",
+        "version": "1.0.0",
+        "description": "Validates the KEEP agent contract integration.",
+        "capabilities": [
+          {
+            "name": "agent.echo",
+            "description": "Echo validated goal payloads for contract verification.",
+            "access": "read"
+          }
+        ],
+        "enabled": true
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+### 20.2 Inspect Agent Metadata
+- **Endpoint:** `GET /api/v1/agents/{agent_id}`
+- **Permission:** `agent.view`
+- **Responses:** `200 OK` (metadata payload), `404 Not Found` (`AGENT_NOT_FOUND`), `403 Forbidden` (disabled agent inspected by non-admin).
+
+### 20.3 Invoke Registered Agent (Phase 4.1 Contract Verification Endpoint)
+- **Endpoint:** `POST /api/v1/agents/{agent_id}/invoke`
+- **Permission:** `agent.invoke` (`Member` and above) + capability-level policy check via `KeepAgentPolicyEngine`
+- **Security Invariant:** `user_id`, `tenant_id`, and `roles` in `AgentContext` are populated strictly from the verified JWT principal — never from client payload fields.
+- **Request Body:**
+```json
+{
+  "request_id": "req-001",
+  "task_id": "task-001",
+  "goal": "Validate KEEP Phase 4.1 contract integration",
+  "input": {"topic": "architecture"},
+  "correlation_id": "corr-001",
+  "schema_version": "1.0"
+}
+```
+- **Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "message": "Agent invocation completed.",
+  "data": {
+    "agent_id": "reference",
+    "request_id": "req-001",
+    "task_id": "task-001",
+    "correlation_id": "corr-001",
+    "status": "succeeded",
+    "output": {
+      "message": "Agent contract integration is working.",
+      "goal": "Validate KEEP Phase 4.1 contract integration"
+    },
+    "evidence": [],
+    "warnings": [],
+    "error_code": null,
+    "schema_version": "1.0"
+  }
+}
+```
+
+### 20.4 Toggle Agent Enabled Status (Admin)
+- **Endpoint:** `PATCH /api/v1/agents/{agent_id}/status`
+- **Permission:** `agent.manage` (`OrgAdmin` / `SuperAdmin`)
+- **Request Body:** `{ "enabled": false }`
+- **Response (`200 OK`):** Updated `AgentMetadata` envelope.
