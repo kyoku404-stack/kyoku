@@ -6643,3 +6643,23 @@ COMPLETED ✓
 - Implement `SQLAlchemyExecutionRepository` + `InMemoryExecutionRepository` (`backend/app/agents/persistence/execution_repository.py`) with atomic compare-and-set transitions and scoped idempotency uniqueness.
 - Implement `KeepCheckpointStore` (`backend/app/agents/persistence/checkpoints.py`) with tenant isolation & re-authorization.
 - Add persistence, concurrency, and idempotency unit tests in `tests/unit/test_phase4_2_persistence.py`.
+
+
+---
+
+### Handoff — Phase 4.2 Stage 2 (Member 2: Execution State, Persistence & Result Management)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 2 (Persistence Lead)
+- **Target Receiving Agent:** Member 3 (Execution Safety & Resource Control)
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Implemented SQLAlchemy ORM models `AgentExecution` and `AgentCheckpoint` in `backend/app/models/agent_execution.py` and re-exported in `backend/app/models/__init__.py`.
+2. Authored and verified Alembic migration `backend/migrations/versions/2c3d4e5f6a7b_phase_4_2_agent_runtime_executions.py` chained cleanly from `1b2c3d4e5f6a` → `2c3d4e5f6a7b (head)` (`tests/integration/test_db_migrations.py` 4/4 passed).
+3. Implemented `SQLAlchemyExecutionRepository` and `InMemoryExecutionRepository` (`backend/app/agents/persistence/execution_repository.py`) with atomic SQL compare-and-set state transitions, scoped `(tenant_id, requested_by, idempotency_key)` uniqueness, tenant-isolated reads, and stale running discovery.
+4. Implemented `KeepCheckpointStore` (`backend/app/agents/persistence/checkpoints.py`) with strict tenant boundary enforcement.
+5. Verified `tests/unit/test_phase4_2_persistence.py` + `test_phase4_2_runtime_lifecycle.py` (12/12 passed) and Ruff (0 errors).
+
+#### Required Action for Member 3
+- Implement `backend/app/agents/runtime/cancellation.py`, `backend/app/agents/runtime/limits.py`, and `backend/app/agents/runtime/policies.py` (default/max timeouts, cooperative cancellation registry, global/agent/tenant concurrency limits, input size guards, and bounded transient-only retry policy).
+- Add safety & failure-handling unit tests in `tests/unit/test_phase4_2_safety.py`.
