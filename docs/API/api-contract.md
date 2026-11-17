@@ -5091,3 +5091,59 @@ All Phase 4.1 agent endpoints are mounted under `/api/v1/agents`, authenticated 
 - **Permission:** `agent.manage` (`OrgAdmin` / `SuperAdmin`)
 - **Request Body:** `{ "enabled": false }`
 - **Response (`200 OK`):** Updated `AgentMetadata` envelope.
+
+
+---
+
+## Section 21: Phase 4.2 Agent Runtime & Execution Engine API
+
+All Phase 4.2 runtime endpoints are mounted under `/api/v1`, authenticated via KEEP Bearer JWT, strictly tenant-scoped (cross-tenant execution IDs return `404 Not Found` for concealment), and return KEEP's canonical `ApiResponse` envelope.
+
+### 21.1 Submit Agent Execution
+- **Endpoint:** `POST /api/v1/agents/{agent_id}/executions`
+- **Permission:** `agent.invoke` + capability-tier policy check via `KeepAgentPolicyEngine`
+- **Headers:** `Idempotency-Key` (`string`, optional — scoped to `(tenant_id, user_id, key)`)
+- **Request Body:**
+```json
+{
+  "goal": "Summarize approved project documentation",
+  "input": { "project_id": "project-123" },
+  "mode": "async",
+  "timeout_seconds": 30,
+  "requested_capabilities": []
+}
+```
+- **Responses:**
+  - `202 Accepted` (when `mode == "async"`, returns `{ execution_id, status: "pending", status_url, ... }`)
+  - `200 OK` (when `mode == "sync"`, returns completed `ExecutionRecord`)
+  - `409 Conflict` (idempotency fingerprint conflict or disabled agent)
+  - `429 Too Many Requests` (global, per-agent, or per-tenant concurrency limit exceeded)
+
+### 21.2 List Tenant Executions
+- **Endpoint:** `GET /api/v1/executions`
+- **Permission:** `agent.view`
+- **Query Parameters:** `agent_id`, `status`, `limit` (default `50`, max `200`)
+
+### 21.3 Runtime Observability Metrics
+- **Endpoint:** `GET /api/v1/executions/metrics`
+- **Permission:** `agent.view`
+- **Response (`200 OK`):** Aggregated execution counts by status, active count, average/p95 duration, queue wait duration, timeout/cancel/retry counts, output validation failures, and recent sanitized lifecycle events.
+
+### 21.4 Retrieve Execution Status
+- **Endpoint:** `GET /api/v1/executions/{execution_id}`
+- **Permission:** `agent.view` (tenant-scoped; returns `404` for foreign tenants)
+
+### 21.5 Retrieve Completed Execution Result
+- **Endpoint:** `GET /api/v1/executions/{execution_id}/result`
+- **Permission:** `agent.view`
+- **Responses:** `200 OK` (validated output, evidence, warnings, error details), `404 Not Found`, `409 Conflict` (execution still `PENDING` or `RUNNING`).
+
+### 21.6 Cancel Execution
+- **Endpoint:** `POST /api/v1/executions/{execution_id}/cancel`
+- **Permission:** `agent.invoke`
+- **Behavior:** Atomically transitions `PENDING -> CANCELLED`; sets cooperative cancellation signal for `RUNNING`; returns `409 Conflict` if execution is already in a terminal state.
+
+### 21.7 Retry Execution
+- **Endpoint:** `POST /api/v1/executions/{execution_id}/retry`
+- **Permission:** `agent.invoke`
+- **Behavior:** Validates retry eligibility (transient failure / timeout / cancelled within max attempts) and creates a new linked execution record (`attempt_number + 1`, `parent_execution_id = execution_id`). Returns `409 Conflict` if non-retryable or still active.

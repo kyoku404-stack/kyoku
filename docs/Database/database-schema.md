@@ -1733,3 +1733,64 @@ CREATE INDEX idx_security_audit_score ON security_audit_records(overall_score DE
 CREATE INDEX idx_security_audit_created ON security_audit_records(created_at DESC);
 ```
 
+
+
+---
+
+### 3.25 Phase 4.2 — Agent Runtime Executions & Graph Checkpoints
+
+#### Table: `agent_executions`
+Durable execution ledger tracking business-level agent tasks, lifecycle transitions, idempotency, timing metrics, and sanitized outcomes.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal surrogate primary key |
+| `execution_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Public stable execution identifier (`exec_*`) |
+| `task_id` | `VARCHAR(128)` | NOT NULL, INDEX | Logical task identifier shared across retries |
+| `agent_id` | `VARCHAR(64)` | NOT NULL, INDEX | Registered KEEP agent identifier |
+| `agent_version` | `VARCHAR(32)` | NOT NULL | Semantic version captured at submission time |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Verified organization/tenant boundary |
+| `requested_by` | `VARCHAR(128)` | NOT NULL, INDEX | Verified principal user ID |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `PENDING`, `RUNNING`, `SUCCEEDED`, `FAILED`, `TIMED_OUT`, `CANCELLED` |
+| `mode` | `VARCHAR(16)` | NOT NULL | `sync` or `async` |
+| `goal` | `TEXT` | NOT NULL | Validated user goal |
+| `input_json` | `JSONB` | NOT NULL | Validated structured request input |
+| `input_ref` | `VARCHAR(256)` | NULL | Optional external storage reference |
+| `result_json` | `JSONB` | NULL | Validated `AgentResult` payload |
+| `result_ref` | `VARCHAR(256)` | NULL | Optional external result reference |
+| `error_code` | `VARCHAR(128)` | NULL | Machine-readable failure category |
+| `error_message` | `VARCHAR(512)` | NULL | Sanitized, secret-safe error summary |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | End-to-end distributed tracing ID |
+| `attempt_number` | `INTEGER` | NOT NULL, DEFAULT 1 | Monotonic retry attempt counter |
+| `parent_execution_id` | `VARCHAR(128)` | NULL, INDEX | Prior execution ID for linked retry lineage |
+| `idempotency_key` | `VARCHAR(128)` | NULL | Client-supplied idempotency key |
+| `request_fingerprint` | `VARCHAR(64)` | NULL | SHA-256 canonical request fingerprint |
+| `cancel_requested` | `BOOLEAN` | NOT NULL, DEFAULT FALSE | Cooperative cancellation request flag |
+| `cancel_requested_at` | `TIMESTAMPTZ` | NULL | Timestamp when cancellation was requested |
+| `started_at` | `TIMESTAMPTZ` | NULL | Actual worker start timestamp |
+| `completed_at` | `TIMESTAMPTZ` | NULL | Immutable terminal-state timestamp |
+| `deadline_at` | `TIMESTAMPTZ` | NULL | Enforced execution deadline |
+| `duration_ms` | `INTEGER` | NULL | Execution duration in milliseconds |
+| `queue_wait_ms` | `INTEGER` | NULL | Queue latency before start in milliseconds |
+| `checkpoint_thread_id` | `VARCHAR(128)` | NULL | Scoped LangGraph checkpoint thread identifier |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` audit columns |
+
+- **Constraints & Indexes:**
+  - `uq_agent_exec_idempotency`: `UNIQUE (tenant_id, requested_by, idempotency_key)`
+  - `idx_agent_exec_tenant_status`: `(tenant_id, status)`
+  - `idx_agent_exec_tenant_created`: `(tenant_id, created_at)`
+
+#### Table: `agent_checkpoints`
+Stores LangGraph graph state snapshots scoped strictly by tenant and execution ID (separate from business authorization records per ADR-073).
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `checkpoint_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique checkpoint identifier (`chk_*`) |
+| `execution_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owning execution identifier |
+| `thread_id` | `VARCHAR(128)` | NOT NULL, INDEX | Scoped graph thread identifier |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `step_name` | `VARCHAR(128)` | NOT NULL | Graph node/step name |
+| `step_number` | `INTEGER` | NOT NULL | Monotonic step index |
+| `state_json` | `JSONB` | NOT NULL | Serialized graph state snapshot |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
