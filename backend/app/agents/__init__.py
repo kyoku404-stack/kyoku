@@ -4,6 +4,12 @@ Exposes KEEP's canonical agent protocol, metadata, contracts, message envelopes,
 error hierarchy, and registry.
 """
 
+from backend.app.agents.adapters import (
+    KeepDocumentAdapter,
+    KeepKnowledgeAdapter,
+    LangGraphAgentAdapter,
+    LangGraphRunnable,
+)
 from backend.app.agents.base import BaseAgent
 from backend.app.agents.contracts import (
     AGENT_CONTRACT_SCHEMA_VERSION,
@@ -40,7 +46,9 @@ from backend.app.agents.messages import (
     generate_message_id,
 )
 from backend.app.agents.metadata import AgentCapability, AgentMetadata, CapabilityAccess
+from backend.app.agents.reference_agent import ReferenceAgent
 from backend.app.agents.registry import AgentRegistry
+from backend.app.agents.service import KeepAgentService, build_default_agent_registry
 
 __all__ = [
     "AGENT_CONTRACT_SCHEMA_VERSION",
@@ -69,8 +77,15 @@ __all__ = [
     "BaseAgent",
     "CapabilityAccess",
     "EvidenceReference",
+    "KeepAgentService",
+    "KeepDocumentAdapter",
+    "KeepKnowledgeAdapter",
+    "LangGraphAgentAdapter",
+    "LangGraphRunnable",
     "MessagePriority",
     "MessageType",
+    "ReferenceAgent",
+    "build_default_agent_registry",
     "generate_correlation_id",
     "generate_message_id",
     "generate_request_id",
