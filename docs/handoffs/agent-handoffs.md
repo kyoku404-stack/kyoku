@@ -6579,3 +6579,24 @@ COMPLETED ✓
 - Implement `backend/app/services/security/agent_permissions.py` and `backend/app/services/security/agent_policy.py` extending KEEP's existing security module.
 - Enforce trusted `AgentContext` construction from KEEP JWT `AuthenticatedUser`, capability-tier authorization (`read`/`write`/`sensitive`), strict tenant isolation, prompt-injection & untrusted content safeguards, and audit event emission.
 - Add comprehensive security unit tests in `tests/unit/test_phase4_1_security.py`.
+
+
+---
+
+### Handoff — Phase 4.1 Stage 3 (Member 3: Security, Permissions & Governance)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 3 (Security, Permissions & Governance Lead)
+- **Target Receiving Agent:** Member 4 (KEEP Integration, Reference Agent & QA)
+- **Branch:** `agent/ai-lead/feature/phase-4.1-multi-agent-architecture`
+
+#### Summary of Completed Work
+1. Extended KEEP's existing security layer (`backend/app/services/security/`) without duplicating packages:
+   - `backend/app/services/security/agent_permissions.py`: `build_trusted_agent_context()` strictly from KEEP's verified JWT `AuthenticatedUser`, `ACCESS_TIER_REQUIRED_PERMISSIONS`, `AgentPermissionDecision`, and `AgentPermissionEvaluator` (`read` / `write` / `sensitive` tier checks + admin disabled-agent visibility gating).
+   - `backend/app/services/security/agent_policy.py`: `AgentPolicyInterface` protocol, `AgentAuditEvent`, and `KeepAgentPolicyEngine` (trusted context verification, strict tenant boundary enforcement, spoofed `tenant_id`/`user_id` input rejection, prompt-injection screening via KEEP's Phase 3.3 `DefaultAIGuardrailEngine`, untrusted content sanitization, unauthorized tool call denial, and secret-safe audit trail).
+2. Verified `tests/unit/test_phase4_1_security.py` + prior Phase 4.1 unit tests (30/30 passed) and Ruff (0 errors).
+
+#### Required Action for Member 4
+- Implement KEEP service adapters (`backend/app/agents/adapters/keep_services.py`) and LangGraph adapter seam (`backend/app/agents/adapters/langgraph_adapter.py`).
+- Implement `ReferenceAgent` (`backend/app/agents/reference_agent.py`) and `KeepAgentService` (`backend/app/agents/service.py`).
+- Wire `app.state.agent_registry` in `backend/app/main.py` lifespan and expose `/api/v1/agents` via `backend/app/api/v1/agents.py` mounted in `backend/app/api/v1/router.py`.
+- Author integration & regression tests in `tests/integration/test_phase4_1_agent_integration.py` covering all 8 Phase 4.1 Acceptance Checklist items and run full backend verification & Phase 1–3 regression checks.
