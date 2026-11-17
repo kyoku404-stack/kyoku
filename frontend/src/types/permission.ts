@@ -87,6 +87,11 @@ export const Permission = {
   RELEASE_VIEW: 'release.view',
   RELEASE_DEPLOY: 'release.deploy',
 
+  // Multi-Agent Architecture & Runtime (Phase 4.1 & 4.2)
+  AGENT_VIEW: 'agent.view',
+  AGENT_INVOKE: 'agent.invoke',
+  AGENT_MANAGE: 'agent.manage',
+
   // Analytics & Audit
   ANALYTICS_VIEW: 'analytics.view',
   ANALYTICS_EXPORT: 'analytics.export',
@@ -129,6 +134,7 @@ export const VIEWER_PERMISSIONS: Set<string> = new Set([
   Permission.PLUGIN_VIEW,
   Permission.SYSTEM_VIEW,
   Permission.RELEASE_VIEW,
+  Permission.AGENT_VIEW,
 ]);
 
 /**
@@ -146,6 +152,7 @@ export const MEMBER_PERMISSIONS: Set<string> = new Set([
   Permission.WORKFLOW_EXECUTE,
   Permission.NOTIFICATION_MANAGE,
   Permission.PLUGIN_EXECUTE,
+  Permission.AGENT_INVOKE,
 ]);
 
 /**
@@ -193,6 +200,7 @@ export const ORG_ADMIN_PERMISSIONS: Set<string> = new Set([
   Permission.SYSTEM_MANAGE,
   Permission.SYSTEM_DEPLOY,
   Permission.RELEASE_DEPLOY,
+  Permission.AGENT_MANAGE,
 ]);
 
 /**

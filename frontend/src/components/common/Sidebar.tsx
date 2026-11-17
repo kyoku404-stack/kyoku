@@ -121,6 +121,13 @@ const navItems: NavItem[] = [
     requiredPermission: Permission.RELEASE_VIEW,
     badge: 'Phase 3.7',
   },
+  {
+    label: 'Agent Runtime',
+    path: ROUTES.AGENT_RUNTIME,
+    icon: Cpu,
+    requiredPermission: Permission.AGENT_VIEW,
+    badge: 'Phase 4.2',
+  },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
   {

@@ -38,3 +38,4 @@ export * from './pluginService';
 export * from './systemService';
 
 export * from './releaseService';
+export * from './agentRuntimeService';
