@@ -6684,3 +6684,27 @@ COMPLETED ✓
 - Upgrade `backend/app/agents/adapters/langgraph_adapter.py` with `KeepCheckpointStore` integration + deterministic 2-step graph proof-of-concept (`research-graph` agent registered alongside `reference`).
 - Implement `backend/app/api/v1/agent_executions.py`, mount in `backend/app/api/v1/router.py`, and initialize lifespan-managed runtime + worker in `backend/app/main.py`.
 - Author end-to-end integration tests (`tests/integration/test_phase4_2_runtime_integration.py`) proving all 10 Phase 4.2 Acceptance Checklist items and run full backend regression gate.
+
+
+
+---
+
+### Handoff — Phase 4.2 Stage 4 (Member 4: FastAPI Integration, Monitoring & End-to-End QA)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 4 (FastAPI Integration, Monitoring & End-to-End QA Lead)
+- **Target Receiving Agent:** Stage 5 Frontend UI, Vitest & Playwright E2E Lead (`UI_MODE = YES`)
+- **Branch:** `agent/ai-lead/feature/phase-4.2-agent-runtime-execution-engine`
+
+#### Summary of Completed Work
+1. Implemented secret-safe observability & lifecycle metrics collector in `backend/app/agents/observability/telemetry.py` (`ExecutionLifecycleEvent`, `RuntimeMetricsCollector`).
+2. Implemented in-process durable background worker `DurableExecutionWorker` in `backend/app/agents/workers/execution_worker.py` with bounded concurrency and graceful shutdown.
+3. Upgraded `backend/app/agents/adapters/langgraph_adapter.py` with `KeepCheckpointStore` integration, re-authorization checks on checkpoint load/resume, and deterministic 2-step proof-of-concept `TwoStepResearchGraph` (`build_research_graph_agent`, registered as `research-graph` via `build_runtime_agent_registry` while keeping `build_default_agent_registry` backwards-compatible for Phase 4.1).
+4. Exposed all 7 Phase 4.2 REST endpoints in `backend/app/api/v1/agent_executions.py` (`/agents/{agent_id}/executions`, `/executions`, `/executions/metrics`, `/executions/{id}`, `/executions/{id}/result`, `/executions/{id}/cancel`, `/executions/{id}/retry`), mounted in `backend/app/api/v1/router.py`, and initialized via FastAPI lifespan in `backend/app/main.py` with graceful `worker.stop()` on shutdown.
+5. Authored end-to-end integration test suite (`tests/integration/test_phase4_2_runtime_integration.py` — 5/5 passed) covering async/sync execution lifecycle, idempotency deduplication & conflict rejection, cooperative cancellation, retry lineage, timeout handling, LangGraph checkpointing (`research-graph`), cross-tenant isolation, RBAC enforcement, and runtime metrics.
+6. Empirical Backend Verification Gate:
+   - `ruff check backend/ tests/`: **0 errors**
+   - `pytest tests/unit/`: **489/489 passed (100%)**
+   - `pytest` (Phase 4.2 + Phase 4.1 + Alembic migrations + Auth/Tenant/RBAC security suites): **56/56 passed (100%)**
+
+#### Required Action for Stage 5 (UI_MODE = YES)
+- Build the Phase 4.2 Agent Runtime & Execution Engine UI (`AgentRuntimePage`, `RuntimeMetricsBanner`, `ExecuteAgentModal`, `ExecutionListTable`, `ExecutionResultDrawer`), typed client service, custom hook, RBAC permission updates (`AGENT_VIEW`, `AGENT_INVOKE`, `AGENT_MANAGE`), routes (`/agents`, `/agents/runtime`), Sidebar entry, Vitest unit/component tests, and Playwright E2E spec (`tests/e2e/phase4_2_agent_runtime.spec.ts`).

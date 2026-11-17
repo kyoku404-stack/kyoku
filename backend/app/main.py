@@ -9,7 +9,15 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from backend.app.agents.service import build_default_agent_registry
+from backend.app.agents.observability.telemetry import RuntimeMetricsCollector
+from backend.app.agents.persistence.checkpoints import KeepCheckpointStore
+from backend.app.agents.persistence.execution_repository import (
+    SQLAlchemyExecutionRepository,
+)
+from backend.app.agents.runtime.executor import AgentRuntime
+from backend.app.agents.runtime.policies import KeepExecutionPolicy
+from backend.app.agents.service import build_runtime_agent_registry
+from backend.app.agents.workers.execution_worker import DurableExecutionWorker
 from backend.app.api.middleware import (
     LoggingMiddleware,
     RequestIDMiddleware,
@@ -21,7 +29,7 @@ from backend.app.api.v1.health import router as health_router
 from backend.app.core.config import settings
 from backend.app.core.logging import get_logger, setup_logging
 from backend.app.core.metrics import metrics_registry
-from backend.app.db.session import close_async_engine
+from backend.app.db.session import async_session_factory, close_async_engine
 from backend.app.services.security.agent_policy import KeepAgentPolicyEngine
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -95,19 +103,48 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     os.makedirs(settings.STORAGE_ROOT, exist_ok=True)
     os.makedirs(settings.UPLOAD_STORAGE_PATH, exist_ok=True)
 
-    # Phase 4.1: Initialize lifespan-bound multi-agent registry and security policy engine
-    if getattr(app.state, "agent_registry", None) is None:
-        app.state.agent_registry = build_default_agent_registry()
+    # Phase 4.1 / 4.2: Initialize lifespan-bound multi-agent registry, runtime & background worker
     if getattr(app.state, "agent_policy", None) is None:
         app.state.agent_policy = KeepAgentPolicyEngine()
+    if getattr(app.state, "agent_checkpoints", None) is None:
+        app.state.agent_checkpoints = KeepCheckpointStore(
+            session_factory=async_session_factory,
+            policy=app.state.agent_policy,
+        )
+    if getattr(app.state, "agent_registry", None) is None:
+        app.state.agent_registry = build_runtime_agent_registry(
+            checkpoint_store=app.state.agent_checkpoints,
+            policy=app.state.agent_policy,
+        )
+    if getattr(app.state, "execution_repository", None) is None:
+        app.state.execution_repository = SQLAlchemyExecutionRepository(async_session_factory)
+    if getattr(app.state, "execution_policy", None) is None:
+        app.state.execution_policy = KeepExecutionPolicy(security_policy=app.state.agent_policy)
+    if getattr(app.state, "runtime_metrics", None) is None:
+        app.state.runtime_metrics = RuntimeMetricsCollector()
+    if getattr(app.state, "execution_worker", None) is None:
+        app.state.execution_worker = DurableExecutionWorker()
+    if getattr(app.state, "agent_runtime", None) is None:
+        app.state.agent_runtime = AgentRuntime(
+            registry=app.state.agent_registry,
+            repository=app.state.execution_repository,
+            policy=app.state.execution_policy,
+            dispatcher=app.state.execution_worker,
+            observer=app.state.runtime_metrics,
+        )
+    app.state.execution_worker.bind_handler(app.state.agent_runtime.execute_existing)
+    await app.state.execution_worker.start()
     logger.info(
-        "Initialized KEEP AgentRegistry with %d registered agent(s)",
+        "Initialized KEEP AgentRuntime with %d registered agent(s)",
         app.state.agent_registry.count(),
     )
 
     yield
 
     logger.info("Shutting down KEEP Enterprise Platform Backend Engine")
+    worker = getattr(app.state, "execution_worker", None)
+    if worker is not None:
+        await worker.stop()
     # Graceful disposal of database connection pools
     await close_async_engine()
 
