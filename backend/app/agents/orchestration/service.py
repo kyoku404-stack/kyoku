@@ -232,7 +232,7 @@ class KeepOrchestrationService:
             return await self.execute_existing(persisted.workflow_execution_id, context)
 
         if self.dispatcher is not None:
-            await self.dispatcher.enqueue(persisted.workflow_execution_id, context)
+            await self.dispatcher.enqueue(persisted.workflow_execution_id, request, context)
             self.observer.record_event("workflow.queued", record=persisted)
             return persisted
 
@@ -243,6 +243,15 @@ class KeepOrchestrationService:
         self._active_tasks[persisted.workflow_execution_id] = task
         task.add_done_callback(lambda _t: self._active_tasks.pop(persisted.workflow_execution_id, None))
         return persisted
+
+    async def execute_from_worker(
+        self,
+        workflow_execution_id: str,
+        _request: Any,
+        context: AgentContext,
+    ) -> WorkflowExecutionRecord:
+        """Adapter callback matching Phase 4.2 DurableExecutionWorker handler signature."""
+        return await self.execute_existing(workflow_execution_id, context)
 
     async def execute_existing(
         self,
@@ -271,7 +280,12 @@ class KeepOrchestrationService:
         started_at = datetime.now(UTC)
         timeout_seconds = definition.default_timeout_seconds
         if record.deadline_at is not None and not allow_from_recoverable:
-            remaining = (record.deadline_at - started_at).total_seconds()
+            deadline_utc = (
+                record.deadline_at
+                if record.deadline_at.tzinfo is not None
+                else record.deadline_at.replace(tzinfo=UTC)
+            )
+            remaining = (deadline_utc - started_at).total_seconds()
             timeout_seconds = max(0.05, remaining)
         elif allow_from_recoverable:
             record.deadline_at = started_at + timedelta(seconds=definition.default_timeout_seconds)

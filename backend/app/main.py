@@ -10,13 +10,21 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from backend.app.agents.observability.telemetry import RuntimeMetricsCollector
+from backend.app.agents.observability.workflow_tracing import WorkflowMetricsCollector
+from backend.app.agents.orchestration.graphs import build_default_workflow_registry
+from backend.app.agents.orchestration.policies import KeepWorkflowPolicyEngine
+from backend.app.agents.orchestration.service import KeepOrchestrationService
 from backend.app.agents.persistence.checkpoints import KeepCheckpointStore
 from backend.app.agents.persistence.execution_repository import (
     SQLAlchemyExecutionRepository,
 )
+from backend.app.agents.persistence.graph_checkpoints import KeepGraphCheckpointStore
+from backend.app.agents.persistence.workflow_repository import (
+    SQLAlchemyWorkflowRepository,
+)
 from backend.app.agents.runtime.executor import AgentRuntime
 from backend.app.agents.runtime.policies import KeepExecutionPolicy
-from backend.app.agents.service import build_runtime_agent_registry
+from backend.app.agents.service import build_orchestration_agent_registry
 from backend.app.agents.workers.execution_worker import DurableExecutionWorker
 from backend.app.api.middleware import (
     LoggingMiddleware,
@@ -112,7 +120,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             policy=app.state.agent_policy,
         )
     if getattr(app.state, "agent_registry", None) is None:
-        app.state.agent_registry = build_runtime_agent_registry(
+        app.state.agent_registry = build_orchestration_agent_registry(
             checkpoint_store=app.state.agent_checkpoints,
             policy=app.state.agent_policy,
         )
@@ -134,14 +142,45 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
     app.state.execution_worker.bind_handler(app.state.agent_runtime.execute_existing)
     await app.state.execution_worker.start()
+
+    # Phase 4.3: Initialize lifespan-bound multi-agent orchestration engine
+    if getattr(app.state, "workflow_registry", None) is None:
+        app.state.workflow_registry = build_default_workflow_registry(app.state.agent_registry)
+    if getattr(app.state, "workflow_repository", None) is None:
+        app.state.workflow_repository = SQLAlchemyWorkflowRepository(async_session_factory)
+    if getattr(app.state, "graph_checkpoints", None) is None:
+        app.state.graph_checkpoints = KeepGraphCheckpointStore(app.state.agent_checkpoints)
+    if getattr(app.state, "workflow_policy", None) is None:
+        app.state.workflow_policy = KeepWorkflowPolicyEngine(security_policy=app.state.agent_policy)
+    if getattr(app.state, "workflow_metrics", None) is None:
+        app.state.workflow_metrics = WorkflowMetricsCollector()
+    if getattr(app.state, "workflow_worker", None) is None:
+        app.state.workflow_worker = DurableExecutionWorker()
+    if getattr(app.state, "orchestration_service", None) is None:
+        app.state.orchestration_service = KeepOrchestrationService(
+            workflow_registry=app.state.workflow_registry,
+            repository=app.state.workflow_repository,
+            runtime=app.state.agent_runtime,
+            policy=app.state.workflow_policy,
+            security_policy=app.state.agent_policy,
+            checkpoint_store=app.state.graph_checkpoints,
+            dispatcher=app.state.workflow_worker,
+            observer=app.state.workflow_metrics,
+        )
+    app.state.workflow_worker.bind_handler(app.state.orchestration_service.execute_from_worker)
+    await app.state.workflow_worker.start()
     logger.info(
-        "Initialized KEEP AgentRuntime with %d registered agent(s)",
+        "Initialized KEEP AgentRuntime (%d agents) & Orchestration Engine (%d workflows)",
         app.state.agent_registry.count(),
+        app.state.workflow_registry.count(),
     )
 
     yield
 
     logger.info("Shutting down KEEP Enterprise Platform Backend Engine")
+    wf_worker = getattr(app.state, "workflow_worker", None)
+    if wf_worker is not None:
+        await wf_worker.stop()
     worker = getattr(app.state, "execution_worker", None)
     if worker is not None:
         await worker.stop()

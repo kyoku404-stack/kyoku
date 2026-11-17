@@ -1,5 +1,6 @@
 from backend.app.models.activity import ActivityLog
 from backend.app.models.agent_execution import AgentCheckpoint, AgentExecution
+from backend.app.models.agent_workflow import AgentWorkflowExecution, AgentWorkflowStep
 from backend.app.models.analytics import (
     AIRecommendation,
     AnalyticsSnapshot,
@@ -82,6 +83,8 @@ __all__ = [
     "ActivityLog",
     "AgentCheckpoint",
     "AgentExecution",
+    "AgentWorkflowExecution",
+    "AgentWorkflowStep",
     "AnalyticsSnapshot",
     "AssistantApproval",
     "AssistantReport",

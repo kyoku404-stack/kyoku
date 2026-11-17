@@ -370,4 +370,6 @@ class WorkflowObserverInterface(Protocol):
 class WorkflowBackgroundDispatcher(Protocol):
     """Async background dispatcher for non-blocking workflow executions."""
 
-    async def enqueue(self, workflow_execution_id: str, context: AgentContext) -> None: ...
+    async def enqueue(
+        self, workflow_execution_id: str, request: Any, context: AgentContext
+    ) -> None: ...

@@ -49,6 +49,30 @@ def build_runtime_agent_registry(
     return registry
 
 
+def build_orchestration_agent_registry(
+    *,
+    checkpoint_store=None,
+    policy: AgentPolicyInterface | None = None,
+) -> AgentRegistry:
+    """Initializes KEEP's Phase 4.3 registry with Phase 4.1/4.2 agents plus orchestration specialists."""
+    from backend.app.agents.orchestration.specialist_agents import (
+        DecisionExtractionAgent,
+        KnowledgeAnalysisAgent,
+        KnowledgeRetrievalAgent,
+        RiskAnalysisAgent,
+    )
+
+    registry = build_runtime_agent_registry(
+        checkpoint_store=checkpoint_store,
+        policy=policy,
+    )
+    registry.register(KnowledgeRetrievalAgent())
+    registry.register(KnowledgeAnalysisAgent())
+    registry.register(DecisionExtractionAgent())
+    registry.register(RiskAnalysisAgent())
+    return registry
+
+
 class KeepAgentService:
     """Policy-enforced service facade over KEEP's AgentRegistry and BaseAgent contracts."""
 
