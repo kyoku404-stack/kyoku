@@ -6913,3 +6913,19 @@ COMPLETED ✓
 
 #### Readiness for Phase 4.5
 - Phase 4.4 is 100% complete across all 4 member stages. Specialized Phase 4.5 Research Agents can register new capabilities in Phase 4.1 `AgentRegistry` and be automatically selected by `CapabilityAgentSelector` and orchestrated via `PlanOrchestrationBridge` with zero planner redesign.
+
+
+---
+
+### Handoff Entry — Phase 4.5 Member 1: Research Agent Core, Architecture, Contracts & Lifecycle
+
+- **Date:** 2026-11-18
+- **Author:** Member 1 (Research Agent Core)
+- **Branch:** `agent/ai-lead/feature/phase-4.5-research-agents`
+- **Status:** COMPLETED — Ready for Member 2 (Retrieval & Evidence Management)
+
+#### Summary of Deliverables
+- Documented Phase 4.5 architecture (`docs/Architecture/phase-4.5-research-agents.md`), ADRs `ADR-080`–`ADR-082` (`docs/decisions/decisions.md`), API Contract Section 24 (`docs/API/api-contract.md`), and Database Schema Section 3.28 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 7 typed Phase 4.5 error codes & exceptions (`RESEARCH_NOT_FOUND`, `RESEARCH_CITATION_INVALID`, `RESEARCH_RETRIEVAL_UNAVAILABLE`, `RESEARCH_CANCELLED`, `RESEARCH_REPORT_NOT_READY`, `RESEARCH_ACCESS_DENIED`, `RESEARCH_IDEMPOTENCY_CONFLICT`).
+- Implemented `backend/app/agents/research/contracts.py`, `prompts.py`, `agent.py` (`KeepResearchAgent` implementing Phase 4.1 `BaseAgent`), and `research_service.py` (`KeepResearchService` with Phase 4.2 `AgentRuntime` coordination, scoped idempotency, cancellation, and re-authorized `/report` + `/evidence` reads).
+- Verified with `tests/unit/test_phase4_5_research_core.py` (7/7 passed) and Ruff (0 errors).

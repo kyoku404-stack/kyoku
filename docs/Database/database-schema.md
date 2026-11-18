@@ -1944,3 +1944,85 @@ Append-only audit trail recording plan creation, validation, revision reasons, a
 | `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Shared trace correlation ID |
 | `details_json` | `JSONB` | NOT NULL | Secret-safe structured event metadata |
 | `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
+
+
+
+---
+
+### 3.28 Research Agents Tables (Phase 4.5)
+
+#### Table: `research_runs`
+Stores durable metadata, lifecycle status, metrics, and execution links for multi-document research investigations.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `research_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | External investigation ID (`res_*`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary (`organization_id`) |
+| `requested_by` | `VARCHAR(128)` | NOT NULL, INDEX | Authenticated KEEP user ID |
+| `question` | `TEXT` | NOT NULL | User's research question |
+| `scope` | `TEXT` | NULL | Optional investigation scope |
+| `required_output` | `VARCHAR(32)` | NOT NULL | `summary`, `comparison`, `detailed_report` |
+| `max_sources` | `INTEGER` | NOT NULL, DEFAULT `12` | Source retrieval limit (`1..30`) |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `pending`, `running`, `completed`, `partial`, `insufficient_evidence`, `failed`, `cancelled` |
+| `summary` | `TEXT` | NULL | Executive research summary |
+| `contradictions_json` | `JSONB` | NOT NULL | Surfaced cross-source contradictions |
+| `unresolved_questions_json` | `JSONB` | NOT NULL | Explicitly identified evidence gaps |
+| `follow_up_suggestions_json` | `JSONB` | NOT NULL | Suggested follow-up investigations |
+| `correction_attempts` | `INTEGER` | NOT NULL, DEFAULT `0` | Bounded citation correction counter |
+| `sources_retrieved` / `sources_retained` | `INTEGER` | NOT NULL, DEFAULT `0` | Pre/post-deduplication source counts |
+| `retrieval_latency_ms` / `synthesis_latency_ms` | `INTEGER` | NULL | Stage latencies |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Shared trace correlation ID |
+| `plan_id` / `workflow_execution_id` / `agent_execution_id` | `VARCHAR(128)` | NULL, INDEX | Traceability links to Phases 4.4, 4.3, 4.2 |
+| `idempotency_key` / `request_fingerprint` | `VARCHAR(128)` / `VARCHAR(64)` | NULL | Scoped idempotency deduplication |
+| `error_code` / `error_message` | `VARCHAR(128)` / `VARCHAR(512)` | NULL | Sanitized failure metadata |
+| `completed_at` / `created_at` / `updated_at` | `TIMESTAMPTZ` | NULL / NOT NULL | Lifecycle timestamps |
+
+#### Table: `research_evidence`
+Stores deduplicated, provenance-tracked authorized evidence passages collected during a research run.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `record_pk` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique evidence row identifier |
+| `research_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owning investigation ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `evidence_id` | `VARCHAR(64)` | NOT NULL | Investigation-local citation ID (`ev_01`, etc.) |
+| `source_id` | `VARCHAR(128)` | NOT NULL | Original KEEP document/source ID |
+| `source_title` | `VARCHAR(256)` | NOT NULL | Document title |
+| `passage` | `TEXT` | NOT NULL | Sanitized relevant passage excerpt |
+| `retrieval_reference` | `VARCHAR(256)` | NOT NULL | Stable chunk/page retrieval reference |
+| `relevance_score` | `FLOAT` | NULL | Retrieval relevance signal (`0..1`) |
+| `document_date` | `VARCHAR(64)` | NULL | Temporal metadata when available |
+| `access_tier` | `VARCHAR(32)` | NOT NULL, DEFAULT `read` | Document access tier for re-auth checks |
+| `metadata_json` | `JSONB` | NOT NULL | Additional retrieval provenance metadata |
+
+#### Table: `research_findings`
+Stores structured, claim-level findings bound to valid `evidence_id` citations.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `finding_pk` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique finding row ID |
+| `research_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owning investigation ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `finding_id` | `VARCHAR(64)` | NOT NULL | Investigation-local finding ID |
+| `claim` | `TEXT` | NOT NULL | Synthesized claim text |
+| `claim_type` | `VARCHAR(32)` | NOT NULL, DEFAULT `factual` | `factual`, `hypothesis`, `recommendation` |
+| `evidence_ids_json` | `JSONB` | NOT NULL | Cited `evidence_id` references |
+| `confidence` | `VARCHAR(16)` | NOT NULL, DEFAULT `low` | `low`, `medium`, `high` |
+| `limitations_json` | `JSONB` | NOT NULL | Caveats & evidence limitations |
+| `has_contradiction` | `BOOLEAN` | NOT NULL, DEFAULT `false` | Flags conflicting supporting sources |
+
+#### Table: `research_events`
+Append-only audit trail recording lifecycle transitions, citation validations, corrections, and errors.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `event_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique event ID (`resevt_*`) |
+| `research_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owning investigation ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `event_type` | `VARCHAR(64)` | NOT NULL | Lifecycle / validation / correction event type |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Shared trace correlation ID |
+| `details_json` | `JSONB` | NOT NULL | Secret-safe structured metadata |

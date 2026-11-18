@@ -5270,3 +5270,50 @@ All Phase 4.4 planning endpoints are mounted under `/api/v1/plans`, authenticate
 - **Responses:**
   - `200 OK` (`mode == "sync"`) or `202 Accepted` (`mode == "async"`) returning `plan_id`, `workflow_execution_id`, and workflow execution status/result URLs.
   - `409 Conflict` (`PLAN_APPROVAL_REQUIRED` if `approval_required`, or `PLAN_NOT_EXECUTABLE` if `rejected` / `clarification_required` / `draft`).
+
+
+
+---
+
+## Section 24: Phase 4.5 Research Agents API
+
+All Phase 4.5 research endpoints are mounted under `/api/v1/research`, authenticated via KEEP Bearer JWT, strictly tenant-scoped (foreign tenant research IDs return `404 Not Found`), and return KEEP's canonical `ApiResponse` envelope.
+
+### 24.1 Start a Research Investigation
+- **Endpoint:** `POST /api/v1/research`
+- **Permission:** `agent.invoke`
+- **Headers:** `Idempotency-Key` (optional, scoped to `(tenant_id, user_id, key)`)
+- **Request Body:**
+```json
+{
+  "question": "Why did customer complaints increase last quarter and which internal teams were affected?",
+  "scope": "Internal customer feedback and support records",
+  "max_sources": 12,
+  "required_output": "detailed_report",
+  "mode": "sync"
+}
+```
+- **Responses:** `200 OK` (`mode == "sync"`) or `202 Accepted` (`mode == "async"`) with `research_id`, `status`, `agent_execution_id`, `status_url`, `report_url`, and `evidence_url`.
+
+### 24.2 List Tenant Research Investigations
+- **Endpoint:** `GET /api/v1/research`
+- **Permission:** `agent.view`
+- **Query Parameters:** `status` (optional), `limit` (default `50`, max `200`)
+
+### 24.3 Retrieve Investigation Status & Metadata
+- **Endpoint:** `GET /api/v1/research/{research_id}`
+- **Permission:** `agent.view` (tenant-scoped; `404` for foreign tenants)
+
+### 24.4 Retrieve Research Report
+- **Endpoint:** `GET /api/v1/research/{research_id}/report`
+- **Permission:** `agent.view` (re-checks caller access permissions before returning findings & evidence)
+- **Responses:** `200 OK` (completed, partial, or `insufficient_evidence` `ResearchReport`), `404 Not Found`, `409 Conflict` (`RESEARCH_REPORT_NOT_READY` if still running).
+
+### 24.5 Retrieve Authorized Evidence Provenance
+- **Endpoint:** `GET /api/v1/research/{research_id}/evidence`
+- **Permission:** `agent.view` (re-checks caller access permissions and filters restricted passages)
+
+### 24.6 Cancel Research Investigation
+- **Endpoint:** `POST /api/v1/research/{research_id}/cancel`
+- **Permission:** `agent.invoke`
+- **Responses:** `200 OK` (cancelled/signalled), `409 Conflict` (already terminal).
