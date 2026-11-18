@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.3 — Agent Orchestration Engine (100% COMPLETE ✓)
+Phase 4.4 — Planning & Reasoning Engine (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -16,6 +16,34 @@ Phase 3 (Phase 3.1 through Phase 3.7) is 100% COMPLETE across all four member ro
 Phase 4.1 (Multi-Agent Architecture) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.2 (Agent Runtime & Execution Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
 Phase 4.3 (Agent Orchestration Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.4 (Planning & Reasoning Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+
+Phase 4.4 Member 1 (Goal Understanding & Plan Generation) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.4-planning-reasoning-engine.md`), ADRs `ADR-077`–`ADR-079` (`docs/decisions/decisions.md`), REST API Section 23 (`docs/API/api-contract.md`), and Schema Section 3.27 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 9 Phase 4.4 typed error codes and exceptions (`PlanNotFoundError`, `PlanGraphValidationError`, `PlanCapabilityUnavailableError`, `PlanPolicyRejectedError`, `PlanApprovalRequiredError`, `PlanBudgetExceededError`, `PlanReplanLimitExceededError`, `PlanNotExecutableError`).
+- Implemented `backend/app/agents/planning/` (`contracts.py`, `prompts.py`, `goal_parser.py`, `plan_generator.py`) delivering `GoalSpec`, `PlannedTask`, `ExecutionPlan`, ambiguity clarification, and `MockStructuredPlanLLM` stripping any LLM-guessed agent bindings.
+- Authored unit tests `tests/unit/test_phase4_4_plan_generation.py` (5/5 passed).
+
+Phase 4.4 Member 2 (Task Decomposition & Dependency Graph) deliverables are COMPLETED:
+- Implemented `DependencyGraphValidator` & `DependencyGraphResult` (`backend/app/agents/planning/dependency_graph.py`) enforcing DAG acyclicity via Kahn's algorithm, unique IDs/outputs, strict transitive upstream `input_refs`, and deterministic parallel execution layers.
+- Implemented `TaskDecomposer` (`backend/app/agents/planning/decomposer.py`) normalizing tasks and populating `parallel_group` & `execution_layers`.
+- Authored unit tests `tests/unit/test_phase4_4_dependency_graph.py` (4/4 passed).
+
+Phase 4.4 Member 3 (Agent Selection, Policies & Plan Validation) deliverables are COMPLETED:
+- Implemented `CapabilityAgentSelector` (`backend/app/agents/planning/agent_selector.py`) resolving capabilities strictly against live Phase 4.1 `AgentRegistry` (ADR-078).
+- Implemented `KeepPlanningPolicyEngine` & `PlanningBudgetConfig` (`backend/app/agents/planning/policies.py`) and 9-point fail-closed `PlanValidator` (`backend/app/agents/planning/validator.py`) enforcing RBAC capability tiers, prompt-injection screening, resource budgets, evidence ordering, and approval gating (`approval_required`).
+- Authored unit tests `tests/unit/test_phase4_4_validation_security.py` (5/5 passed).
+
+Phase 4.4 Member 4 (FastAPI, Persistence & Integration Testing) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models (`AgentPlan`, `AgentPlanRevision`, `AgentPlanTask`, `AgentPlanEvent`) in `backend/app/models/agent_plan.py` and Alembic migration `4e5f6a7b8c9d_phase_4_4_planning_reasoning_engine.py` (`3d4e5f6a7b8c` → `4e5f6a7b8c9d (head)`).
+- Implemented `InMemoryPlanRepository` & `SQLAlchemyPlanRepository` (`backend/app/agents/persistence/plan_repository.py`), `PlanOrchestrationBridge` (`backend/app/agents/planning/orchestrator_bridge.py`), and `KeepPlanningService` (`backend/app/agents/planning/service.py`).
+- Exposed all 6 Phase 4.4 REST endpoints in `backend/app/api/v1/planning.py` mounted in `backend/app/api/v1/router.py`, and wired lifespan initialization in `backend/app/main.py`.
+- Authored end-to-end integration & demo suite `tests/integration/test_phase4_4_planning_integration.py` (4/4 passed).
+- Empirical Verification Gate: `ruff check backend/ tests/` (**0 errors**), `alembic heads` (**`4e5f6a7b8c9d (head)`**), `pytest tests/unit/` (**518/518 passed**), Phase 4.1–4.4 (CI order) + Alembic Migrations + Auth/Tenant/RBAC Security Regression (**64/64 passed**).
+
+---
+
+### Previous Milestone Archive (Phase 4.3)
 
 Phase 4.3 Member 1 (Orchestration Architecture & Workflow Registry) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/phase-4.3-agent-orchestration-engine.md`), ADRs `ADR-074`–`ADR-076` (`docs/decisions/decisions.md`), REST API Section 22 (`docs/API/api-contract.md`), and Schema Section 3.26 (`docs/Database/database-schema.md`).
