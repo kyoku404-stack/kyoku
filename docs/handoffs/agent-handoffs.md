@@ -6929,3 +6929,19 @@ COMPLETED ✓
 - Extended `backend/app/agents/errors.py` with 7 typed Phase 4.5 error codes & exceptions (`RESEARCH_NOT_FOUND`, `RESEARCH_CITATION_INVALID`, `RESEARCH_RETRIEVAL_UNAVAILABLE`, `RESEARCH_CANCELLED`, `RESEARCH_REPORT_NOT_READY`, `RESEARCH_ACCESS_DENIED`, `RESEARCH_IDEMPOTENCY_CONFLICT`).
 - Implemented `backend/app/agents/research/contracts.py`, `prompts.py`, `agent.py` (`KeepResearchAgent` implementing Phase 4.1 `BaseAgent`), and `research_service.py` (`KeepResearchService` with Phase 4.2 `AgentRuntime` coordination, scoped idempotency, cancellation, and re-authorized `/report` + `/evidence` reads).
 - Verified with `tests/unit/test_phase4_5_research_core.py` (7/7 passed) and Ruff (0 errors).
+
+
+---
+
+### Handoff Entry — Phase 4.5 Member 2: Retrieval & Evidence Management
+
+- **Date:** 2026-11-18
+- **Author:** Member 2 (Retrieval & Evidence Management)
+- **Branch:** `agent/ai-lead/feature/phase-4.5-research-agents`
+- **Status:** COMPLETED — Ready for Member 3 (Cross-Source Synthesis, Citations & Evidence Quality)
+
+#### Summary of Deliverables
+- Implemented `backend/app/agents/research/source_registry.py` (`AuthorizedSourceCatalog` + `ResearchSourceDocument` covering multi-document Q4 complaint investigations, conflicting root-cause assessments with temporal dates, restricted `sensitive` records, and an untrusted prompt-injection fixture).
+- Implemented `backend/app/agents/research/evidence.py` (`normalize_evidence_items`, `sanitize_research_passage`) assigning deterministic `ev_01..ev_NN` citation IDs, deduplicating by `(source_id, normalized_hash)`, and stripping untrusted control directives.
+- Implemented `backend/app/agents/research/retrieval.py` (`KeepResearchRetrievalService`) wrapping KEEP's Phase 4.1 `KeepKnowledgeAdapter` + `KeepAgentPolicyEngine`, enforcing tenant isolation & document access tiers, handling empty evidence cleanly, and mapping backend outages to `ResearchRetrievalUnavailableError`.
+- Verified with `tests/unit/test_phase4_5_retrieval_evidence.py` (5/5 passed; 12/12 Phase 4.5 unit tests total) and Ruff (0 errors).
