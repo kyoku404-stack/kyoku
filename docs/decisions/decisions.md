@@ -2454,3 +2454,55 @@ Complex plans may fail validation or need revision when requirements evolve, and
 
 #### Status
 ACCEPTED
+
+
+---
+
+### ADR-080: Evidence-First Research Synthesis & Claim-Level Citation Integrity
+
+#### Date
+2026-11-18
+
+#### Context
+Polished natural-language summaries can easily conceal fabricated source IDs, weak passage support, or contradictory internal documents. KEEP enterprise research reports must guarantee verifiable provenance for every factual claim.
+
+#### Decision
+1. Represent collected evidence as immutable `EvidenceItem` records carrying retrieval-sourced `source_id`, `retrieval_reference`, `document_date`, and sanitized passages.
+2. Enforce deterministic `validate_evidence_references()` and `ResearchQualityValidator` checks verifying every factual finding cites only collected `evidence_id`s with lexical claim-support grounding, while surfacing conflicting claims explicitly via `ContradictionRecord` entries.
+3. Short-circuit zero-evidence queries to `status="insufficient_evidence"` with zero invented factual findings.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-081: Reusing KEEP Authorized Retrieval via `KeepKnowledgeAdapter`
+
+#### Date
+2026-11-18
+
+#### Context
+Building a separate vector store or bypassing KEEP's Phase 1–4.1 authorization layers inside Research Agents would duplicate infrastructure and risk cross-tenant or restricted-document leakage.
+
+#### Decision
+Implement `KeepResearchRetrievalService` directly over KEEP's `KeepKnowledgeAdapter` and `KeepAgentPolicyEngine`, enforcing tenant boundaries, document access-tier checks, passage deduplication, and untrusted-content prompt-injection sanitization prior to synthesis.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-082: Bounded Self-Correction & Re-Authorized Research Report Access
+
+#### Date
+2026-11-18
+
+#### Context
+Unbounded agent reflection loops waste compute and can stall runtime workers. Additionally, a user's permissions may be downgraded between initiating an investigation and later reading its report or evidence passages.
+
+#### Decision
+1. Bound synthesis citation correction strictly to `max_correction_attempts = 1`; if unresolved after one bounded correction, emit a qualified `partial` report listing explicit `unresolved_questions`.
+2. Re-verify caller RBAC permissions and tenant ownership on every `GET /api/v1/research/{id}/report` and `GET /api/v1/research/{id}/evidence` call, redacting or denying restricted passages if access was revoked.
+
+#### Status
+ACCEPTED

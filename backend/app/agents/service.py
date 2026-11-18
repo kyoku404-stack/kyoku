@@ -10,7 +10,7 @@ Specification: devdocs/p4/p4.1.txt (Sections 2, 5, 9)
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from backend.app.agents.contracts import AgentContext, AgentRequest, AgentResult
 from backend.app.agents.errors import (
@@ -28,6 +28,9 @@ from backend.app.services.security.agent_policy import (
     KeepAgentPolicyEngine,
 )
 
+if TYPE_CHECKING:
+    from backend.app.agents.persistence.checkpoints import KeepCheckpointStore
+
 
 def build_default_agent_registry() -> AgentRegistry:
     """Initializes a fresh AgentRegistry populated with KEEP's Phase 4.1 ReferenceAgent."""
@@ -38,7 +41,7 @@ def build_default_agent_registry() -> AgentRegistry:
 
 def build_runtime_agent_registry(
     *,
-    checkpoint_store=None,
+    checkpoint_store: KeepCheckpointStore | None = None,
     policy: AgentPolicyInterface | None = None,
 ) -> AgentRegistry:
     """Initializes KEEP's Phase 4.2 registry with ReferenceAgent and the LangGraph PoC agent."""
@@ -51,7 +54,7 @@ def build_runtime_agent_registry(
 
 def build_orchestration_agent_registry(
     *,
-    checkpoint_store=None,
+    checkpoint_store: KeepCheckpointStore | None = None,
     policy: AgentPolicyInterface | None = None,
 ) -> AgentRegistry:
     """Initializes KEEP's Phase 4.3 registry with Phase 4.1/4.2 agents plus orchestration specialists."""
@@ -61,6 +64,7 @@ def build_orchestration_agent_registry(
         KnowledgeRetrievalAgent,
         RiskAnalysisAgent,
     )
+    from backend.app.agents.research.graph import build_default_research_agent
 
     registry = build_runtime_agent_registry(
         checkpoint_store=checkpoint_store,
@@ -70,6 +74,7 @@ def build_orchestration_agent_registry(
     registry.register(KnowledgeAnalysisAgent())
     registry.register(DecisionExtractionAgent())
     registry.register(RiskAnalysisAgent())
+    registry.register(build_default_research_agent(policy=policy))
     return registry
 
 
@@ -158,7 +163,7 @@ class KeepAgentService:
         )
 
         try:
-            result = await agent.invoke(effective_request, context)
+            raw_result: Any = await agent.invoke(effective_request, context)
         except AgentLayerError:
             raise
         except (RuntimeError, ValueError, TypeError, KeyError, LookupError, OSError) as exc:
@@ -167,9 +172,9 @@ class KeepAgentService:
                 message=f"Agent '{metadata.agent_id}' encountered an execution error: {exc}",
             )
 
-        if not isinstance(result, AgentResult):
+        if not isinstance(raw_result, AgentResult):
             raise AgentContractValidationError(
-                f"Agent '{metadata.agent_id}' returned invalid result type '{type(result).__name__}'."
+                f"Agent '{metadata.agent_id}' returned invalid result type '{type(raw_result).__name__}'."
             )
 
-        return AgentResult.model_validate(result.model_dump())
+        return AgentResult.model_validate(raw_result.model_dump())

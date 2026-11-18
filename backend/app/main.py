@@ -26,6 +26,10 @@ from backend.app.agents.persistence.workflow_repository import (
 from backend.app.agents.planning.orchestrator_bridge import PlanOrchestrationBridge
 from backend.app.agents.planning.policies import KeepPlanningPolicyEngine
 from backend.app.agents.planning.service import KeepPlanningService
+from backend.app.agents.research.agent import KeepResearchAgent
+from backend.app.agents.research.graph import build_default_research_agent
+from backend.app.agents.research.repository import SQLAlchemyResearchRepository
+from backend.app.agents.research.research_service import KeepResearchService
 from backend.app.agents.runtime.executor import AgentRuntime
 from backend.app.agents.runtime.policies import KeepExecutionPolicy
 from backend.app.agents.service import build_orchestration_agent_registry
@@ -196,8 +200,35 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             orchestrator_bridge=app.state.plan_orchestration_bridge,
             policy_engine=app.state.planning_policy,
         )
+
+    # Phase 4.5: Initialize lifespan-bound Research Agents Service & background worker
+    if getattr(app.state, "research_repository", None) is None:
+        app.state.research_repository = SQLAlchemyResearchRepository(async_session_factory)
+    if getattr(app.state, "research_worker", None) is None:
+        app.state.research_worker = DurableExecutionWorker()
+    if getattr(app.state, "research_service", None) is None:
+        if app.state.agent_registry.is_registered("research_agent"):
+            candidate_research = app.state.agent_registry.get("research_agent")
+            research_agent = (
+                candidate_research
+                if isinstance(candidate_research, KeepResearchAgent)
+                else build_default_research_agent(policy=app.state.agent_policy)
+            )
+        else:
+            research_agent = build_default_research_agent(policy=app.state.agent_policy)
+        app.state.research_service = KeepResearchService(
+            repository=app.state.research_repository,
+            research_agent=research_agent,
+            agent_runtime=app.state.agent_runtime
+            if app.state.agent_registry.is_registered("research_agent")
+            else None,
+            policy=app.state.agent_policy,
+            worker=app.state.research_worker,
+        )
+    await app.state.research_worker.start()
+
     logger.info(
-        "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows) & Planning Engine",
+        "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning & Research Engine",
         app.state.agent_registry.count(),
         app.state.workflow_registry.count(),
     )
@@ -205,6 +236,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     logger.info("Shutting down KEEP Enterprise Platform Backend Engine")
+    res_worker = getattr(app.state, "research_worker", None)
+    if res_worker is not None:
+        await res_worker.stop()
     wf_worker = getattr(app.state, "workflow_worker", None)
     if wf_worker is not None:
         await wf_worker.stop()

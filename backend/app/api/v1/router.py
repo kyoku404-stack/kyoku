@@ -31,6 +31,7 @@ from backend.app.api.v1.plugins import router as plugins_router
 from backend.app.api.v1.projects import router as projects_router
 from backend.app.api.v1.rag import router as rag_router
 from backend.app.api.v1.release import router as release_router
+from backend.app.api.v1.research import router as research_router
 from backend.app.api.v1.search import router as search_router
 from backend.app.api.v1.security import router as security_router
 from backend.app.api.v1.system import router as system_router
@@ -65,6 +66,7 @@ api_v1_router.include_router(agents_router)
 api_v1_router.include_router(agent_executions_router)
 api_v1_router.include_router(agent_workflows_router)
 api_v1_router.include_router(planning_router)
+api_v1_router.include_router(research_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(connectors_router)
 api_v1_router.include_router(collaboration_router)

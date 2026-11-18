@@ -53,6 +53,9 @@ const ProductionReleasePage = lazy(() =>
 const AgentRuntimePage = lazy(() =>
   import('@/pages/AgentRuntimePage').then((m) => ({ default: m.AgentRuntimePage }))
 );
+const ResearchAgentsPage = lazy(() =>
+  import('@/pages/ResearchAgentsPage').then((m) => ({ default: m.ResearchAgentsPage }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -461,6 +464,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <AgentRuntimePage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'agents/research',
+        element: (
+          <SuspenseWrapper>
+            <ResearchAgentsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'research',
+        element: (
+          <SuspenseWrapper>
+            <ResearchAgentsPage />
           </SuspenseWrapper>
         ),
       },

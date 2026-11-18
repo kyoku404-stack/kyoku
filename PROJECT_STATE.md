@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.4 — Planning & Reasoning Engine (100% COMPLETE ✓)
+Phase 4.5 — Research Agents (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -17,6 +17,34 @@ Phase 4.1 (Multi-Agent Architecture) is 100% COMPLETE across all four member rol
 Phase 4.2 (Agent Runtime & Execution Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
 Phase 4.3 (Agent Orchestration Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.4 (Planning & Reasoning Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.5 (Research Agents) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+
+Phase 4.5 Member 1 (Research Agent Core) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.5-research-agents.md`), ADRs `ADR-080`–`ADR-082` (`docs/decisions/decisions.md`), REST API Section 24 (`docs/API/api-contract.md`), and Schema Section 3.28 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 7 Phase 4.5 typed error codes and exceptions (`ResearchNotFoundError`, `ResearchCitationValidationError`, `ResearchRetrievalUnavailableError`, `ResearchCancelledError`, `ResearchReportNotReadyError`, `ResearchAccessDeniedError`, `ResearchIdempotencyConflictError`).
+- Implemented `backend/app/agents/research/` (`contracts.py`, `prompts.py`, `agent.py`, `research_service.py`) delivering `KeepResearchAgent` (`agent_id="research_agent"`, `BaseAgent` compliant), untrusted-source framed prompts, and `KeepResearchService` with Phase 4.2 `AgentRuntime` coordination, scoped idempotency, cancellation, and re-authorized `/report` + `/evidence` reads.
+- Authored unit tests `tests/unit/test_phase4_5_research_core.py` (7/7 passed).
+
+Phase 4.5 Member 2 (Retrieval & Evidence Management) deliverables are COMPLETED:
+- Implemented `AuthorizedSourceCatalog` (`backend/app/agents/research/source_registry.py`), `normalize_evidence_items` & `sanitize_research_passage` (`backend/app/agents/research/evidence.py`), and `KeepResearchRetrievalService` (`backend/app/agents/research/retrieval.py`) wrapping KEEP's `KeepKnowledgeAdapter` + `KeepAgentPolicyEngine` with tenant isolation, access-tier filtering, deduplication, and prompt-injection neutralization.
+- Authored unit tests `tests/unit/test_phase4_5_retrieval_evidence.py` (5/5 passed).
+
+Phase 4.5 Member 3 (Cross-Source Synthesis, Citations & Evidence Quality) deliverables are COMPLETED:
+- Implemented `validate_evidence_references` (`backend/app/agents/research/citations.py`), `ResearchQualityValidator` (`backend/app/agents/research/quality.py`), and `KeepResearchSynthesisService` (`backend/app/agents/research/synthesis.py`) enforcing ADR-080 citation integrity, lexical grounding, explicit contradiction reporting with temporal dates, documented confidence grading (`high`/`medium`/`low`), and bounded single-pass `correct_findings()`.
+- Authored unit tests `tests/unit/test_phase4_5_synthesis_quality.py` (3/3 passed).
+
+Phase 4.5 Member 4 (Controlled Research Graph, Persistence, API, Wiring & QA) deliverables are COMPLETED:
+- Implemented bounded `KeepStateGraph` research pipeline (`backend/app/agents/research/graph.py`: `build_research_graph`, `build_default_research_agent`), ORM models (`backend/app/models/agent_research.py`: `ResearchRun`, `ResearchEvidence`, `ResearchFindingModel`, `ResearchEvent`), Alembic migration `5f6a7b8c9d0e_phase_4_5_research_agents.py` (`4e5f6a7b8c9d` → `5f6a7b8c9d0e (head)`), and `SQLAlchemyResearchRepository` (`backend/app/agents/research/repository.py`).
+- Registered `research_agent` in `build_orchestration_agent_registry()`, added `knowledge.research` routing in `MockStructuredPlanLLM` (proving Phase 4.4 → 4.3 → 4.2 → `research_agent` execution), mounted all 6 endpoints in `backend/app/api/v1/research.py`, and initialized lifespan workers in `backend/app/main.py`.
+- Empirical Backend Verification Gate: `ruff check backend/ tests/` (**0 errors**), `alembic heads` (**`5f6a7b8c9d0e (head)`**), `pytest tests/unit/` (**533/533 passed**), CI-order Phase 4.1–4.5 + Alembic Migrations + Auth/Tenant/RBAC Security Regression (**70/70 passed**).
+
+Phase 4.5 Stage 5 (Frontend UI, Vitest & Playwright E2E) deliverables are COMPLETED:
+- Created typed contracts (`frontend/src/types/research.ts`), API client (`frontend/src/services/researchService.ts`), workspace hook (`frontend/src/hooks/useResearchWorkspace.ts`), modular components (`ResearchLaunchForm`, `ResearchRunList`, `ResearchReportViewer`, `EvidenceProvenanceDrawer`), and `ResearchAgentsPage` mounted at `/agents/research` & `/research` with `Research Agents` (`Phase 4.5`) Sidebar entry.
+- Empirical Frontend Verification Gate: `npm run build` (**0 errors**, 1,891 modules), `npm run lint` (**0 errors, 0 warnings**), `npx vitest run` (**50/50 files, 387/387 tests passed**), Playwright Chromium (`phase4_5_research_agents.spec.ts`: **4/4 passed**).
+
+---
+
+### Previous Milestone Archive (Phase 4.4)
 
 Phase 4.4 Member 1 (Goal Understanding & Plan Generation) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/phase-4.4-planning-reasoning-engine.md`), ADRs `ADR-077`–`ADR-079` (`docs/decisions/decisions.md`), REST API Section 23 (`docs/API/api-contract.md`), and Schema Section 3.27 (`docs/Database/database-schema.md`).

@@ -85,6 +85,14 @@ class AgentErrorCode(str, Enum):
     PLAN_REPLAN_LIMIT_EXCEEDED = "PLAN_REPLAN_LIMIT_EXCEEDED"
     PLAN_NOT_EXECUTABLE = "PLAN_NOT_EXECUTABLE"
     PLAN_CLARIFICATION_REQUIRED = "PLAN_CLARIFICATION_REQUIRED"
+    # Phase 4.5 Research Agents error codes
+    RESEARCH_NOT_FOUND = "RESEARCH_NOT_FOUND"
+    RESEARCH_CITATION_INVALID = "RESEARCH_CITATION_INVALID"
+    RESEARCH_RETRIEVAL_UNAVAILABLE = "RESEARCH_RETRIEVAL_UNAVAILABLE"
+    RESEARCH_CANCELLED = "RESEARCH_CANCELLED"
+    RESEARCH_REPORT_NOT_READY = "RESEARCH_REPORT_NOT_READY"
+    RESEARCH_ACCESS_DENIED = "RESEARCH_ACCESS_DENIED"
+    RESEARCH_IDEMPOTENCY_CONFLICT = "RESEARCH_IDEMPOTENCY_CONFLICT"
 
 
 class AgentErrorDetail(BaseModel):
@@ -567,4 +575,89 @@ class PlanNotExecutableError(AgentLayerError, ValueError):
             code=AgentErrorCode.PLAN_NOT_EXECUTABLE,
             http_status=409,
             details={"plan_id": plan_id, "status": status},
+        )
+
+
+class ResearchNotFoundError(AgentLayerError, LookupError):
+    """Raised when a research_id does not exist or belongs to another tenant."""
+
+    def __init__(self, research_id: str) -> None:
+        super().__init__(
+            f"Research investigation not found: {research_id}",
+            code=AgentErrorCode.RESEARCH_NOT_FOUND,
+            http_status=404,
+            details={"research_id": research_id},
+        )
+
+
+class ResearchCitationValidationError(AgentLayerError, ValueError):
+    """Raised when synthesized research findings reference unknown or fabricated evidence IDs."""
+
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.RESEARCH_CITATION_INVALID,
+            http_status=422,
+            details=details or {},
+        )
+
+
+class ResearchRetrievalUnavailableError(AgentLayerError, RuntimeError):
+    """Raised when KEEP's underlying retrieval service is temporarily unavailable."""
+
+    def __init__(self, message: str = "Knowledge retrieval service is currently unavailable.") -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.RESEARCH_RETRIEVAL_UNAVAILABLE,
+            http_status=503,
+            retryable=True,
+        )
+
+
+class ResearchCancelledError(AgentLayerError):
+    """Raised when a research investigation is cooperatively cancelled."""
+
+    def __init__(self, research_id: str) -> None:
+        super().__init__(
+            f"Research investigation '{research_id}' was cancelled.",
+            code=AgentErrorCode.RESEARCH_CANCELLED,
+            http_status=409,
+            retryable=True,
+            details={"research_id": research_id},
+        )
+
+
+class ResearchReportNotReadyError(AgentLayerError, ValueError):
+    """Raised when requesting a report for an investigation that has not reached a report-ready state."""
+
+    def __init__(self, research_id: str, status: str) -> None:
+        super().__init__(
+            f"Research report for '{research_id}' is not ready yet (current status: {status}).",
+            code=AgentErrorCode.RESEARCH_REPORT_NOT_READY,
+            http_status=409,
+            details={"research_id": research_id, "status": status},
+        )
+
+
+class ResearchAccessDeniedError(AgentLayerError, PermissionError):
+    """Raised when caller permissions deny access to a research run, report, or evidence tier."""
+
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.RESEARCH_ACCESS_DENIED,
+            http_status=403,
+            details=details or {},
+        )
+
+
+class ResearchIdempotencyConflictError(AgentLayerError, ValueError):
+    """Raised when an Idempotency-Key is reused for a different research request payload."""
+
+    def __init__(self, idempotency_key: str) -> None:
+        super().__init__(
+            f"Research Idempotency-Key '{idempotency_key}' was already used with a different request payload.",
+            code=AgentErrorCode.RESEARCH_IDEMPOTENCY_CONFLICT,
+            http_status=409,
+            details={"idempotency_key": idempotency_key},
         )

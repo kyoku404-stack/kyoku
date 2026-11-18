@@ -50,6 +50,8 @@ export const ROUTES = {
   SYSTEM_RELEASE: '/system/release',
   AGENTS: '/agents',
   AGENT_RUNTIME: '/agents/runtime',
+  AGENT_RESEARCH: '/agents/research',
+  RESEARCH: '/research',
   NOT_FOUND: '*',
 } as const;
 
