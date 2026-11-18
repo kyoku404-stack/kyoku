@@ -31,6 +31,7 @@ import {
   Blocks,
   Server,
   Award,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -127,6 +128,13 @@ const navItems: NavItem[] = [
     icon: Cpu,
     requiredPermission: Permission.AGENT_VIEW,
     badge: 'Phase 4.2',
+  },
+  {
+    label: 'Research Agents',
+    path: ROUTES.AGENT_RESEARCH,
+    icon: BookOpen,
+    requiredPermission: Permission.AGENT_VIEW,
+    badge: 'Phase 4.5',
   },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
