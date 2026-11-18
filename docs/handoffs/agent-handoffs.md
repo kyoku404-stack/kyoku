@@ -6825,3 +6825,24 @@ COMPLETED ✓
 
 #### Readiness for Phase 4.4
 - `WorkflowDefinition`, `WorkflowRegistry`, `WorkflowState`, `KeepStateGraph`, `RuntimeNodeInvoker`, `KeepWorkflowPolicyEngine`, `WorkflowFailureHandler`, `WorkflowRecoveryManager`, `KeepGraphCheckpointStore`, and `KeepOrchestrationService` are frozen and verified. Phase 4.4 (`Planning & Reasoning Engine`) can emit validated execution plans executed through KEEP's orchestration policies without redesigning Phase 4.3.
+
+
+---
+
+### Handoff — Phase 4.4 Stage 1 (Member 1: Goal Understanding & Plan Generation)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 1 (Goal Understanding & Plan Generation Lead)
+- **Target Receiving Agent:** Member 2 (Task Decomposition & Dependency Graph)
+- **Branch:** `agent/ai-lead/feature/phase-4.4-planning-reasoning-engine`
+
+#### Summary of Completed Work
+1. Authored master architecture spec (`docs/Architecture/phase-4.4-planning-reasoning-engine.md`), ADRs `ADR-077`–`ADR-079` (`docs/decisions/decisions.md`), REST API Section 23 (`docs/API/api-contract.md`), and Schema Section 3.27 (`docs/Database/database-schema.md`).
+2. Added 9 Phase 4.4 typed error codes and exceptions to `backend/app/agents/errors.py`.
+3. Implemented `backend/app/agents/planning/contracts.py` (`PlanStatus`, `ValidationFinding`, `GoalSpec`, `PlannedTask`, `ExecutionPlan`, `PlanCreateRequest`, `PlanReviseRequest`, `PlanExecuteRequest`, `PlanRevisionSnapshot`, `PlanEventRecord`, and protocol seams).
+4. Implemented `backend/app/agents/planning/prompts.py`, `goal_parser.py` (`GoalParser` with ambiguity detection and constraint/timeframe extraction), and `plan_generator.py` (`MockStructuredPlanLLM` & `PlanGenerator` stripping any LLM-guessed agent bindings).
+5. Verified `tests/unit/test_phase4_4_plan_generation.py` (**5/5 passed**) and Ruff (**0 errors**).
+
+#### Required Action for Member 2
+- Implement `backend/app/agents/planning/dependency_graph.py` (`DependencyGraphResult`, `DependencyGraphValidator` with cycle detection, transitive upstream `input_refs` validation, and parallel execution layer grouping).
+- Implement `backend/app/agents/planning/decomposer.py` (`TaskDecomposer` normalizing atomic tasks and populating `parallel_group` + `execution_layers`).
+- Author unit tests in `tests/unit/test_phase4_4_dependency_graph.py`.

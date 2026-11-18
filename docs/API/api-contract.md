@@ -5220,3 +5220,53 @@ All Phase 4.3 orchestration endpoints are mounted under `/api/v1`, authenticated
 - **Endpoint:** `POST /api/v1/workflow-executions/{workflow_execution_id}/resume`
 - **Permission:** `agent.invoke` (re-verifies current caller RBAC & agent capabilities before resuming)
 - **Behavior:** Loads latest tenant-scoped checkpoint, skips already-succeeded idempotent nodes, rejects unsafe side-effect replay, and completes remaining nodes.
+
+
+
+---
+
+## Section 23: Phase 4.4 Planning & Reasoning Engine API
+
+All Phase 4.4 planning endpoints are mounted under `/api/v1/plans`, authenticated via KEEP Bearer JWT, strictly tenant-scoped (foreign tenant plan IDs return `404 Not Found` for concealment), and return KEEP's canonical `ApiResponse` envelope.
+
+### 23.1 Generate & Validate an Execution Plan
+- **Endpoint:** `POST /api/v1/plans`
+- **Permission:** `agent.invoke`
+- **Request Body:**
+```json
+{
+  "goal": "Compare customer feedback from the last two quarters, identify recurring complaints, and recommend actions",
+  "constraints": ["Use authorized internal sources only", "Include evidence references"],
+  "expected_output": "A comparison and three evidence-backed recommendations",
+  "input": { "project_id": "q3-q4-feedback" }
+}
+```
+- **Response (`201 Created`):** Persisted `ExecutionPlan` including `plan_id`, `version`, `goal` (`GoalSpec`), `tasks`, `execution_layers`, `validation_findings`, `approval_required`, `clarification_questions`, and `status` (`validated`, `approval_required`, `clarification_required`, or `rejected`).
+
+### 23.2 List Tenant Plans
+- **Endpoint:** `GET /api/v1/plans`
+- **Permission:** `agent.view`
+- **Query Parameters:** `status` (optional), `limit` (default `50`, max `200`)
+
+### 23.3 Retrieve a Plan
+- **Endpoint:** `GET /api/v1/plans/{plan_id}`
+- **Permission:** `agent.view` (tenant-scoped; `404` for foreign tenants)
+
+### 23.4 Retrieve Plan Validation Findings & Revisions
+- **Endpoint:** `GET /api/v1/plans/{plan_id}/validation`
+- **Permission:** `agent.view`
+- **Response (`200 OK`):** Current plan status, `policy_version`, `approval_required`, `approval_reasons`, structured `validation_findings`, immutable `revisions`, and audit `events`.
+
+### 23.5 Revise / Replan Within Budget
+- **Endpoint:** `POST /api/v1/plans/{plan_id}/revise`
+- **Permission:** `agent.invoke` (re-checks current caller permissions from scratch)
+- **Request Body:** `{ "reason": "Add explicit risk assessment", "updated_goal": "...", "constraints": [...] }`
+- **Responses:** `200 OK` (new persisted revision `version + 1`), `409 Conflict` (`PLAN_REPLAN_LIMIT_EXCEEDED`).
+
+### 23.6 Execute Validated Plan via Phase 4.3 Orchestrator
+- **Endpoint:** `POST /api/v1/plans/{plan_id}/execute`
+- **Permission:** `agent.invoke`
+- **Request Body:** `{ "mode": "sync" | "async", "timeout_seconds": 120 }`
+- **Responses:**
+  - `200 OK` (`mode == "sync"`) or `202 Accepted` (`mode == "async"`) returning `plan_id`, `workflow_execution_id`, and workflow execution status/result URLs.
+  - `409 Conflict` (`PLAN_APPROVAL_REQUIRED` if `approval_required`, or `PLAN_NOT_EXECUTABLE` if `rejected` / `clarification_required` / `draft`).

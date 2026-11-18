@@ -1857,3 +1857,90 @@ Links each orchestrated graph node execution to its corresponding Phase 4.2 `age
 
 - **Indexes:**
   - `idx_agent_wf_step_exec_tenant`: `(workflow_execution_id, tenant_id)`
+
+
+
+---
+
+### 3.27 Multi-Agent Planning & Reasoning Tables (Phase 4.4)
+
+#### Table: `agent_plans`
+Stores top-level multi-agent execution plans separately from Phase 4.2 agent executions and Phase 4.3 workflow executions.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `plan_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | External plan identifier (`plan_*`) |
+| `current_version` | `INTEGER` | NOT NULL, DEFAULT `1` | Active revision number |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary (`organization_id`) |
+| `requested_by` | `VARCHAR(128)` | NOT NULL, INDEX | Authenticated KEEP user ID |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `draft`, `validated`, `approval_required`, `clarification_required`, `rejected`, `submitted` |
+| `goal_text` | `TEXT` | NOT NULL | Original natural-language goal |
+| `goal_json` | `JSONB` | NOT NULL | Structured `GoalSpec` payload |
+| `input_json` | `JSONB` | NOT NULL | Structured caller context/input payload |
+| `execution_layers_json` | `JSONB` | NOT NULL | Topologically grouped parallel task layers |
+| `validation_findings_json` | `JSONB` | NOT NULL | Latest validation findings list |
+| `approval_required` | `BOOLEAN` | NOT NULL, DEFAULT `false` | Fail-closed HITL gate flag |
+| `approval_reasons_json` | `JSONB` | NOT NULL | Reasons approval is required |
+| `clarification_questions_json` | `JSONB` | NOT NULL | Questions returned for ambiguous requests |
+| `policy_version` | `VARCHAR(32)` | NOT NULL | Planning policy version applied |
+| `max_steps` / `max_replans` / `replan_count` | `INTEGER` | NOT NULL | Bounded execution & replanning budgets |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Trace correlation ID shared into Phase 4.3 & 4.2 |
+| `source_request_id` | `VARCHAR(128)` | NULL | Originating HTTP request ID |
+| `workflow_execution_id` | `VARCHAR(128)` | NULL, INDEX | Linked Phase 4.3 `agent_workflow_executions.workflow_execution_id` |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
+
+#### Table: `agent_plan_revisions`
+Stores immutable historical snapshots of every plan version and its validation findings.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `revision_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique revision ID (`planrev_*`) |
+| `plan_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owning plan identifier |
+| `version` | `INTEGER` | NOT NULL | Monotonic revision version |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `status` | `VARCHAR(32)` | NOT NULL | Plan status at this revision |
+| `revision_reason` | `VARCHAR(512)` | NOT NULL | Why this revision was created |
+| `policy_version` | `VARCHAR(32)` | NOT NULL | Policy version applied |
+| `snapshot_json` | `JSONB` | NOT NULL | Immutable serialized `ExecutionPlan` snapshot |
+| `validation_findings_json` | `JSONB` | NOT NULL | Validation findings at this revision |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
+
+#### Table: `agent_plan_tasks`
+Stores atomic planned tasks, dependency links, I/O contracts, and resolved Phase 4.1 agent versions.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `plan_task_pk` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique persisted task record ID |
+| `plan_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owning plan identifier |
+| `plan_version` | `INTEGER` | NOT NULL | Revision number |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `task_id` | `VARCHAR(64)` | NOT NULL | Plan-local task ID (`task_1`, etc.) |
+| `description` | `TEXT` | NOT NULL | Task description |
+| `required_capabilities_json` | `JSONB` | NOT NULL | Required capabilities list |
+| `depends_on_json` | `JSONB` | NOT NULL | Upstream `task_id` dependencies |
+| `input_refs_json` | `JSONB` | NOT NULL | Referenced upstream `output_key`s |
+| `output_key` | `VARCHAR(128)` | NOT NULL | Output key produced by task |
+| `required` | `BOOLEAN` | NOT NULL, DEFAULT `true` | Required vs optional execution role |
+| `is_side_effecting` | `BOOLEAN` | NOT NULL, DEFAULT `false` | Side-effect marker for approval gating |
+| `parallel_group` | `INTEGER` | NOT NULL, DEFAULT `0` | Execution layer index |
+| `resolved_agent_id` | `VARCHAR(64)` | NULL | Resolved Phase 4.1 agent ID |
+| `resolved_agent_version` | `VARCHAR(32)` | NULL | Pinned Phase 4.1 agent version |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
+
+#### Table: `agent_plan_events`
+Append-only audit trail recording plan creation, validation, revision reasons, and Phase 4.3 submission events.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `event_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Unique event ID (`planevt_*`) |
+| `plan_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owning plan identifier |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `event_type` | `VARCHAR(64)` | NOT NULL | `plan.created`, `plan.validated`, `plan.revised`, `plan.submitted`, `plan.rejected` |
+| `actor_id` | `VARCHAR(128)` | NOT NULL | Verified user ID |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Shared trace correlation ID |
+| `details_json` | `JSONB` | NOT NULL | Secret-safe structured event metadata |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | NOT NULL | Standard `TimestampMixin` columns |
