@@ -49,6 +49,7 @@ class TestDatabaseMigrations:
             "1b2c3d4e5f6a",
             "2c3d4e5f6a7b",
             "3d4e5f6a7b8c",
+            "4e5f6a7b8c9d",
         )
 
     def test_schema_metadata_tables_completeness(self):
@@ -120,6 +121,10 @@ class TestDatabaseMigrations:
             "agent_checkpoints",
             "agent_workflow_executions",
             "agent_workflow_steps",
+            "agent_plans",
+            "agent_plan_revisions",
+            "agent_plan_tasks",
+            "agent_plan_events",
         }
 
         missing_tables = expected_tables - table_names
