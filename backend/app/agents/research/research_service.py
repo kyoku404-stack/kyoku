@@ -57,9 +57,11 @@ from backend.app.services.security.agent_policy import (
 
 logger = logging.getLogger(__name__)
 
-SENSITIVE_READ_ROLES: frozenset[str] = frozenset({"org_admin", "super_admin", "admin"})
+SENSITIVE_READ_ROLES: frozenset[str] = frozenset(
+    {"orgadmin", "superadmin", "org_admin", "super_admin", "admin"}
+)
 SENSITIVE_READ_PERMISSIONS: frozenset[str] = frozenset(
-    {"agent.admin", "documents.read_sensitive", "admin.all"}
+    {"agent.manage", "agent.admin", "documents.read_sensitive", "admin.all"}
 )
 
 
@@ -273,20 +275,24 @@ class KeepResearchService:
                     mode="sync",
                 )
                 run.agent_execution_id = execution_record.execution_id
-                if execution_record.result is None or execution_record.result.status != "succeeded":
+                result_payload = execution_record.result_payload or {}
+                if (
+                    execution_record.status.value != "SUCCEEDED"
+                    or result_payload.get("status") != "succeeded"
+                ):
                     err_code = (
                         execution_record.error_code
-                        or (execution_record.result.error_code if execution_record.result else None)
+                        or result_payload.get("error_code")
                         or AgentErrorCode.AGENT_EXECUTION_FAILED.value
                     )
                     err_msg = (
                         execution_record.error_message
-                        or (execution_record.result.error_message if execution_record.result else None)
+                        or result_payload.get("error_message")
                         or "Research execution failed in AgentRuntime."
                     )
                     run.status = ResearchStatus.FAILED
-                    run.error_code = err_code
-                    run.error_message = sanitize_error_message(err_msg)
+                    run.error_code = str(err_code)
+                    run.error_message = sanitize_error_message(str(err_msg))
                     run.completed_at = datetime.now(UTC)
                     run.updated_at = run.completed_at
                     await self._repository.update_run(run)
@@ -298,7 +304,7 @@ class KeepResearchService:
                         {"error_code": run.error_code},
                     )
                     return run, None
-                raw_report = execution_record.result.output.get("report")
+                raw_report = (result_payload.get("output") or {}).get("report")
                 report = ResearchReport.model_validate(raw_report)
             else:
                 report = await self._research_agent.run_research(request, context)

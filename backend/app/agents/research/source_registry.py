@@ -50,6 +50,8 @@ _STOPWORDS: frozenset[str] = frozenset(
         "should",
         "more",
         "than",
+        "caused",
+        "cause",
     }
 )
 

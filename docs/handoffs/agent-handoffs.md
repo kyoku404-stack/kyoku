@@ -6961,3 +6961,21 @@ COMPLETED ✓
 - Implemented `backend/app/agents/research/quality.py` (`ResearchQualityValidator`, `detect_evidence_stance_conflicts`) checking citation integrity, contradiction disclosure, temporal document date warnings, single-source caveats, and coverage gaps.
 - Implemented `backend/app/agents/research/synthesis.py` (`KeepResearchSynthesisService`) delivering multi-source synthesis with documented confidence grading (`high`/`medium`/`low`), explicit `ContradictionRecord` generation with `source_dates`, separate `factual` vs `recommendation` labeling, and bounded single-pass `correct_findings()`.
 - Verified with `tests/unit/test_phase4_5_synthesis_quality.py` (3/3 passed; 15/15 Phase 4.5 unit tests total) and Ruff (0 errors).
+
+
+---
+
+### Handoff Entry — Phase 4.5 Member 4: Controlled Research Graph, Persistence, FastAPI API, Phase 4.1–4.4 Wiring & QA
+
+- **Date:** 2026-11-18
+- **Author:** Member 4 (Research Graph, Persistence, API & QA)
+- **Branch:** `agent/ai-lead/feature/phase-4.5-research-agents`
+- **Status:** COMPLETED — Ready for Stage 5 Frontend UI, Vitest & Playwright E2E
+
+#### Summary of Deliverables
+- Implemented `backend/app/agents/research/graph.py` (`build_research_graph`, `build_default_research_agent`) running the bounded evidence-first research flow on KEEP's `KeepStateGraph` (`retrieve → [insufficient_evidence | synthesize → validate_quality → (finalize | correct_once → validate_quality → finalize_partial)]`) with strict `max_correction_attempts = 1`.
+- Added SQLAlchemy ORM models (`backend/app/models/agent_research.py`: `ResearchRun`, `ResearchEvidence`, `ResearchFindingModel`, `ResearchEvent`), exported in `backend/app/models/__init__.py`, plus Alembic migration `backend/migrations/versions/5f6a7b8c9d0e_phase_4_5_research_agents.py` (`4e5f6a7b8c9d` → `5f6a7b8c9d0e (head)`), and updated `tests/integration/test_db_migrations.py`.
+- Implemented `backend/app/agents/research/repository.py` (`InMemoryResearchRepository` & `SQLAlchemyResearchRepository` with UTC normalization, scoped idempotency, and tenant isolation).
+- Registered `research_agent` in `build_orchestration_agent_registry()` (`backend/app/agents/service.py`) and added investigative goal routing to `knowledge.research` in `MockStructuredPlanLLM` (`backend/app/agents/planning/plan_generator.py`), proving the full Phase 4.4 Plan → Phase 4.3 Orchestrator → Phase 4.2 Runtime → `research_agent` chain.
+- Exposed FastAPI routes in `backend/app/api/v1/research.py` (`/api/v1/research`, `/{id}`, `/{id}/report`, `/{id}/evidence`, `/{id}/cancel`), mounted in `backend/app/api/v1/router.py`, and initialized safely in `backend/app/main.py` lifespan.
+- Verified with `tests/integration/test_phase4_5_research_integration.py` (6/6 passed), full CI-order Phase 4.1–4.5 + DB migrations + security integration suite (**70/70 passed**), full backend unit suite (**533/533 passed**), Ruff (**0 errors**), and Alembic single head (`5f6a7b8c9d0e (head)`).

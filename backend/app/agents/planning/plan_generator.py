@@ -183,6 +183,32 @@ class MockStructuredPlanLLM:
                 ),
             ]
 
+        # Scenario C2: Phase 4.5 Investigative Research goal -> route directly to `knowledge.research`
+        if "knowledge.research" in avail and any(
+            kw in lower for kw in ("investigate", "why did", "research", "root cause")
+        ):
+            synth_cap = "knowledge.analyze" if "knowledge.analyze" in avail else "knowledge.research"
+            return [
+                PlannedTask(
+                    task_id="task_1",
+                    description=f"Conduct evidence-backed multi-source research for: {goal.goal}",
+                    required_capabilities=["knowledge.research"],
+                    depends_on=[],
+                    input_refs=[],
+                    output_key="research_report",
+                    requires_evidence=True,
+                ),
+                PlannedTask(
+                    task_id="task_2",
+                    description=f"Summarize research findings and citations into: {goal.expected_output}",
+                    required_capabilities=[synth_cap],
+                    depends_on=["task_1"],
+                    input_refs=["research_report"],
+                    output_key="final_research_brief",
+                    requires_evidence=True,
+                ),
+            ]
+
         # Scenario D: Default sequential retrieval -> analysis plan
         synth_cap = "knowledge.analyze" if "knowledge.analyze" in avail else "knowledge.search"
         return [

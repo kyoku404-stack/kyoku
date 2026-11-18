@@ -61,6 +61,7 @@ def build_orchestration_agent_registry(
         KnowledgeRetrievalAgent,
         RiskAnalysisAgent,
     )
+    from backend.app.agents.research.graph import build_default_research_agent
 
     registry = build_runtime_agent_registry(
         checkpoint_store=checkpoint_store,
@@ -70,6 +71,7 @@ def build_orchestration_agent_registry(
     registry.register(KnowledgeAnalysisAgent())
     registry.register(DecisionExtractionAgent())
     registry.register(RiskAnalysisAgent())
+    registry.register(build_default_research_agent(policy=policy))
     return registry
 
 

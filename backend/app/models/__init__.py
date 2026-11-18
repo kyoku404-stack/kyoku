@@ -6,6 +6,12 @@ from backend.app.models.agent_plan import (
     AgentPlanRevision,
     AgentPlanTask,
 )
+from backend.app.models.agent_research import (
+    ResearchEvent,
+    ResearchEvidence,
+    ResearchFindingModel,
+    ResearchRun,
+)
 from backend.app.models.agent_workflow import AgentWorkflowExecution, AgentWorkflowStep
 from backend.app.models.analytics import (
     AIRecommendation,
@@ -132,6 +138,10 @@ __all__ = [
     "RAGFeedback",
     "RAGQuery",
     "ReleaseChecklist",
+    "ResearchEvent",
+    "ResearchEvidence",
+    "ResearchFindingModel",
+    "ResearchRun",
     "SecurityAIGovernanceLog",
     "SecurityAuditLog",
     "SecurityAuditRecord",
