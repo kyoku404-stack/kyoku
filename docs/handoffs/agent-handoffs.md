@@ -6846,3 +6846,23 @@ COMPLETED ✓
 - Implement `backend/app/agents/planning/dependency_graph.py` (`DependencyGraphResult`, `DependencyGraphValidator` with cycle detection, transitive upstream `input_refs` validation, and parallel execution layer grouping).
 - Implement `backend/app/agents/planning/decomposer.py` (`TaskDecomposer` normalizing atomic tasks and populating `parallel_group` + `execution_layers`).
 - Author unit tests in `tests/unit/test_phase4_4_dependency_graph.py`.
+
+
+---
+
+### Handoff — Phase 4.4 Stage 2 (Member 2: Task Decomposition & Dependency Graph)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 2 (Task Decomposition & Dependency Graph Lead)
+- **Target Receiving Agent:** Member 3 (Agent Selection, Policies & Plan Validation)
+- **Branch:** `agent/ai-lead/feature/phase-4.4-planning-reasoning-engine`
+
+#### Summary of Completed Work
+1. Implemented `DependencyGraphValidator` and `DependencyGraphResult` in `backend/app/agents/planning/dependency_graph.py` enforcing unique task/output IDs, Kahn's cycle detection, strict transitive ancestor validation for `input_refs`, task count limits, and deterministic parallel execution layer scheduling.
+2. Implemented `TaskDecomposer` in `backend/app/agents/planning/decomposer.py` normalizing deduplicated atomic tasks, annotating `parallel_group`, and setting `plan.execution_layers`.
+3. Verified `tests/unit/test_phase4_4_dependency_graph.py` + Stage 1 unit tests (**9/9 passed**) and Ruff (**0 errors**).
+
+#### Required Action for Member 3
+- Implement `backend/app/agents/planning/agent_selector.py` (`CapabilityAgentSelector` resolving capabilities strictly against Phase 4.1 `AgentRegistry`, rejecting unknown/disabled capabilities).
+- Implement `backend/app/agents/planning/policies.py` (`KeepPlanningPolicyEngine`, `PlanningBudgetConfig`, RBAC capability-tier enforcement, prompt-injection & spoofed-identity screening, approval detection).
+- Implement `backend/app/agents/planning/validator.py` (`PlanValidator` running all 9 Section 8 validation checks fail-closed).
+- Author comprehensive validation & security unit tests in `tests/unit/test_phase4_4_validation_security.py`.
