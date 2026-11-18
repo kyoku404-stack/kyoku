@@ -16,19 +16,21 @@ from backend.app.agents.registry import AgentRegistry
 
 def build_default_workflow_registry(
     agent_registry: AgentRegistry | None = None,
+    *,
+    validate_deps: bool = True,
 ) -> WorkflowRegistry:
     """Initializes KEEP's Phase 4.3 WorkflowRegistry with built-in approved workflows."""
     wf_registry = WorkflowRegistry(agent_registry=agent_registry)
-    validate = agent_registry is not None
+    should_validate = validate_deps and (agent_registry is not None)
     wf_registry.register(
         KNOWLEDGE_ANALYSIS_DEFINITION,
         build_knowledge_workflow_graph,
-        validate_deps=validate,
+        validate_deps=should_validate,
     )
     wf_registry.register(
         PARALLEL_PROJECT_REVIEW_DEFINITION,
         build_parallel_analysis_graph,
-        validate_deps=validate,
+        validate_deps=should_validate,
     )
     return wf_registry
 

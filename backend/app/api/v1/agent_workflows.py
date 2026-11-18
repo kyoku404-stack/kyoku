@@ -81,7 +81,10 @@ def get_orchestration_service(request: Request) -> KeepOrchestrationService:
 
     wf_registry = getattr(request.app.state, "workflow_registry", None)
     if wf_registry is None:
-        wf_registry = build_default_workflow_registry(runtime.registry)
+        wf_registry = build_default_workflow_registry(
+            runtime.registry,
+            validate_deps=False,
+        )
         request.app.state.workflow_registry = wf_registry
 
     wf_repo = getattr(request.app.state, "workflow_repository", None)

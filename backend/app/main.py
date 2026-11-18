@@ -119,7 +119,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             session_factory=async_session_factory,
             policy=app.state.agent_policy,
         )
-    if getattr(app.state, "agent_registry", None) is None:
+    registry_created_by_lifespan = getattr(app.state, "agent_registry", None) is None
+    if registry_created_by_lifespan:
         app.state.agent_registry = build_orchestration_agent_registry(
             checkpoint_store=app.state.agent_checkpoints,
             policy=app.state.agent_policy,
@@ -145,7 +146,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Phase 4.3: Initialize lifespan-bound multi-agent orchestration engine
     if getattr(app.state, "workflow_registry", None) is None:
-        app.state.workflow_registry = build_default_workflow_registry(app.state.agent_registry)
+        app.state.workflow_registry = build_default_workflow_registry(
+            app.state.agent_registry,
+            validate_deps=registry_created_by_lifespan,
+        )
     if getattr(app.state, "workflow_repository", None) is None:
         app.state.workflow_repository = SQLAlchemyWorkflowRepository(async_session_factory)
     if getattr(app.state, "graph_checkpoints", None) is None:
