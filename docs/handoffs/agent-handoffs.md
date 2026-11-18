@@ -6825,3 +6825,91 @@ COMPLETED ✓
 
 #### Readiness for Phase 4.4
 - `WorkflowDefinition`, `WorkflowRegistry`, `WorkflowState`, `KeepStateGraph`, `RuntimeNodeInvoker`, `KeepWorkflowPolicyEngine`, `WorkflowFailureHandler`, `WorkflowRecoveryManager`, `KeepGraphCheckpointStore`, and `KeepOrchestrationService` are frozen and verified. Phase 4.4 (`Planning & Reasoning Engine`) can emit validated execution plans executed through KEEP's orchestration policies without redesigning Phase 4.3.
+
+
+---
+
+### Handoff — Phase 4.4 Stage 1 (Member 1: Goal Understanding & Plan Generation)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 1 (Goal Understanding & Plan Generation Lead)
+- **Target Receiving Agent:** Member 2 (Task Decomposition & Dependency Graph)
+- **Branch:** `agent/ai-lead/feature/phase-4.4-planning-reasoning-engine`
+
+#### Summary of Completed Work
+1. Authored master architecture spec (`docs/Architecture/phase-4.4-planning-reasoning-engine.md`), ADRs `ADR-077`–`ADR-079` (`docs/decisions/decisions.md`), REST API Section 23 (`docs/API/api-contract.md`), and Schema Section 3.27 (`docs/Database/database-schema.md`).
+2. Added 9 Phase 4.4 typed error codes and exceptions to `backend/app/agents/errors.py`.
+3. Implemented `backend/app/agents/planning/contracts.py` (`PlanStatus`, `ValidationFinding`, `GoalSpec`, `PlannedTask`, `ExecutionPlan`, `PlanCreateRequest`, `PlanReviseRequest`, `PlanExecuteRequest`, `PlanRevisionSnapshot`, `PlanEventRecord`, and protocol seams).
+4. Implemented `backend/app/agents/planning/prompts.py`, `goal_parser.py` (`GoalParser` with ambiguity detection and constraint/timeframe extraction), and `plan_generator.py` (`MockStructuredPlanLLM` & `PlanGenerator` stripping any LLM-guessed agent bindings).
+5. Verified `tests/unit/test_phase4_4_plan_generation.py` (**5/5 passed**) and Ruff (**0 errors**).
+
+#### Required Action for Member 2
+- Implement `backend/app/agents/planning/dependency_graph.py` (`DependencyGraphResult`, `DependencyGraphValidator` with cycle detection, transitive upstream `input_refs` validation, and parallel execution layer grouping).
+- Implement `backend/app/agents/planning/decomposer.py` (`TaskDecomposer` normalizing atomic tasks and populating `parallel_group` + `execution_layers`).
+- Author unit tests in `tests/unit/test_phase4_4_dependency_graph.py`.
+
+
+---
+
+### Handoff — Phase 4.4 Stage 2 (Member 2: Task Decomposition & Dependency Graph)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 2 (Task Decomposition & Dependency Graph Lead)
+- **Target Receiving Agent:** Member 3 (Agent Selection, Policies & Plan Validation)
+- **Branch:** `agent/ai-lead/feature/phase-4.4-planning-reasoning-engine`
+
+#### Summary of Completed Work
+1. Implemented `DependencyGraphValidator` and `DependencyGraphResult` in `backend/app/agents/planning/dependency_graph.py` enforcing unique task/output IDs, Kahn's cycle detection, strict transitive ancestor validation for `input_refs`, task count limits, and deterministic parallel execution layer scheduling.
+2. Implemented `TaskDecomposer` in `backend/app/agents/planning/decomposer.py` normalizing deduplicated atomic tasks, annotating `parallel_group`, and setting `plan.execution_layers`.
+3. Verified `tests/unit/test_phase4_4_dependency_graph.py` + Stage 1 unit tests (**9/9 passed**) and Ruff (**0 errors**).
+
+#### Required Action for Member 3
+- Implement `backend/app/agents/planning/agent_selector.py` (`CapabilityAgentSelector` resolving capabilities strictly against Phase 4.1 `AgentRegistry`, rejecting unknown/disabled capabilities).
+- Implement `backend/app/agents/planning/policies.py` (`KeepPlanningPolicyEngine`, `PlanningBudgetConfig`, RBAC capability-tier enforcement, prompt-injection & spoofed-identity screening, approval detection).
+- Implement `backend/app/agents/planning/validator.py` (`PlanValidator` running all 9 Section 8 validation checks fail-closed).
+- Author comprehensive validation & security unit tests in `tests/unit/test_phase4_4_validation_security.py`.
+
+
+---
+
+### Handoff — Phase 4.4 Stage 3 (Member 3: Agent Selection, Policies & Plan Validation)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 3 (Agent Selection, Policies & Plan Validation Lead)
+- **Target Receiving Agent:** Member 4 (FastAPI, Persistence & Integration Testing)
+- **Branch:** `agent/ai-lead/feature/phase-4.4-planning-reasoning-engine`
+
+#### Summary of Completed Work
+1. Implemented `CapabilityAgentSelector` (`backend/app/agents/planning/agent_selector.py`) resolving task capabilities strictly against live enabled agents in Phase 4.1 `AgentRegistry` with deterministic tie-breaking and structured `PLAN_CAPABILITY_UNAVAILABLE` findings.
+2. Implemented `KeepPlanningPolicyEngine` and `PlanningBudgetConfig` (`backend/app/agents/planning/policies.py`) enforcing zero-trust JWT context verification, spoofed identity rejection, prompt-injection screening on goals and every LLM-proposed task description, RBAC capability-tier checks, resource budgets (tasks, tokens, duration, parallel width, replans), and fail-closed approval gating (`approval_required`) for write/sensitive/side-effecting actions.
+3. Implemented `PlanValidator` (`backend/app/agents/planning/validator.py`) executing all 9 Section 8 validation checks fail-closed and stamping `policy_version` and resulting `PlanStatus`.
+4. Verified `tests/unit/test_phase4_4_validation_security.py` + Stages 1–2 unit tests (**14/14 passed**) and Ruff (**0 errors**).
+
+#### Required Action for Member 4
+- Implement SQLAlchemy ORM models (`agent_plans`, `agent_plan_revisions`, `agent_plan_tasks`, `agent_plan_events`) in `backend/app/models/agent_plan.py` and Alembic migration `4e5f6a7b8c9d`.
+- Implement `InMemoryPlanRepository` & `SQLAlchemyPlanRepository` (`backend/app/agents/persistence/plan_repository.py`).
+- Implement `PlanOrchestrationBridge` (`backend/app/agents/planning/orchestrator_bridge.py`) compiling validated `ExecutionPlan` layers into Phase 4.3 `KeepStateGraph` + `RuntimeNodeInvoker` executed through Phase 4.3 `KeepOrchestrationService` and Phase 4.2 `AgentRuntime`.
+- Implement `KeepPlanningService` (`backend/app/agents/planning/service.py`) coordinating goal parsing, bounded regeneration, revision history, re-authorization, and Phase 4.3 execution submission.
+- Expose all 6 Phase 4.4 REST endpoints in `backend/app/api/v1/planning.py`, mount in `router.py`, wire lifespan in `main.py`, and author end-to-end QA suite `tests/integration/test_phase4_4_planning_integration.py`.
+
+
+---
+
+### Handoff — Phase 4.4 Stage 4 (Member 4: FastAPI, Persistence & Integration Testing — FINAL)
+- **Date:** 2026-11-18
+- **Originating Agent:** Member 4 (FastAPI, Persistence & Integration Testing Lead)
+- **Target Receiving Agent:** Human Reviewer / Phase 4.5 Execution Lead
+- **Branch:** `agent/ai-lead/feature/phase-4.4-planning-reasoning-engine`
+
+#### Summary of Completed Work
+1. Implemented SQLAlchemy ORM models `AgentPlan`, `AgentPlanRevision`, `AgentPlanTask`, and `AgentPlanEvent` in `backend/app/models/agent_plan.py` (exported in `backend/app/models/__init__.py`) and authored Alembic migration `backend/migrations/versions/4e5f6a7b8c9d_phase_4_4_planning_reasoning_engine.py` chained cleanly `3d4e5f6a7b8c` → `4e5f6a7b8c9d (head)`.
+2. Implemented `InMemoryPlanRepository` and `SQLAlchemyPlanRepository` (`backend/app/agents/persistence/plan_repository.py`) persisting plans, immutable revisions, resolved tasks, and audit events scoped strictly by `tenant_id`.
+3. Implemented `PlanOrchestrationBridge` (`backend/app/agents/planning/orchestrator_bridge.py`) compiling validated `ExecutionPlan` parallel layers onto Phase 4.3 `KeepStateGraph` + `RuntimeNodeInvoker` executed strictly through `KeepOrchestrationService` and Phase 4.2 `AgentRuntime`.
+4. Implemented `KeepPlanningService` (`backend/app/agents/planning/service.py`) coordinating goal parsing, bounded auto-regeneration, immutable plan revisions, fresh re-authorization on revise & execute, and fail-closed approval gating (`PLAN_APPROVAL_REQUIRED`).
+5. Exposed all 6 Phase 4.4 REST endpoints in `backend/app/api/v1/planning.py` (`/api/v1/plans`, `/{id}`, `/{id}/validation`, `/{id}/revise`, `/{id}/execute`), mounted in `backend/app/api/v1/router.py`, and initialized via FastAPI lifespan in `backend/app/main.py`.
+6. Authored end-to-end integration & demonstration test suite (`tests/integration/test_phase4_4_planning_integration.py` — 4/4 passed) proving all 19 Phase 4.4 Acceptance Checklist items, including the multi-step quarterly feedback comparison demo with parallel layers executing through Phase 4.3 & Phase 4.2 with shared `correlation_id`.
+7. Full Empirical Verification Gate (`UI_MODE = BACKEND_FIRST`):
+   - `ruff check backend/ tests/`: **0 errors**
+   - `alembic heads`: **`4e5f6a7b8c9d (head)`**
+   - `pytest tests/unit/`: **518/518 passed (100%)** (504 baseline + 14 Phase 4.4 unit tests)
+   - `pytest` (Phase 4.1–4.4 in CI order + Alembic Migrations + Auth/Tenant/RBAC Security): **64/64 passed (100%)**
+
+#### Readiness for Phase 4.5
+- Phase 4.4 is 100% complete across all 4 member stages. Specialized Phase 4.5 Research Agents can register new capabilities in Phase 4.1 `AgentRegistry` and be automatically selected by `CapabilityAgentSelector` and orchestrated via `PlanOrchestrationBridge` with zero planner redesign.

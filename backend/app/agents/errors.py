@@ -75,6 +75,16 @@ class AgentErrorCode(str, Enum):
     WORKFLOW_RESULT_NOT_READY = "WORKFLOW_RESULT_NOT_READY"
     WORKFLOW_RECOVERY_NOT_ALLOWED = "WORKFLOW_RECOVERY_NOT_ALLOWED"
     WORKFLOW_STEP_FAILED = "WORKFLOW_STEP_FAILED"
+    # Phase 4.4 Planning & Reasoning Engine error codes
+    PLAN_NOT_FOUND = "PLAN_NOT_FOUND"
+    PLAN_INVALID_GRAPH = "PLAN_INVALID_GRAPH"
+    PLAN_CAPABILITY_UNAVAILABLE = "PLAN_CAPABILITY_UNAVAILABLE"
+    PLAN_POLICY_REJECTED = "PLAN_POLICY_REJECTED"
+    PLAN_APPROVAL_REQUIRED = "PLAN_APPROVAL_REQUIRED"
+    PLAN_BUDGET_EXCEEDED = "PLAN_BUDGET_EXCEEDED"
+    PLAN_REPLAN_LIMIT_EXCEEDED = "PLAN_REPLAN_LIMIT_EXCEEDED"
+    PLAN_NOT_EXECUTABLE = "PLAN_NOT_EXECUTABLE"
+    PLAN_CLARIFICATION_REQUIRED = "PLAN_CLARIFICATION_REQUIRED"
 
 
 class AgentErrorDetail(BaseModel):
@@ -460,4 +470,101 @@ class WorkflowRecoveryNotAllowedError(AgentLayerError, ValueError):
             code=AgentErrorCode.WORKFLOW_RECOVERY_NOT_ALLOWED,
             http_status=409,
             details={"workflow_execution_id": workflow_execution_id, "reason": reason},
+        )
+
+
+
+class PlanNotFoundError(AgentLayerError, LookupError):
+    """Raised when a plan_id does not exist or belongs to another tenant."""
+
+    def __init__(self, plan_id: str) -> None:
+        super().__init__(
+            f"Execution plan not found: {plan_id}",
+            code=AgentErrorCode.PLAN_NOT_FOUND,
+            http_status=404,
+            details={"plan_id": plan_id},
+        )
+
+
+class PlanGraphValidationError(AgentLayerError, ValueError):
+    """Raised when a task dependency graph has cycles, missing references, or invalid I/O wiring."""
+
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.PLAN_INVALID_GRAPH,
+            http_status=422,
+            details=details or {},
+        )
+
+
+class PlanCapabilityUnavailableError(AgentLayerError, LookupError):
+    """Raised when no registered enabled agent satisfies a task's required capabilities."""
+
+    def __init__(self, task_id: str, missing_capabilities: list[str]) -> None:
+        super().__init__(
+            f"Task '{task_id}' requires unavailable capabilities: {', '.join(missing_capabilities)}",
+            code=AgentErrorCode.PLAN_CAPABILITY_UNAVAILABLE,
+            http_status=422,
+            details={"task_id": task_id, "missing_capabilities": missing_capabilities},
+        )
+
+
+class PlanPolicyRejectedError(AgentLayerError, PermissionError):
+    """Raised when a plan violates KEEP security, tenant isolation, or authorization policy."""
+
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.PLAN_POLICY_REJECTED,
+            http_status=403,
+            details=details or {},
+        )
+
+
+class PlanApprovalRequiredError(AgentLayerError, PermissionError):
+    """Raised when attempting to execute a plan whose restricted actions await HITL approval."""
+
+    def __init__(self, plan_id: str, reasons: list[str]) -> None:
+        super().__init__(
+            f"Plan '{plan_id}' requires human approval before execution: {'; '.join(reasons)}",
+            code=AgentErrorCode.PLAN_APPROVAL_REQUIRED,
+            http_status=409,
+            details={"plan_id": plan_id, "approval_reasons": reasons},
+        )
+
+
+class PlanBudgetExceededError(AgentLayerError, ValueError):
+    """Raised when a plan exceeds configured task, token, parallel-width, or duration budgets."""
+
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.PLAN_BUDGET_EXCEEDED,
+            http_status=422,
+            details=details or {},
+        )
+
+
+class PlanReplanLimitExceededError(AgentLayerError, ValueError):
+    """Raised when revising a plan would exceed its configured `max_replans` budget."""
+
+    def __init__(self, plan_id: str, max_replans: int) -> None:
+        super().__init__(
+            f"Plan '{plan_id}' reached its maximum replan limit ({max_replans}).",
+            code=AgentErrorCode.PLAN_REPLAN_LIMIT_EXCEEDED,
+            http_status=409,
+            details={"plan_id": plan_id, "max_replans": max_replans},
+        )
+
+
+class PlanNotExecutableError(AgentLayerError, ValueError):
+    """Raised when attempting to submit a non-validated plan (draft, rejected, clarification, submitted)."""
+
+    def __init__(self, plan_id: str, status: str) -> None:
+        super().__init__(
+            f"Plan '{plan_id}' cannot be executed from status '{status}'.",
+            code=AgentErrorCode.PLAN_NOT_EXECUTABLE,
+            http_status=409,
+            details={"plan_id": plan_id, "status": status},
         )

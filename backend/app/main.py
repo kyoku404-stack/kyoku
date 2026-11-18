@@ -19,9 +19,13 @@ from backend.app.agents.persistence.execution_repository import (
     SQLAlchemyExecutionRepository,
 )
 from backend.app.agents.persistence.graph_checkpoints import KeepGraphCheckpointStore
+from backend.app.agents.persistence.plan_repository import SQLAlchemyPlanRepository
 from backend.app.agents.persistence.workflow_repository import (
     SQLAlchemyWorkflowRepository,
 )
+from backend.app.agents.planning.orchestrator_bridge import PlanOrchestrationBridge
+from backend.app.agents.planning.policies import KeepPlanningPolicyEngine
+from backend.app.agents.planning.service import KeepPlanningService
 from backend.app.agents.runtime.executor import AgentRuntime
 from backend.app.agents.runtime.policies import KeepExecutionPolicy
 from backend.app.agents.service import build_orchestration_agent_registry
@@ -173,8 +177,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
     app.state.workflow_worker.bind_handler(app.state.orchestration_service.execute_from_worker)
     await app.state.workflow_worker.start()
+
+    # Phase 4.4: Initialize lifespan-bound Planning & Reasoning Engine
+    if getattr(app.state, "plan_repository", None) is None:
+        app.state.plan_repository = SQLAlchemyPlanRepository(async_session_factory)
+    if getattr(app.state, "plan_orchestration_bridge", None) is None:
+        app.state.plan_orchestration_bridge = PlanOrchestrationBridge(
+            app.state.orchestration_service
+        )
+    if getattr(app.state, "planning_policy", None) is None:
+        app.state.planning_policy = KeepPlanningPolicyEngine(
+            security_policy=app.state.agent_policy
+        )
+    if getattr(app.state, "planning_service", None) is None:
+        app.state.planning_service = KeepPlanningService(
+            agent_registry=app.state.agent_registry,
+            plan_repository=app.state.plan_repository,
+            orchestrator_bridge=app.state.plan_orchestration_bridge,
+            policy_engine=app.state.planning_policy,
+        )
     logger.info(
-        "Initialized KEEP AgentRuntime (%d agents) & Orchestration Engine (%d workflows)",
+        "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows) & Planning Engine",
         app.state.agent_registry.count(),
         app.state.workflow_registry.count(),
     )

@@ -2402,3 +2402,55 @@ Multi-agent parallel workflows can experience optional branch failures, worker c
 
 #### Status
 ACCEPTED
+
+
+---
+
+### ADR-077: Zero-Trust LLM-Proposes / KEEP-Validates Planning Boundary
+
+#### Date
+2026-11-18
+
+#### Context
+Phase 4.4 introduces dynamic planning so KEEP can decompose complex goals into multi-step dependency DAGs. Treating an LLM-generated plan as trusted executable code or allowing plans to bypass Phase 4.3 orchestration and Phase 4.2 runtime policies would violate KEEP's zero-trust architecture.
+
+#### Decision
+1. Treat every generated `ExecutionPlan` as untrusted input until it passes KEEP's deterministic 9-point `PlanValidator` (DAG acyclicity, I/O references, real registry capability matching, RBAC, prompt-injection guardrails, budgets, evidence ordering, approval detection, and version stamping).
+2. Submit validated plans exclusively through `PlanOrchestrationBridge` → Phase 4.3 `KeepOrchestrationService` → Phase 4.2 `AgentRuntime`. The planner never executes agent tasks directly.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-078: Capability-Based Agent Selection Over LLM-Guessed Agent Names
+
+#### Date
+2026-11-18
+
+#### Context
+Allowing a language model to pick internal agent IDs by name creates brittle coupling and enables hallucinated or unauthorized agent invocations.
+
+#### Decision
+`PlannedTask` declares `required_capabilities` (e.g. `knowledge.search`, `knowledge.decisions`, `knowledge.risks`, `knowledge.analyze`). `CapabilityAgentSelector` resolves every task strictly against KEEP's live Phase 4.1 `AgentRegistry` metadata, binding `resolved_agent_id` and `resolved_agent_version` deterministically and rejecting disabled or missing capabilities.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-079: Immutable Plan Revisions, Bounded Replanning & Fail-Closed Approval Gating
+
+#### Date
+2026-11-18
+
+#### Context
+Complex plans may fail validation or need revision when requirements evolve, and some tasks involve write or sensitive actions requiring human approval (full HITL lifecycle arrives in Phase 4.12).
+
+#### Decision
+1. Persist plans (`agent_plans`), immutable revision snapshots (`agent_plan_revisions`), resolved tasks (`agent_plan_tasks`), and audit events (`agent_plan_events`) separately from workflow and agent execution records.
+2. Cap replanning strictly (`max_replans`, hard cap `3`), record every `revision_reason`, and re-evaluate caller RBAC permissions from scratch on every revision and before execution.
+3. Mark plans containing write, sensitive, or side-effecting tasks as `approval_required` and fail closed (`409 PLAN_APPROVAL_REQUIRED`) on `/execute` until approved.
+
+#### Status
+ACCEPTED
