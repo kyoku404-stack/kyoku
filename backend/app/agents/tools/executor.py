@@ -133,7 +133,7 @@ class KeepToolExecutor:
                 decision = await self.policy_service.authorize(
                     tool=tool,
                     context=context,
-                    arguments=validated_args,
+                    arguments=request.arguments,
                 )
                 if not decision.allowed:
                     dur_ms = int((time.perf_counter() - start_time) * 1000)

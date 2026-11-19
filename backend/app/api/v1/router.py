@@ -36,6 +36,7 @@ from backend.app.api.v1.search import router as search_router
 from backend.app.api.v1.security import router as security_router
 from backend.app.api.v1.system import router as system_router
 from backend.app.api.v1.teams import router as teams_router
+from backend.app.api.v1.tools import router as tools_router
 from backend.app.api.v1.users import router as users_router
 from backend.app.api.v1.workflows import router as workflows_router
 from fastapi import APIRouter
@@ -67,6 +68,7 @@ api_v1_router.include_router(agent_executions_router)
 api_v1_router.include_router(agent_workflows_router)
 api_v1_router.include_router(planning_router)
 api_v1_router.include_router(research_router)
+api_v1_router.include_router(tools_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(connectors_router)
 api_v1_router.include_router(collaboration_router)
