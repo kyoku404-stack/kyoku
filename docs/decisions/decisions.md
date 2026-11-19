@@ -2566,3 +2566,58 @@ LangGraph provides native tool-binding primitives, but binding raw Python callab
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-086: Multi-Tier Memory Scopes, Explicit Ownership, and Zero-Trust Tenant Isolation
+
+#### Date
+2026-11-19
+
+#### Context
+Treating agent memory as a single global bucket creates critical data leakage risks between tenants, between users within the same tenant, and across disparate workflow executions. Conversely, treating every agent run as completely stateless loses high-value user preferences and workflow context.
+
+#### Decision
+1. Strictly categorize memory into four distinct scopes: `user` (personal preferences), `organization` (shared operational facts), `workflow` (resumable execution state), and `agent` (ephemeral task working memory).
+2. Enforce zero-trust multi-tenancy on all memory operations: `tenant_id` must originate from server-validated JWT tokens and cannot be overridden by agent arguments or client payloads.
+3. Isolate user-scoped memory by default so that one user's private preferences are never exposed to another user in the same tenant, unless explicitly granted through tenant organization administration policies.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-087: Two-Phase Memory Proposal, Approval Governance, and Automatic Provenance Tracking
+
+#### Date
+2026-11-19
+
+#### Context
+Agent models frequently encounter noisy internal documents, hallucinations, or prompt injection payloads during research and tool execution. Allowing agents to directly write active records to persistent memory would cause memory poisoning and compromise future agent invocations.
+
+#### Decision
+1. Enforce a two-phase memory write lifecycle: agents can only submit `MemoryProposal` candidates (`status="proposed"`).
+2. Require validation by `MemoryPolicyEngine` prior to activation, screening for prompt injection attacks, secrets/credentials, and payload integrity.
+3. Low-risk user preferences directly submitted by authenticated users may be auto-approved; model-generated proposals cannot self-approve and require programmatic or human review.
+4. Record complete provenance (`source_type`, `source_reference`, `content_hash`, `confidence`) and historical version lineage (`memory_versions`, `superseded_by`) for all activated memories.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-088: Composite Relevance Ranking, Recency Decay, and Strict Context Budgeting
+
+#### Date
+2026-11-19
+
+#### Context
+Unbounded retrieval of past memories clutters downstream LLM context windows, increases token costs, and risks injecting stale or conflicting guidance into fresh agent runs.
+
+#### Decision
+1. Implement a composite ranking algorithm that scores candidate memories using token overlap / semantic relevance, recency decay (time-based decay factor), and source confidence.
+2. Filter out expired, superseded, and deleted memories at the database query level prior to ranking.
+3. Enforce a strict token budget (default 1000 tokens) on memory contexts injected into agent prompts, returning only the top-K highest-ranked memories that fit within the budget.
+
+#### Status
+ACCEPTED

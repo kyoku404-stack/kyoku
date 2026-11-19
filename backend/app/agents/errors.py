@@ -108,6 +108,22 @@ class AgentErrorCode(str, Enum):
     TOOL_CONCURRENCY_LIMIT = "TOOL_CONCURRENCY_LIMIT"
     TOOL_IDEMPOTENCY_CONFLICT = "TOOL_IDEMPOTENCY_CONFLICT"
     TOOL_PROMPT_INJECTION_BLOCKED = "TOOL_PROMPT_INJECTION_BLOCKED"
+    # Phase 4.7 Agent Memory System error codes
+    MEMORY_NOT_FOUND = "MEMORY_NOT_FOUND"
+    MEMORY_DISABLED = "MEMORY_DISABLED"
+    MEMORY_ACCESS_DENIED = "MEMORY_ACCESS_DENIED"
+    MEMORY_PROPOSAL_REJECTED = "MEMORY_PROPOSAL_REJECTED"
+    MEMORY_PROPOSAL_NOT_FOUND = "MEMORY_PROPOSAL_NOT_FOUND"
+    MEMORY_ALREADY_EXISTS = "MEMORY_ALREADY_EXISTS"
+    MEMORY_INVALID_SCOPE = "MEMORY_INVALID_SCOPE"
+    MEMORY_CONTENT_INVALID = "MEMORY_CONTENT_INVALID"
+    MEMORY_RETENTION_EXPIRED = "MEMORY_RETENTION_EXPIRED"
+    MEMORY_DELETED = "MEMORY_DELETED"
+    MEMORY_POLICY_VIOLATION = "MEMORY_POLICY_VIOLATION"
+    MEMORY_TENANT_ISOLATION_VIOLATION = "MEMORY_TENANT_ISOLATION_VIOLATION"
+    MEMORY_PROMPT_INJECTION_BLOCKED = "MEMORY_PROMPT_INJECTION_BLOCKED"
+    MEMORY_BUDGET_EXCEEDED = "MEMORY_BUDGET_EXCEEDED"
+    MEMORY_CONFLICT_DETECTED = "MEMORY_CONFLICT_DETECTED"
 
 
 class AgentErrorDetail(BaseModel):
@@ -872,4 +888,154 @@ class ToolPromptInjectionBlockedError(AgentLayerError, PermissionError):
             http_status=403,
             details={"tool_id": tool_id, "pattern_matched": pattern_matched or "detected"},
         )
+
+
+# ============================================================================
+# Phase 4.7 Agent Memory System Typed Exceptions
+# ============================================================================
+
+
+class MemoryNotFoundError(AgentLayerError, LookupError):
+    """Raised when an authorized memory record cannot be found or is soft-deleted."""
+
+    def __init__(self, memory_id: str) -> None:
+        super().__init__(
+            f"Memory record '{memory_id}' was not found.",
+            code=AgentErrorCode.MEMORY_NOT_FOUND,
+            http_status=404,
+            details={"memory_id": memory_id},
+        )
+
+
+class MemoryProposalNotFoundError(AgentLayerError, LookupError):
+    """Raised when a memory proposal cannot be found."""
+
+    def __init__(self, proposal_id: str) -> None:
+        super().__init__(
+            f"Memory proposal '{proposal_id}' was not found.",
+            code=AgentErrorCode.MEMORY_PROPOSAL_NOT_FOUND,
+            http_status=404,
+            details={"proposal_id": proposal_id},
+        )
+
+
+class MemoryAccessDeniedError(AgentLayerError, PermissionError):
+    """Raised when a caller or agent attempts to access, approve, or delete a memory outside their authorized scope."""
+
+    def __init__(self, message: str = "Memory access denied", *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.MEMORY_ACCESS_DENIED,
+            http_status=403,
+            details=details or {},
+        )
+
+
+class MemoryTenantIsolationViolationError(AgentLayerError, PermissionError):
+    """Raised when a memory query or proposal attempts cross-tenant boundary breach."""
+
+    def __init__(self, *, tenant_id: str, target_tenant_id: str) -> None:
+        super().__init__(
+            f"Cross-tenant memory access attempt detected: caller '{tenant_id}' cannot access target '{target_tenant_id}'.",
+            code=AgentErrorCode.MEMORY_TENANT_ISOLATION_VIOLATION,
+            http_status=403,
+            details={"caller_tenant_id": tenant_id, "target_tenant_id": target_tenant_id},
+        )
+
+
+class MemoryInvalidScopeError(AgentLayerError, ValueError):
+    """Raised when an invalid memory scope is specified."""
+
+    def __init__(self, scope: str) -> None:
+        super().__init__(
+            f"Invalid memory scope '{scope}'. Allowed scopes: 'user', 'organization', 'workflow', 'agent'.",
+            code=AgentErrorCode.MEMORY_INVALID_SCOPE,
+            http_status=400,
+            details={"scope": scope},
+        )
+
+
+class MemoryContentInvalidError(AgentLayerError, ValueError):
+    """Raised when memory content fails length, format, or sanitization constraints."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(
+            f"Memory content validation failed: {reason}",
+            code=AgentErrorCode.MEMORY_CONTENT_INVALID,
+            http_status=400,
+            details={"reason": reason},
+        )
+
+
+class MemoryProposalRejectedError(AgentLayerError, ValueError):
+    """Raised when a memory proposal is rejected by policy or human reviewer."""
+
+    def __init__(self, proposal_id: str, reason: str) -> None:
+        super().__init__(
+            f"Memory proposal '{proposal_id}' was rejected: {reason}",
+            code=AgentErrorCode.MEMORY_PROPOSAL_REJECTED,
+            http_status=400,
+            details={"proposal_id": proposal_id, "reason": reason},
+        )
+
+
+class MemoryRetentionExpiredError(AgentLayerError, ValueError):
+    """Raised when an expired memory record is queried or operated on."""
+
+    def __init__(self, memory_id: str) -> None:
+        super().__init__(
+            f"Memory record '{memory_id}' has expired under retention policy.",
+            code=AgentErrorCode.MEMORY_RETENTION_EXPIRED,
+            http_status=410,
+            details={"memory_id": memory_id},
+        )
+
+
+class MemoryDeletedError(AgentLayerError, ValueError):
+    """Raised when an operation targets a deleted memory record."""
+
+    def __init__(self, memory_id: str) -> None:
+        super().__init__(
+            f"Memory record '{memory_id}' has been deleted.",
+            code=AgentErrorCode.MEMORY_DELETED,
+            http_status=410,
+            details={"memory_id": memory_id},
+        )
+
+
+class MemoryPromptInjectionBlockedError(AgentLayerError, PermissionError):
+    """Raised when prompt injection payload is detected in proposed memory content."""
+
+    def __init__(self, *, pattern_matched: str | None = None) -> None:
+        super().__init__(
+            "Memory write proposal rejected due to prompt injection screening.",
+            code=AgentErrorCode.MEMORY_PROMPT_INJECTION_BLOCKED,
+            http_status=403,
+            details={"pattern_matched": pattern_matched or "detected"},
+        )
+
+
+class MemoryConflictDetectedError(AgentLayerError, ValueError):
+    """Raised when a memory write conflicts with an existing verified memory."""
+
+    def __init__(self, memory_id: str, conflict_details: str) -> None:
+        super().__init__(
+            f"Memory conflict detected against record '{memory_id}': {conflict_details}",
+            code=AgentErrorCode.MEMORY_CONFLICT_DETECTED,
+            http_status=409,
+            details={"conflicting_memory_id": memory_id, "conflict_details": conflict_details},
+        )
+
+
+class MemoryBudgetExceededError(AgentLayerError, ValueError):
+    """Raised when memory retrieval or storage exceeds configured context budget."""
+
+    def __init__(self, tokens: int, max_tokens: int) -> None:
+        super().__init__(
+            f"Memory token budget exceeded: {tokens} tokens requested, maximum {max_tokens}.",
+            code=AgentErrorCode.MEMORY_BUDGET_EXCEEDED,
+            http_status=400,
+            details={"tokens": tokens, "max_tokens": max_tokens},
+        )
+
 

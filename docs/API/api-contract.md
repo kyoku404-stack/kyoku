@@ -5374,3 +5374,78 @@ All Phase 4.6 tool endpoints are mounted under `/api/v1/tools` (with aliases `/a
 - **Request Body:** `{"enabled": true}`
 - **Responses:** `200 OK` with updated `ToolMetadata`.
 
+---
+
+## Section 26: Phase 4.7 Agent Memory System API
+
+All Phase 4.7 memory endpoints are mounted under `/api/v1/memory` (with backwards-compatible aliases `/api/memory/*` as specified in devdocs/p4/p4.7.txt Section 10). Endpoints require valid KEEP Bearer JWT authentication, enforce tenant isolation, and return KEEP's canonical `ApiResponse` envelope.
+
+### 26.1 Search Memories
+- **Endpoint:** `POST /api/v1/memory/search` (alias: `POST /api/memory/search`)
+- **Permission:** `agent.view`
+- **Request Body:**
+```json
+{
+  "query": "preferred quarterly report format",
+  "allowed_scopes": ["user", "organization"],
+  "limit": 5,
+  "max_tokens": 1000
+}
+```
+- **Responses:**
+  - `200 OK`: `ApiResponse[list[MemoryRecord]]` filtered by caller tenant, owner authorization, non-expired status, and ranked by composite relevance and token budget.
+  - `403 Forbidden`: `MEMORY_ACCESS_DENIED` if unauthorized scope or tenant mismatch.
+
+### 26.2 Get Memory Record
+- **Endpoint:** `GET /api/v1/memory/{memory_id}` (alias: `GET /api/memory/{memory_id}`)
+- **Permission:** `agent.view`
+- **Responses:**
+  - `200 OK`: `ApiResponse[MemoryRecord]`
+  - `403 Forbidden`: `MEMORY_ACCESS_DENIED` if user does not own or have permission to access the memory.
+  - `404 Not Found`: `MEMORY_NOT_FOUND` if record does not exist or has been deleted.
+
+### 26.3 Submit Memory Proposal
+- **Endpoint:** `POST /api/v1/memory/proposals` (alias: `POST /api/memory/proposals`)
+- **Permission:** `agent.invoke`
+- **Request Body:**
+```json
+{
+  "scope": "user",
+  "memory_type": "preference",
+  "content": "User prefers concise, bulleted quarterly reports with executive summaries.",
+  "confidence": 0.95,
+  "source_type": "agent_execution",
+  "source_reference": "exec-999"
+}
+```
+- **Responses:**
+  - `201 Created`: `ApiResponse[MemoryProposal]` with `status: "pending"` or `"approved"` (if eligible for auto-approval).
+  - `400 Bad Request`: `MEMORY_CONTENT_INVALID` / `MEMORY_PROMPT_INJECTION_BLOCKED`.
+  - `403 Forbidden`: `MEMORY_ACCESS_DENIED` / `MEMORY_TENANT_ISOLATION_VIOLATION`.
+
+### 26.4 Approve Memory Proposal
+- **Endpoint:** `POST /api/v1/memory/{memory_id}/approve` (alias: `POST /api/memory/{memory_id}/approve`)
+- **Permission:** `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[MemoryRecord]` with `status: "active"`.
+  - `403 Forbidden`: `MEMORY_ACCESS_DENIED` if caller lacks approval rights (e.g., standard user attempting to approve another user's proposal or org memory).
+  - `404 Not Found`: `MEMORY_NOT_FOUND`.
+
+### 26.5 Reject Memory Proposal
+- **Endpoint:** `POST /api/v1/memory/{memory_id}/reject` (alias: `POST /api/memory/{memory_id}/reject`)
+- **Permission:** `agent.invoke`
+- **Request Body:** (optional) `{"reason": "Superseded or inaccurate context"}`
+- **Responses:**
+  - `200 OK`: `ApiResponse[MemoryRecord]` with `status: "rejected"`.
+  - `403 Forbidden`: `MEMORY_ACCESS_DENIED`.
+  - `404 Not Found`: `MEMORY_NOT_FOUND`.
+
+### 26.6 Delete Memory Record
+- **Endpoint:** `DELETE /api/v1/memory/{memory_id}` (alias: `DELETE /api/memory/{memory_id}`)
+- **Permission:** `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[dict]` confirming deletion; immediate invalidation in search indexes.
+  - `403 Forbidden`: `MEMORY_ACCESS_DENIED`.
+  - `404 Not Found`: `MEMORY_NOT_FOUND`.
+
+

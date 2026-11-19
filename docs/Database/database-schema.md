@@ -2072,3 +2072,89 @@ Append-only security audit log recording every policy decision, authorization ch
 | `timestamp` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Audit event creation time |
 | `details` | `JSONB` | NOT NULL, DEFAULT '{}' | Security context and redaction details |
 
+---
+
+### 3.30 Phase 4.7 Agent Memory System Persistence
+
+Phase 4.7 introduces durable multi-tenant persistence for the Agent Memory System, covering canonical active memories, memory proposals, version histories, and security access audit events.
+
+#### Table: `memories`
+Stores approved canonical and active agent memories across user, organization, workflow, and agent scopes.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `memory_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique domain identifier (`mem_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `scope` | `VARCHAR(32)` | NOT NULL, INDEX | `user`, `organization`, `workflow`, `agent` |
+| `owner_id` | `VARCHAR(128)` | NOT NULL, INDEX | Owner identifier (user ID, tenant ID, or execution ID) |
+| `memory_type` | `VARCHAR(64)` | NOT NULL, INDEX | `preference`, `fact`, `intermediate_result`, `instruction`, `observation` |
+| `content` | `TEXT` | NOT NULL | Memory payload text (1 to 4000 characters) |
+| `content_hash` | `VARCHAR(64)` | NOT NULL, INDEX | SHA-256 hash for deduplication |
+| `source_type` | `VARCHAR(64)` | NOT NULL | `user_input`, `agent_execution`, `workflow`, `system` |
+| `source_reference` | `VARCHAR(128)` | NULL, INDEX | Source ID (execution ID, document ID, etc.) |
+| `confidence` | `FLOAT` | NOT NULL, DEFAULT 1.0 | Confidence rating (0.0 to 1.0) |
+| `status` | `VARCHAR(32)` | NOT NULL, DEFAULT 'active', INDEX | `proposed`, `active`, `expired`, `deleted`, `rejected` |
+| `version` | `INTEGER` | NOT NULL, DEFAULT 1 | Incremental version number |
+| `superseded_by` | `VARCHAR(128)` | NULL, INDEX | Pointer to newer replacing memory |
+| `meta_data` | `JSONB` | NOT NULL, DEFAULT '{}' | Structured metadata, token counts, tags |
+| `expires_at` | `TIMESTAMP WITH TIME ZONE` | NULL, INDEX | Optional expiration timestamp |
+| `deleted_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Timestamp of soft-deletion |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Record creation timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Last update timestamp |
+
+#### Table: `memory_proposals`
+Stores proposals submitted by agents or workflows pending policy validation or approval.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `proposal_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Domain proposal identifier (`prop_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `scope` | `VARCHAR(32)` | NOT NULL, INDEX | Proposed scope |
+| `owner_id` | `VARCHAR(128)` | NOT NULL | Target owner identifier |
+| `proposer_id` | `VARCHAR(128)` | NOT NULL | Submitting principal or agent ID |
+| `proposer_type` | `VARCHAR(32)` | NOT NULL | `agent`, `workflow`, `user` |
+| `memory_type` | `VARCHAR(64)` | NOT NULL | Proposed memory type |
+| `content` | `TEXT` | NOT NULL | Proposed memory content |
+| `confidence` | `FLOAT` | NOT NULL, DEFAULT 1.0 | Proposed confidence |
+| `source_reference` | `VARCHAR(128)` | NULL | Reference to source execution/doc |
+| `status` | `VARCHAR(32)` | NOT NULL, DEFAULT 'pending', INDEX | `pending`, `approved`, `rejected` |
+| `rejection_reason` | `VARCHAR(256)` | NULL | Rejection explanation if rejected |
+| `approved_memory_id`| `VARCHAR(128)` | NULL | Memory ID created upon approval |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Submission timestamp |
+| `reviewed_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Review timestamp |
+
+#### Table: `memory_versions`
+Append-only version history preserving provenance and superseding lineage.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `memory_id` | `VARCHAR(128)` | NOT NULL, INDEX | Canonical memory identifier |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `version` | `INTEGER` | NOT NULL | Historical version number |
+| `content` | `TEXT` | NOT NULL | Historical content snapshot |
+| `content_hash` | `VARCHAR(64)` | NOT NULL | SHA-256 snapshot |
+| `reason` | `VARCHAR(256)` | NULL | Reason for revision |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Version snapshot timestamp |
+
+#### Table: `memory_access_events`
+Append-only security and operational audit trail for memory access and mutations.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `event_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique audit event ID (`mem_evt_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `user_id` | `VARCHAR(128)` | NOT NULL, INDEX | Acting principal user ID |
+| `action` | `VARCHAR(32)` | NOT NULL, INDEX | `retrieve`, `propose`, `approve`, `reject`, `update`, `expire`, `delete` |
+| `memory_id` | `VARCHAR(128)` | NULL, INDEX | Target memory ID if applicable |
+| `scope` | `VARCHAR(32)` | NULL | Associated scope |
+| `allowed` | `BOOLEAN` | NOT NULL | Authorization decision outcome |
+| `denial_reason` | `VARCHAR(64)` | NULL | Machine error code if denied |
+| `query_summary` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized query metadata |
+| `correlation_id` | `VARCHAR(128)` | NULL, INDEX | Request tracing correlation ID |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Event timestamp |
+
+
