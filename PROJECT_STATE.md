@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.5 — Research Agents (100% COMPLETE ✓)
+Phase 4.6 — Tool-Calling Framework (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -18,6 +18,36 @@ Phase 4.2 (Agent Runtime & Execution Engine) is 100% COMPLETE across all four me
 Phase 4.3 (Agent Orchestration Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.4 (Planning & Reasoning Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.5 (Research Agents) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+Phase 4.6 (Tool-Calling Framework) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+
+Phase 4.6 Member 1 (Tool Registry and Contracts) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.6-tool-calling-framework.md`), ADRs `ADR-083`–`ADR-085` (`docs/decisions/decisions.md`), REST API Section 25 (`docs/API/api-contract.md`), and Schema Section 3.29 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 14 Phase 4.6 typed error codes and exceptions (`ToolNotFoundError`, `ToolDisabledError`, `ToolAlreadyRegisteredError`, `ToolArgumentValidationError`, `ToolOutputValidationError`, `ToolOutputTooLargeError`, `ToolPermissionDeniedError`, `ToolApprovalRequiredError`, `ToolExecutionFailedError`, `ToolTimedOutError`, `ToolRateLimitedError`, `ToolConcurrencyLimitError`, `ToolIdempotencyConflictError`, `ToolPromptInjectionBlockedError`).
+- Implemented `backend/app/agents/tools/contracts.py`, `backend/app/agents/tools/metadata.py`, and `backend/app/agents/tools/registry.py` delivering `ToolMetadata`, `ToolCallRequest`, `ToolCallResult`, server-side trusted `ToolContext`, `BaseTool` protocol, and `ToolRegistry` with duplicate prevention, role filtering, schema export for agents, and enable/disable lifecycle.
+- Authored unit tests `tests/unit/test_phase4_6_tool_core.py` (10/10 passed).
+
+Phase 4.6 Member 2 (Tool Adapters and Execution Engine) deliverables are COMPLETED:
+- Implemented `BasePlatformTool` (`backend/app/agents/tools/base.py`) with Pydantic v2 argument and output validation.
+- Implemented reference adapters: `KnowledgeSearchTool` (`backend/app/agents/tools/adapters/knowledge_search.py`, `tool_id="knowledge.search"`, read-only, wrapping `AuthorizedSourceCatalog`) and `ReportDraftTool` (`backend/app/agents/tools/adapters/report_draft.py`, `tool_id="report.create_draft"`, controlled write, tenant-isolated draft storage).
+- Implemented `KeepToolExecutor` (`backend/app/agents/tools/executor.py`) delivering multi-stage execution: registry lookup, schema validation, policy authorization, approval gating, concurrency control (asyncio Semaphore), timeout enforcement (`asyncio.wait_for`), bounded retries for read operations, output size bounding, and safe error normalization.
+- Authored unit tests `tests/unit/test_phase4_6_tool_execution.py` (10/10 passed).
+
+Phase 4.6 Member 3 (Security, Policies and Audit) deliverables are COMPLETED:
+- Implemented `PolicyDecision` (`backend/app/agents/tools/authorization.py`), `ToolPolicyEngine` (`backend/app/agents/tools/policies.py`), and `ToolAuditService` (`backend/app/agents/tools/audit.py`).
+- Enforced zero-trust tenant boundaries (blocking cross-tenant argument parameters), RBAC role clearance (viewer denied write tools), prompt injection screening (blocking instruction override patterns), per-tenant sliding window rate limiting, and tenant write-approval policies.
+- Implemented fail-closed audit logging with automated secret masking (`_sanitize_payload` redacting bearer tokens, JWTs, API keys, and passwords).
+- Authored unit tests `tests/unit/test_phase4_6_tool_security.py` (9/9 passed).
+
+Phase 4.6 Member 4 (LangGraph Integration, API, Persistence & QA) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models (`ToolInvocationModel`, `ToolAuditLogModel`) in `backend/app/models/agent_tool.py`, exported in `backend/app/models/__init__.py`, and created Alembic migration `6a7b8c9d0e1f_phase_4_6_tool_calling_framework.py` (`5f6a7b8c9d0e` → `6a7b8c9d0e1f (head)`).
+- Implemented `ToolRepository` (`backend/app/agents/tools/repository.py`) and `LangGraphToolAdapter` (`backend/app/agents/tools/langgraph_adapter.py`) enabling graph nodes and Research Agents to invoke platform tools through `KeepToolExecutor`.
+- Mounted all REST endpoints in `backend/app/api/v1/tools.py` (`/api/v1/tools`, `/api/v1/tools/{id}`, `/api/v1/tools/execute`, `/api/v1/tool-calls`, `/api/v1/tools/calls/{id}`, `/api/v1/admin/tools`, `/api/v1/admin/tools/{id}/toggle`), registered in `backend/app/api/v1/router.py`, and initialized lifespan in `backend/app/main.py`.
+- Authored end-to-end integration suite `tests/integration/test_phase4_6_tool_integration.py` (7/7 passed).
+- Empirical Backend Verification Gate: `ruff check backend/ tests/` (**0 errors**), `alembic heads` (**`6a7b8c9d0e1f (head)`**), `pytest tests/unit/` (**562/562 passed**), CI-order Phase 4.1–4.6 + Alembic Migrations (**37/37 passed**).
+
+---
+
+### Previous Milestone Archive (Phase 4.5)
 
 Phase 4.5 Member 1 (Research Agent Core) deliverables are COMPLETED:
 - Authored master Architecture Specification (`docs/Architecture/phase-4.5-research-agents.md`), ADRs `ADR-080`–`ADR-082` (`docs/decisions/decisions.md`), REST API Section 24 (`docs/API/api-contract.md`), and Schema Section 3.28 (`docs/Database/database-schema.md`).

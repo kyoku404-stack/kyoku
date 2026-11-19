@@ -33,6 +33,13 @@ from backend.app.agents.research.research_service import KeepResearchService
 from backend.app.agents.runtime.executor import AgentRuntime
 from backend.app.agents.runtime.policies import KeepExecutionPolicy
 from backend.app.agents.service import build_orchestration_agent_registry
+from backend.app.agents.tools.adapters.knowledge_search import KnowledgeSearchTool
+from backend.app.agents.tools.adapters.report_draft import ReportDraftTool
+from backend.app.agents.tools.audit import ToolAuditService
+from backend.app.agents.tools.executor import KeepToolExecutor
+from backend.app.agents.tools.policies import ToolPolicyEngine
+from backend.app.agents.tools.registry import ToolRegistry
+from backend.app.agents.tools.repository import ToolRepository
 from backend.app.agents.workers.execution_worker import DurableExecutionWorker
 from backend.app.api.middleware import (
     LoggingMiddleware,
@@ -93,6 +100,10 @@ OPENAPI_TAGS = [
     {
         "name": "Agents",
         "description": "Phase 4.1 multi-agent discovery, capability metadata, and contract verification endpoints.",
+    },
+    {
+        "name": "Tools",
+        "description": "Phase 4.6 tool registry, schema discovery, execution engine, and audit trail endpoints.",
     },
 ]
 
@@ -227,8 +238,29 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
     await app.state.research_worker.start()
 
+    # Phase 4.6: Initialize lifespan-bound Tool-Calling Framework
+    if getattr(app.state, "tool_registry", None) is None:
+        tool_reg = ToolRegistry()
+        tool_reg.register(KnowledgeSearchTool())
+        tool_reg.register(ReportDraftTool())
+        app.state.tool_registry = tool_reg
+
+    if getattr(app.state, "tool_policy_engine", None) is None:
+        app.state.tool_policy_engine = ToolPolicyEngine()
+    if getattr(app.state, "tool_audit_service", None) is None:
+        app.state.tool_audit_service = ToolAuditService()
+    if getattr(app.state, "tool_repository", None) is None:
+        app.state.tool_repository = ToolRepository(session=None)
+    if getattr(app.state, "tool_executor", None) is None:
+        app.state.tool_executor = KeepToolExecutor(
+            registry=app.state.tool_registry,
+            policy_service=app.state.tool_policy_engine,
+            audit_service=app.state.tool_audit_service,
+            repository=app.state.tool_repository,
+        )
+
     logger.info(
-        "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning & Research Engine",
+        "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning, Research & Tool Engine",
         app.state.agent_registry.count(),
         app.state.workflow_registry.count(),
     )

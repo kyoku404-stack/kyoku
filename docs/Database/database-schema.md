@@ -2026,3 +2026,49 @@ Append-only audit trail recording lifecycle transitions, citation validations, c
 | `event_type` | `VARCHAR(64)` | NOT NULL | Lifecycle / validation / correction event type |
 | `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Shared trace correlation ID |
 | `details_json` | `JSONB` | NOT NULL | Secret-safe structured metadata |
+
+---
+
+### 3.29 Phase 4.6 Tool-Calling Framework Persistence
+
+Phase 4.6 introduces dedicated persistence for tool invocation records and security audit logs, linking invocations to Phase 4.2 agent executions and Phase 4.3 workflow executions.
+
+#### Table: `tool_invocations`
+Tracks every invocation of a registered tool, its execution parameters, performance, status, and bounded outputs.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `call_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique invocation identifier |
+| `tool_id` | `VARCHAR(128)` | NOT NULL, INDEX | Registered tool identifier |
+| `tool_version` | `VARCHAR(32)` | NOT NULL | Registered tool version |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `requested_by` | `VARCHAR(128)` | NOT NULL | Authenticated user ID |
+| `agent_execution_id` | `VARCHAR(128)` | NULL, INDEX | Linked Phase 4.2 agent execution ID |
+| `workflow_execution_id` | `VARCHAR(128)` | NULL, INDEX | Linked Phase 4.3 workflow execution ID |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Distributed trace correlation ID |
+| `idempotency_key` | `VARCHAR(128)` | NULL, INDEX | Deduplication key |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `succeeded`, `failed`, `timed_out`, `denied`, `approval_required` |
+| `started_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Execution start timestamp |
+| `completed_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Execution completion timestamp |
+| `duration_ms` | `INTEGER` | NULL | Invocation latency in milliseconds |
+| `error_code` | `VARCHAR(64)` | NULL | Sanitized machine-readable error code |
+| `input_summary` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized & bounded input arguments |
+| `output_summary` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized & bounded execution result output |
+
+#### Table: `tool_audit_logs`
+Append-only security audit log recording every policy decision, authorization check, denial, and approval requirement.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `event_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique audit event identifier |
+| `call_id` | `VARCHAR(128)` | NOT NULL, INDEX | Associated tool call ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `user_id` | `VARCHAR(128)` | NOT NULL, INDEX | Calling principal user ID |
+| `tool_id` | `VARCHAR(128)` | NOT NULL, INDEX | Registered tool identifier |
+| `decision` | `VARCHAR(32)` | NOT NULL | `allowed`, `denied`, `approval_required` |
+| `reason_code` | `VARCHAR(64)` | NOT NULL | Explanation/policy rule code |
+| `timestamp` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Audit event creation time |
+| `details` | `JSONB` | NOT NULL, DEFAULT '{}' | Security context and redaction details |
+

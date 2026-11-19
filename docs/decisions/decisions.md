@@ -2506,3 +2506,63 @@ Unbounded agent reflection loops waste compute and can stall runtime workers. Ad
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-083: Centralized Tool Execution Pipeline with Server-Side Trusted Context Enforcement
+
+#### Date
+2026-11-19
+
+#### Context
+Phase 4.6 introduces tool-calling to KEEP agents. Allowing agents or LLMs to invoke tools directly or allowing LLM-generated arguments to define security attributes (such as `tenant_id`, `user_id`, or `roles`) would expose the system to privilege escalation, tenant isolation bypasses, and unauthorized side effects.
+
+#### Decision
+1. Route all tool invocations through a single centralized `KeepToolExecutor` pipeline that enforces:
+   - Tool registry lookup and enabled status verification
+   - Strict Pydantic v2 input argument schema validation
+   - Policy engine authorization and tenant containment checks
+   - Approval requirement gating for sensitive actions
+   - Sandboxed execution with timeout (`asyncio.wait_for`) and concurrency semaphores
+   - Strict output schema validation and maximum payload size bounding
+   - Immutable persistence of invocation records and security audit logs
+2. Construct the executing `ToolContext` strictly on the server from authenticated JWT claims and runtime session state. Reject any attempt by LLM parameters to override security context attributes.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-084: Two-Tier Tool Permission & Human Approval Gating Architecture
+
+#### Date
+2026-11-19
+
+#### Context
+Certain tools are safe read-only operations (e.g. `knowledge.search`), whereas others produce state alterations (e.g. `report.create_draft`) or sensitive modifications. Executing sensitive side effects without explicit policy authorization and human approval risks data corruption or unintended actions.
+
+#### Decision
+1. Explicitly partition tools into `read` (read-only queries) and `write` (state-modifying mutations) access modes.
+2. Restrict bounded automatic retries strictly to idempotent `read` operations encountering transient exceptions; never automatically retry write operations.
+3. Integrate approval gating: if a tool or policy specifies `requires_approval=True`, `KeepToolExecutor` halts execution immediately and returns a structured `status="approval_required"` result without triggering underlying side effects, awaiting Phase 4.12 approval lifecycle processing.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-085: LangGraph Tool Calling Encapsulation Behind Trusted KEEP Adapters
+
+#### Date
+2026-11-19
+
+#### Context
+LangGraph provides native tool-binding primitives, but binding raw Python callables directly to LangGraph would bypass KEEP's multi-tenant authorization, rate limiting, and audit logging.
+
+#### Decision
+1. Encapsulate all tool representations exposed to LangGraph agents inside a dedicated `LangGraphToolAdapter`.
+2. Ensure that model-generated tool calls emitted by LangGraph nodes are translated into validated `ToolCallRequest` objects and dispatched strictly through `KeepToolExecutor.invoke()`.
+3. Normalize all outcomes (succeeded, failed, denied, approval_required, timed_out) into safe, structured dictionary responses with secret redaction before injecting them into LangGraph state channels.
+
+#### Status
+ACCEPTED

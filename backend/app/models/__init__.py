@@ -12,6 +12,10 @@ from backend.app.models.agent_research import (
     ResearchFindingModel,
     ResearchRun,
 )
+from backend.app.models.agent_tool import (
+    ToolAuditLogModel,
+    ToolInvocationModel,
+)
 from backend.app.models.agent_workflow import AgentWorkflowExecution, AgentWorkflowStep
 from backend.app.models.analytics import (
     AIRecommendation,
@@ -157,6 +161,8 @@ __all__ = [
     "SystemHealthSnapshot",
     "Task",
     "Team",
+    "ToolAuditLogModel",
+    "ToolInvocationModel",
     "User",
     "Workflow",
     "WorkflowApproval",

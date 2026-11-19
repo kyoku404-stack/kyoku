@@ -5317,3 +5317,60 @@ All Phase 4.5 research endpoints are mounted under `/api/v1/research`, authentic
 - **Endpoint:** `POST /api/v1/research/{research_id}/cancel`
 - **Permission:** `agent.invoke`
 - **Responses:** `200 OK` (cancelled/signalled), `409 Conflict` (already terminal).
+
+---
+
+## Section 25: Phase 4.6 Tool-Calling Framework API
+
+All Phase 4.6 tool endpoints are mounted under `/api/v1/tools` (with aliases `/api/v1/tool-calls` where specified), authenticated via KEEP Bearer JWT, strictly tenant-scoped, and return KEEP's canonical `ApiResponse` envelope.
+
+### 25.1 List Available Tools
+- **Endpoint:** `GET /api/v1/tools`
+- **Permission:** `agent.view`
+- **Responses:** `200 OK` with list of enabled `ToolMetadata` records visible to caller's role and tenant.
+
+### 25.2 Get Tool Metadata & Schema
+- **Endpoint:** `GET /api/v1/tools/{tool_id}`
+- **Permission:** `agent.view`
+- **Responses:** `200 OK` with detailed schema, capabilities, and parameters for the specified tool (`404 Not Found` if unknown).
+
+### 25.3 Execute Tool Call
+- **Endpoint:** `POST /api/v1/tools/execute` (alias: `POST /api/v1/tool-calls`)
+- **Permission:** `agent.invoke`
+- **Headers:** `Idempotency-Key` (optional, tenant/user scoped)
+- **Request Body:**
+```json
+{
+  "tool_id": "knowledge.search",
+  "call_id": "call-a1b2c3d4-e5f6-7890",
+  "arguments": {
+    "query": "quarterly incident report",
+    "limit": 5
+  },
+  "idempotency_key": "idemp-001"
+}
+```
+- **Responses:**
+  - `200 OK` (`ToolCallResult` with `status: "succeeded"` or `"approval_required"`)
+  - `400 Bad Request` (`TOOL_ARGUMENT_INVALID`)
+  - `403 Forbidden` (`TOOL_PERMISSION_DENIED`)
+  - `404 Not Found` (`TOOL_NOT_FOUND`)
+  - `408 Request Timeout` (`TOOL_TIMED_OUT`)
+  - `429 Too Many Requests` (`TOOL_RATE_LIMITED` / `TOOL_CONCURRENCY_LIMIT`)
+
+### 25.4 Retrieve Tool Invocation Status & Result
+- **Endpoint:** `GET /api/v1/tools/calls/{call_id}` (alias: `GET /api/v1/tool-calls/{call_id}`)
+- **Permission:** `agent.view`
+- **Responses:** `200 OK` (`ToolCallResult` with execution status, timings, redacted inputs/outputs).
+
+### 25.5 Admin Tool Catalog
+- **Endpoint:** `GET /api/v1/admin/tools`
+- **Permission:** `ai.admin` / `system_admin`
+- **Responses:** `200 OK` with complete tool catalog including disabled tools and administrative status.
+
+### 25.6 Admin Toggle Tool Status
+- **Endpoint:** `POST /api/v1/admin/tools/{tool_id}/toggle`
+- **Permission:** `ai.admin` / `system_admin`
+- **Request Body:** `{"enabled": true}`
+- **Responses:** `200 OK` with updated `ToolMetadata`.
+

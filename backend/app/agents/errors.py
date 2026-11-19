@@ -93,6 +93,21 @@ class AgentErrorCode(str, Enum):
     RESEARCH_REPORT_NOT_READY = "RESEARCH_REPORT_NOT_READY"
     RESEARCH_ACCESS_DENIED = "RESEARCH_ACCESS_DENIED"
     RESEARCH_IDEMPOTENCY_CONFLICT = "RESEARCH_IDEMPOTENCY_CONFLICT"
+    # Phase 4.6 Tool-Calling Framework error codes
+    TOOL_NOT_FOUND = "TOOL_NOT_FOUND"
+    TOOL_DISABLED = "TOOL_DISABLED"
+    TOOL_ALREADY_REGISTERED = "TOOL_ALREADY_REGISTERED"
+    TOOL_ARGUMENT_INVALID = "TOOL_ARGUMENT_INVALID"
+    TOOL_OUTPUT_INVALID = "TOOL_OUTPUT_INVALID"
+    TOOL_OUTPUT_TOO_LARGE = "TOOL_OUTPUT_TOO_LARGE"
+    TOOL_PERMISSION_DENIED = "TOOL_PERMISSION_DENIED"
+    TOOL_APPROVAL_REQUIRED = "TOOL_APPROVAL_REQUIRED"
+    TOOL_EXECUTION_FAILED = "TOOL_EXECUTION_FAILED"
+    TOOL_TIMED_OUT = "TOOL_TIMED_OUT"
+    TOOL_RATE_LIMITED = "TOOL_RATE_LIMITED"
+    TOOL_CONCURRENCY_LIMIT = "TOOL_CONCURRENCY_LIMIT"
+    TOOL_IDEMPOTENCY_CONFLICT = "TOOL_IDEMPOTENCY_CONFLICT"
+    TOOL_PROMPT_INJECTION_BLOCKED = "TOOL_PROMPT_INJECTION_BLOCKED"
 
 
 class AgentErrorDetail(BaseModel):
@@ -661,3 +676,200 @@ class ResearchIdempotencyConflictError(AgentLayerError, ValueError):
             http_status=409,
             details={"idempotency_key": idempotency_key},
         )
+
+
+# ============================================================================
+# Phase 4.6 Tool-Calling Framework Exceptions
+# ============================================================================
+
+
+class ToolNotFoundError(AgentLayerError, LookupError):
+    """Raised when an agent attempts to invoke or inspect an unregistered tool."""
+
+    def __init__(self, tool_id: str) -> None:
+        super().__init__(
+            f"Tool '{tool_id}' is not registered in the platform catalog.",
+            code=AgentErrorCode.TOOL_NOT_FOUND,
+            http_status=404,
+            details={"tool_id": tool_id},
+        )
+
+
+class ToolDisabledError(AgentLayerError, ValueError):
+    """Raised when an agent attempts to invoke a tool that is currently disabled."""
+
+    def __init__(self, tool_id: str) -> None:
+        super().__init__(
+            f"Tool '{tool_id}' is currently disabled by administrative policy.",
+            code=AgentErrorCode.TOOL_DISABLED,
+            http_status=400,
+            details={"tool_id": tool_id},
+        )
+
+
+class ToolAlreadyRegisteredError(AgentLayerError, ValueError):
+    """Raised when attempting to register a tool with an identifier that already exists."""
+
+    def __init__(self, tool_id: str) -> None:
+        super().__init__(
+            f"Tool with ID '{tool_id}' is already registered.",
+            code=AgentErrorCode.TOOL_ALREADY_REGISTERED,
+            http_status=409,
+            details={"tool_id": tool_id},
+        )
+
+
+class ToolArgumentValidationError(AgentLayerError, ValueError):
+    """Raised when tool input arguments fail schema validation."""
+
+    def __init__(self, message: str, *, tool_id: str, details: dict[str, Any] | None = None) -> None:
+        combined_details = {"tool_id": tool_id}
+        if details:
+            combined_details.update(details)
+        super().__init__(
+            message,
+            code=AgentErrorCode.TOOL_ARGUMENT_INVALID,
+            http_status=400,
+            details=combined_details,
+        )
+
+
+class ToolOutputValidationError(AgentLayerError, ValueError):
+    """Raised when tool execution output fails schema validation."""
+
+    def __init__(self, message: str, *, tool_id: str, details: dict[str, Any] | None = None) -> None:
+        combined_details = {"tool_id": tool_id}
+        if details:
+            combined_details.update(details)
+        super().__init__(
+            message,
+            code=AgentErrorCode.TOOL_OUTPUT_INVALID,
+            http_status=500,
+            details=combined_details,
+        )
+
+
+class ToolOutputTooLargeError(AgentLayerError, ValueError):
+    """Raised when tool execution output exceeds configured maximum size limits."""
+
+    def __init__(self, message: str, *, tool_id: str, size_bytes: int, max_bytes: int) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.TOOL_OUTPUT_TOO_LARGE,
+            http_status=413,
+            details={"tool_id": tool_id, "size_bytes": size_bytes, "max_bytes": max_bytes},
+        )
+
+
+class ToolPermissionDeniedError(AgentLayerError, PermissionError):
+    """Raised when caller lacks required role, tenant, or capability permissions for a tool."""
+
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.TOOL_PERMISSION_DENIED,
+            http_status=403,
+            details=details or {},
+        )
+
+
+class ToolApprovalRequiredError(AgentLayerError):
+    """Raised when a tool action requires human or administrative approval before execution."""
+
+    def __init__(self, message: str, *, tool_id: str, details: dict[str, Any] | None = None) -> None:
+        combined_details = {"tool_id": tool_id}
+        if details:
+            combined_details.update(details)
+        super().__init__(
+            message,
+            code=AgentErrorCode.TOOL_APPROVAL_REQUIRED,
+            http_status=409,
+            details=combined_details,
+        )
+
+
+class ToolExecutionFailedError(AgentLayerError, RuntimeError):
+    """Raised when tool execution fails unexpectedly during adapter invocation."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        tool_id: str,
+        retryable: bool = False,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        combined_details = {"tool_id": tool_id}
+        if details:
+            combined_details.update(details)
+        super().__init__(
+            message,
+            code=AgentErrorCode.TOOL_EXECUTION_FAILED,
+            http_status=500,
+            retryable=retryable,
+            details=combined_details,
+        )
+
+
+class ToolTimedOutError(AgentLayerError, TimeoutError):
+    """Raised when a tool invocation exceeds its timeout limit."""
+
+    def __init__(self, tool_id: str, timeout_seconds: float) -> None:
+        super().__init__(
+            f"Tool '{tool_id}' execution timed out after {timeout_seconds:.1f}s.",
+            code=AgentErrorCode.TOOL_TIMED_OUT,
+            http_status=408,
+            retryable=False,
+            details={"tool_id": tool_id, "timeout_seconds": timeout_seconds},
+        )
+
+
+class ToolRateLimitedError(AgentLayerError):
+    """Raised when tool invocation rate exceeds tenant or agent burst limits."""
+
+    def __init__(self, tool_id: str, *, tenant_id: str, limit: int, window_seconds: int) -> None:
+        super().__init__(
+            f"Tool '{tool_id}' rate limit exceeded for tenant '{tenant_id}' ({limit} calls per {window_seconds}s).",
+            code=AgentErrorCode.TOOL_RATE_LIMITED,
+            http_status=429,
+            retryable=True,
+            details={"tool_id": tool_id, "tenant_id": tenant_id, "limit": limit, "window_seconds": window_seconds},
+        )
+
+
+class ToolConcurrencyLimitError(AgentLayerError):
+    """Raised when concurrent tool invocations exceed maximum allowed semaphore slots."""
+
+    def __init__(self, tool_id: str, *, max_concurrency: int) -> None:
+        super().__init__(
+            f"Tool '{tool_id}' maximum concurrency limit ({max_concurrency}) reached.",
+            code=AgentErrorCode.TOOL_CONCURRENCY_LIMIT,
+            http_status=429,
+            retryable=True,
+            details={"tool_id": tool_id, "max_concurrency": max_concurrency},
+        )
+
+
+class ToolIdempotencyConflictError(AgentLayerError, ValueError):
+    """Raised when an Idempotency-Key is reused with differing arguments."""
+
+    def __init__(self, idempotency_key: str) -> None:
+        super().__init__(
+            f"Tool Idempotency-Key '{idempotency_key}' was already used with a different request payload.",
+            code=AgentErrorCode.TOOL_IDEMPOTENCY_CONFLICT,
+            http_status=409,
+            details={"idempotency_key": idempotency_key},
+        )
+
+
+class ToolPromptInjectionBlockedError(AgentLayerError, PermissionError):
+    """Raised when malicious prompt injection or instruction override patterns are detected in tool arguments."""
+
+    def __init__(self, tool_id: str, *, pattern_matched: str | None = None) -> None:
+        super().__init__(
+            f"Tool '{tool_id}' execution blocked due to prompt injection attempt.",
+            code=AgentErrorCode.TOOL_PROMPT_INJECTION_BLOCKED,
+            http_status=403,
+            details={"tool_id": tool_id, "pattern_matched": pattern_matched or "detected"},
+        )
+
