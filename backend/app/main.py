@@ -9,6 +9,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
+from backend.app.agents.memory.repository import SqlAlchemyMemoryRepository
+from backend.app.agents.memory.service import MemoryService
 from backend.app.agents.observability.telemetry import RuntimeMetricsCollector
 from backend.app.agents.observability.workflow_tracing import WorkflowMetricsCollector
 from backend.app.agents.orchestration.graphs import build_default_workflow_registry
@@ -49,6 +51,7 @@ from backend.app.api.middleware import (
 )
 from backend.app.api.v1 import api_v1_router
 from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.memory import router as memory_router
 from backend.app.core.config import settings
 from backend.app.core.logging import get_logger, setup_logging
 from backend.app.core.metrics import metrics_registry
@@ -104,6 +107,10 @@ OPENAPI_TAGS = [
     {
         "name": "Tools",
         "description": "Phase 4.6 tool registry, schema discovery, execution engine, and audit trail endpoints.",
+    },
+    {
+        "name": "Memory",
+        "description": "Phase 4.7 agent memory system, scoped retrieval, proposals, and lifecycle governance.",
     },
 ]
 
@@ -259,8 +266,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             repository=app.state.tool_repository,
         )
 
+    # Phase 4.7: Initialize lifespan-bound Agent Memory System
+    if getattr(app.state, "memory_repository", None) is None:
+        app.state.memory_repository = SqlAlchemyMemoryRepository(session=None)
+    if getattr(app.state, "memory_service", None) is None:
+        app.state.memory_service = MemoryService(repository=app.state.memory_repository)
+
     logger.info(
-        "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning, Research & Tool Engine",
+        "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning, Research, Tool & Memory Engine",
         app.state.agent_registry.count(),
         app.state.workflow_registry.count(),
     )
@@ -321,6 +334,9 @@ register_exception_handlers(app)
 
 # 7. Mount API v1 Router
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
+
+# 8. Mount Phase 4.7 Memory Compatibility Router (/api/memory/*)
+app.include_router(memory_router, prefix="/api")
 
 # 6. Mount Root-Level Observability & Health Probes (/health, /health/*)
 app.include_router(health_router)

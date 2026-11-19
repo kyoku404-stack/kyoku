@@ -1,5 +1,11 @@
 from backend.app.models.activity import ActivityLog
 from backend.app.models.agent_execution import AgentCheckpoint, AgentExecution
+from backend.app.models.agent_memory import (
+    MemoryAccessEventModel,
+    MemoryModel,
+    MemoryProposalModel,
+    MemoryVersionModel,
+)
 from backend.app.models.agent_plan import (
     AgentPlan,
     AgentPlanEvent,
@@ -128,6 +134,10 @@ __all__ = [
     "KgEntity",
     "KgRelationship",
     "Meeting",
+    "MemoryAccessEventModel",
+    "MemoryModel",
+    "MemoryProposalModel",
+    "MemoryVersionModel",
     "Notification",
     "NotificationPreference",
     "Organization",

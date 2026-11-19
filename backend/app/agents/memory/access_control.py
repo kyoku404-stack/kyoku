@@ -189,7 +189,10 @@ class MemoryAccessController:
             )
 
         if scope == "organization":
-            # Organization memory mutations require Org Admin privilege
+            # Any authenticated member within the tenant may submit an organization proposal
+            if action == "propose":
+                return PolicyDecision.allow(action)
+            # Modifying, approving, or deleting organization memory requires Org Admin privilege
             if admin:
                 return PolicyDecision.allow(action)
             return PolicyDecision.deny(

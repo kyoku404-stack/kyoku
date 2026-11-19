@@ -23,6 +23,7 @@ from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.ingestion import router as ingestion_router
 from backend.app.api.v1.invitations import router as invitations_router
 from backend.app.api.v1.members import router as members_router
+from backend.app.api.v1.memory import router as memory_router
 from backend.app.api.v1.metrics import router as metrics_router
 from backend.app.api.v1.notifications import router as notifications_router
 from backend.app.api.v1.organizations import router as organizations_router
@@ -69,6 +70,7 @@ api_v1_router.include_router(agent_workflows_router)
 api_v1_router.include_router(planning_router)
 api_v1_router.include_router(research_router)
 api_v1_router.include_router(tools_router)
+api_v1_router.include_router(memory_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(connectors_router)
 api_v1_router.include_router(collaboration_router)
