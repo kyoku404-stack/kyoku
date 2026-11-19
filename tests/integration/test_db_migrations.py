@@ -52,6 +52,7 @@ class TestDatabaseMigrations:
             "4e5f6a7b8c9d",
             "5f6a7b8c9d0e",
             "6a7b8c9d0e1f",
+            "7b8c9d0e1f2a",
         )
 
     def test_schema_metadata_tables_completeness(self):
@@ -133,6 +134,10 @@ class TestDatabaseMigrations:
             "research_events",
             "tool_invocations",
             "tool_audit_logs",
+            "memories",
+            "memory_proposals",
+            "memory_versions",
+            "memory_access_events",
         }
 
         missing_tables = expected_tables - table_names

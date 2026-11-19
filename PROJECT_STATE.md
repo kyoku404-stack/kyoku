@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.6 — Tool-Calling Framework (100% COMPLETE ✓)
+Phase 4.7 — Agent Memory System (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -12,38 +12,53 @@ GREEN
 ## Overall Status
 Phase 1 (Phase 1.1 through Phase 1.10) is 100% COMPLETE across all four member roles.
 Phase 2 (Phase 2.1 through Phase 2.5) is 100% COMPLETE across all four member roles.
-Phase 3 (Phase 3.1 through Phase 3.7) is 100% COMPLETE across all four member roles.
+Phase 3 (Phase 3.7) is 100% COMPLETE across all four member roles.
 Phase 4.1 (Multi-Agent Architecture) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.2 (Agent Runtime & Execution Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
 Phase 4.3 (Agent Orchestration Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.4 (Planning & Reasoning Engine) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.5 (Research Agents) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
 Phase 4.6 (Tool-Calling Framework) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.7 (Agent Memory System) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 
-Phase 4.6 Member 1 (Tool Registry and Contracts) deliverables are COMPLETED:
-- Authored master Architecture Specification (`docs/Architecture/phase-4.6-tool-calling-framework.md`), ADRs `ADR-083`–`ADR-085` (`docs/decisions/decisions.md`), REST API Section 25 (`docs/API/api-contract.md`), and Schema Section 3.29 (`docs/Database/database-schema.md`).
-- Extended `backend/app/agents/errors.py` with 14 Phase 4.6 typed error codes and exceptions (`ToolNotFoundError`, `ToolDisabledError`, `ToolAlreadyRegisteredError`, `ToolArgumentValidationError`, `ToolOutputValidationError`, `ToolOutputTooLargeError`, `ToolPermissionDeniedError`, `ToolApprovalRequiredError`, `ToolExecutionFailedError`, `ToolTimedOutError`, `ToolRateLimitedError`, `ToolConcurrencyLimitError`, `ToolIdempotencyConflictError`, `ToolPromptInjectionBlockedError`).
-- Implemented `backend/app/agents/tools/contracts.py`, `backend/app/agents/tools/metadata.py`, and `backend/app/agents/tools/registry.py` delivering `ToolMetadata`, `ToolCallRequest`, `ToolCallResult`, server-side trusted `ToolContext`, `BaseTool` protocol, and `ToolRegistry` with duplicate prevention, role filtering, schema export for agents, and enable/disable lifecycle.
-- Authored unit tests `tests/unit/test_phase4_6_tool_core.py` (10/10 passed).
+Phase 4.7 Member 1 (Memory Contracts, Scopes and Storage) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.7-agent-memory-system.md`), ADRs `ADR-086`–`ADR-088` (`docs/decisions/decisions.md`), REST API Section 26 (`docs/API/api-contract.md`), and Schema Section 3.30 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 14 Phase 4.7 typed error codes and exceptions (`MemoryNotFoundError`, `MemoryDisabledError`, `MemoryAccessDeniedError`, `MemoryProposalRejectedError`, `MemoryProposalNotFoundError`, `MemoryAlreadyExistsError`, `MemoryInvalidScopeError`, `MemoryContentInvalidError`, `MemoryRetentionExpiredError`, `MemoryDeletedError`, `MemoryPolicyViolationError`, `MemoryTenantIsolationViolationError`, `MemoryPromptInjectionBlockedError`, `MemoryBudgetExceededError`, `MemoryConflictDetectedError`).
+- Implemented `backend/app/agents/memory/contracts.py` and `backend/app/memory/contracts.py` delivering `MemoryRecord`, `MemoryProposal`, `MemoryVersionRecord`, `MemoryAccessEvent`, `MemoryQuery`, `MemoryRetrievalResult`, `MemoryWriteRequest`, and server-side trusted `MemorySecurityContext` with SHA-256 content hashing.
+- Implemented `BaseMemoryRepository` and `InMemoryMemoryRepository` (`backend/app/agents/memory/repository.py`, `backend/app/memory/repository.py`).
+- Authored unit tests `tests/unit/test_phase4_7_memory_core.py` (9/9 passed).
 
-Phase 4.6 Member 2 (Tool Adapters and Execution Engine) deliverables are COMPLETED:
-- Implemented `BasePlatformTool` (`backend/app/agents/tools/base.py`) with Pydantic v2 argument and output validation.
-- Implemented reference adapters: `KnowledgeSearchTool` (`backend/app/agents/tools/adapters/knowledge_search.py`, `tool_id="knowledge.search"`, read-only, wrapping `AuthorizedSourceCatalog`) and `ReportDraftTool` (`backend/app/agents/tools/adapters/report_draft.py`, `tool_id="report.create_draft"`, controlled write, tenant-isolated draft storage).
-- Implemented `KeepToolExecutor` (`backend/app/agents/tools/executor.py`) delivering multi-stage execution: registry lookup, schema validation, policy authorization, approval gating, concurrency control (asyncio Semaphore), timeout enforcement (`asyncio.wait_for`), bounded retries for read operations, output size bounding, and safe error normalization.
-- Authored unit tests `tests/unit/test_phase4_6_tool_execution.py` (10/10 passed).
+Phase 4.7 Member 2 (Retrieval, Relevance, Ranking & Consolidation) deliverables are COMPLETED:
+- Implemented `MemoryRanker` (`backend/app/agents/memory/relevance.py`, `backend/app/memory/relevance.py`) computing composite scores across lexical/token overlap, exponential recency decay, and source confidence, enforcing context token budgeting (`max_tokens`).
+- Implemented `MemoryRetrievalService` (`backend/app/agents/memory/retrieval.py`, `backend/app/memory/retrieval.py`) executing scoped candidate searches, filtering, and ranked context delivery.
+- Implemented `MemoryConsolidationEngine` (`backend/app/agents/memory/consolidation.py`, `backend/app/memory/consolidation.py`) managing exact SHA-256 deduplication, near-duplicate detection (Jaccard similarity threshold), semantic contradiction detection, and version superseding lineage.
+- Authored unit tests `tests/unit/test_phase4_7_memory_retrieval.py` (7/7 passed).
 
-Phase 4.6 Member 3 (Security, Policies and Audit) deliverables are COMPLETED:
-- Implemented `PolicyDecision` (`backend/app/agents/tools/authorization.py`), `ToolPolicyEngine` (`backend/app/agents/tools/policies.py`), and `ToolAuditService` (`backend/app/agents/tools/audit.py`).
-- Enforced zero-trust tenant boundaries (blocking cross-tenant argument parameters), RBAC role clearance (viewer denied write tools), prompt injection screening (blocking instruction override patterns), per-tenant sliding window rate limiting, and tenant write-approval policies.
-- Implemented fail-closed audit logging with automated secret masking (`_sanitize_payload` redacting bearer tokens, JWTs, API keys, and passwords).
-- Authored unit tests `tests/unit/test_phase4_6_tool_security.py` (9/9 passed).
+Phase 4.7 Member 3 (Privacy, Governance, Policies & Lifecycle) deliverables are COMPLETED:
+- Implemented `MemoryAccessController` (`backend/app/agents/memory/access_control.py`) enforcing zero-trust tenant boundaries and scope-specific clearances (`user`, `organization`, `workflow`, `agent`).
+- Implemented `MemoryPolicyEngine` (`backend/app/agents/memory/policies.py`) screening prompt injection patterns, redacting bearer tokens/credentials, and enforcing two-phase proposal governance (user preferences eligible for auto-approval, model proposals held pending).
+- Implemented `MemoryLifecycleManager` (`backend/app/agents/memory/lifecycle.py`) managing retention TTLs, expiration sweeps, approval/rejection workflows, soft-deletion, and audit event logging.
+- Authored unit tests `tests/unit/test_phase4_7_memory_security.py` (9/9 passed).
 
-Phase 4.6 Member 4 (LangGraph Integration, API, Persistence & QA) deliverables are COMPLETED:
-- Implemented SQLAlchemy ORM models (`ToolInvocationModel`, `ToolAuditLogModel`) in `backend/app/models/agent_tool.py`, exported in `backend/app/models/__init__.py`, and created Alembic migration `6a7b8c9d0e1f_phase_4_6_tool_calling_framework.py` (`5f6a7b8c9d0e` → `6a7b8c9d0e1f (head)`).
-- Implemented `ToolRepository` (`backend/app/agents/tools/repository.py`) and `LangGraphToolAdapter` (`backend/app/agents/tools/langgraph_adapter.py`) enabling graph nodes and Research Agents to invoke platform tools through `KeepToolExecutor`.
-- Mounted all REST endpoints in `backend/app/api/v1/tools.py` (`/api/v1/tools`, `/api/v1/tools/{id}`, `/api/v1/tools/execute`, `/api/v1/tool-calls`, `/api/v1/tools/calls/{id}`, `/api/v1/admin/tools`, `/api/v1/admin/tools/{id}/toggle`), registered in `backend/app/api/v1/router.py`, and initialized lifespan in `backend/app/main.py`.
-- Authored end-to-end integration suite `tests/integration/test_phase4_6_tool_integration.py` (7/7 passed).
-- Empirical Backend Verification Gate: `ruff check backend/ tests/` (**0 errors**), `alembic heads` (**`6a7b8c9d0e1f (head)`**), `pytest tests/unit/` (**562/562 passed**), CI-order Phase 4.1–4.6 + Alembic Migrations (**37/37 passed**).
+Phase 4.7 Member 4 (LangGraph Integration, API, Persistence & QA) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models (`MemoryModel`, `MemoryProposalModel`, `MemoryVersionModel`, `MemoryAccessEventModel`) in `backend/app/models/agent_memory.py`, exported in `backend/app/models/__init__.py`, and created Alembic migration `7b8c9d0e1f2a_phase_4_7_agent_memory_system.py` (`6a7b8c9d0e1f` → `7b8c9d0e1f2a (head)`).
+- Implemented `SqlAlchemyMemoryRepository` (`backend/app/agents/memory/repository.py`) and unified `MemoryService` (`backend/app/agents/memory/service.py`).
+- Implemented LangGraph nodes `load_memory_node` and `propose_memory_node` (`backend/app/agents/memory/langgraph_integration.py`).
+- Implemented observability metrics collector (`backend/app/agents/memory/observability.py`).
+- Mounted all REST endpoints in `backend/app/api/v1/memory.py` (`/api/v1/memory/search`, `/api/v1/memory/{id}`, `/api/v1/memory/proposals`, `/api/v1/memory/{id}/approve`, `/api/v1/memory/{id}/reject`, `/api/v1/memory/{id}`, and backward-compatible `/api/memory/*`), registered in `backend/app/api/v1/router.py`, and initialized lifespan in `backend/app/main.py`.
+- Authored end-to-end integration suite `tests/integration/test_phase4_7_memory_integration.py` (7/7 passed) and alias `tests/integration/test_agent_memory.py` (7/7 passed).
+- Empirical Backend Verification Gate: `ruff check backend/ tests/` (**0 errors**), `alembic heads` (**`7b8c9d0e1f2a (head)`**), `pytest tests/unit/` (**587/587 passed**), CI-order Phase 4.1–4.7 + Alembic Migrations (**44/44 passed**).
+
+---
+
+### Previous Milestone Archive (Phase 4.6)
+Phase 4.6 (Tool-Calling Framework) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+- Authored master Architecture Specification (`docs/Architecture/phase-4.6-tool-calling-framework.md`), ADRs `ADR-083`–`ADR-085`, REST API Section 25, and Schema Section 3.29.
+- Implemented `ToolRegistry`, `KeepToolExecutor`, `KnowledgeSearchTool`, `ReportDraftTool`, `ToolPolicyEngine`, `ToolAuditService`, `ToolRepository`, and `LangGraphToolAdapter`.
+- Mounted REST endpoints under `/api/v1/tools` and `/api/v1/tool-calls`.
+- Verified Alembic migration `6a7b8c9d0e1f`, 10/10 core unit tests, 10/10 execution unit tests, 9/9 security unit tests, and 7/7 integration tests.
+
+---
 
 ---
 
