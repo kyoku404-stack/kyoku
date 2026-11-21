@@ -125,6 +125,22 @@ class AgentErrorCode(str, Enum):
     MEMORY_BUDGET_EXCEEDED = "MEMORY_BUDGET_EXCEEDED"
     MEMORY_CONFLICT_DETECTED = "MEMORY_CONFLICT_DETECTED"
 
+    # Phase 4.8 Multi-Agent Collaboration error codes
+    COLLABORATION_SESSION_NOT_FOUND = "COLLABORATION_SESSION_NOT_FOUND"
+    COLLABORATION_SESSION_COMPLETED = "COLLABORATION_SESSION_COMPLETED"
+    COLLABORATION_SESSION_CANCELLED = "COLLABORATION_SESSION_CANCELLED"
+    COLLABORATION_TASK_NOT_FOUND = "COLLABORATION_TASK_NOT_FOUND"
+    COLLABORATION_TASK_DEPENDENCY_FAILED = "COLLABORATION_TASK_DEPENDENCY_FAILED"
+    COLLABORATION_MESSAGE_INVALID = "COLLABORATION_MESSAGE_INVALID"
+    COLLABORATION_AGENT_NOT_REGISTERED = "COLLABORATION_AGENT_NOT_REGISTERED"
+    COLLABORATION_AGENT_CAPABILITY_MISMATCH = "COLLABORATION_AGENT_CAPABILITY_MISMATCH"
+    COLLABORATION_REVIEW_FAILED = "COLLABORATION_REVIEW_FAILED"
+    COLLABORATION_CONFLICT_DETECTED = "COLLABORATION_CONFLICT_DETECTED"
+    COLLABORATION_CONFLICT_UNRESOLVED = "COLLABORATION_CONFLICT_UNRESOLVED"
+    COLLABORATION_MAX_REVISIONS_EXCEEDED = "COLLABORATION_MAX_REVISIONS_EXCEEDED"
+    COLLABORATION_ACCESS_DENIED = "COLLABORATION_ACCESS_DENIED"
+    COLLABORATION_TENANT_ISOLATION_VIOLATION = "COLLABORATION_TENANT_ISOLATION_VIOLATION"
+
 
 class AgentErrorDetail(BaseModel):
     """Structured, sanitized error payload embedded in failed AgentResults and messages."""
@@ -1037,5 +1053,178 @@ class MemoryBudgetExceededError(AgentLayerError, ValueError):
             http_status=400,
             details={"tokens": tokens, "max_tokens": max_tokens},
         )
+
+
+# ==============================================================================
+# Phase 4.8 Multi-Agent Collaboration Typed Exceptions
+# ==============================================================================
+
+
+class CollaborationSessionNotFoundError(AgentLayerError, LookupError):
+    """Raised when a collaboration session does not exist."""
+
+    def __init__(self, session_id: str) -> None:
+        super().__init__(
+            f"Collaboration session '{session_id}' was not found.",
+            code=AgentErrorCode.COLLABORATION_SESSION_NOT_FOUND,
+            http_status=404,
+            details={"session_id": session_id},
+        )
+
+
+class CollaborationSessionCompletedError(AgentLayerError, ValueError):
+    """Raised when an operation cannot be performed on a completed collaboration session."""
+
+    def __init__(self, session_id: str) -> None:
+        super().__init__(
+            f"Collaboration session '{session_id}' has already completed.",
+            code=AgentErrorCode.COLLABORATION_SESSION_COMPLETED,
+            http_status=400,
+            details={"session_id": session_id},
+        )
+
+
+class CollaborationSessionCancelledError(AgentLayerError, ValueError):
+    """Raised when an operation cannot be performed on a cancelled collaboration session."""
+
+    def __init__(self, session_id: str) -> None:
+        super().__init__(
+            f"Collaboration session '{session_id}' has been cancelled.",
+            code=AgentErrorCode.COLLABORATION_SESSION_CANCELLED,
+            http_status=400,
+            details={"session_id": session_id},
+        )
+
+
+class CollaborationTaskNotFoundError(AgentLayerError, LookupError):
+    """Raised when a collaboration task does not exist."""
+
+    def __init__(self, task_id: str) -> None:
+        super().__init__(
+            f"Collaboration task '{task_id}' was not found.",
+            code=AgentErrorCode.COLLABORATION_TASK_NOT_FOUND,
+            http_status=404,
+            details={"task_id": task_id},
+        )
+
+
+class CollaborationTaskDependencyFailedError(AgentLayerError, RuntimeError):
+    """Raised when a task cannot proceed because predecessor dependencies failed."""
+
+    def __init__(self, task_id: str, failed_dependencies: list[str]) -> None:
+        super().__init__(
+            f"Collaboration task '{task_id}' dependencies failed: {failed_dependencies}",
+            code=AgentErrorCode.COLLABORATION_TASK_DEPENDENCY_FAILED,
+            http_status=400,
+            details={"task_id": task_id, "failed_dependencies": failed_dependencies},
+        )
+
+
+class CollaborationMessageInvalidError(AgentLayerError, ValueError):
+    """Raised when an agent collaboration message is malformed or invalid."""
+
+    def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            f"Collaboration message validation failed: {reason}",
+            code=AgentErrorCode.COLLABORATION_MESSAGE_INVALID,
+            http_status=400,
+            details=details or {},
+        )
+
+
+class CollaborationAgentNotRegisteredError(AgentLayerError, LookupError):
+    """Raised when a participant agent is not registered or found in the registry."""
+
+    def __init__(self, agent_id: str) -> None:
+        super().__init__(
+            f"Collaboration agent '{agent_id}' is not registered.",
+            code=AgentErrorCode.COLLABORATION_AGENT_NOT_REGISTERED,
+            http_status=400,
+            details={"agent_id": agent_id},
+        )
+
+
+class CollaborationAgentCapabilityMismatchError(AgentLayerError, ValueError):
+    """Raised when an agent lacks the required capability for a collaboration task."""
+
+    def __init__(self, agent_id: str, required_capability: str) -> None:
+        super().__init__(
+            f"Agent '{agent_id}' lacks required capability '{required_capability}'.",
+            code=AgentErrorCode.COLLABORATION_AGENT_CAPABILITY_MISMATCH,
+            http_status=400,
+            details={"agent_id": agent_id, "required_capability": required_capability},
+        )
+
+
+class CollaborationReviewFailedError(AgentLayerError, RuntimeError):
+    """Raised when a peer review rejects findings without a recoverable path."""
+
+    def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            f"Collaboration peer review failed: {reason}",
+            code=AgentErrorCode.COLLABORATION_REVIEW_FAILED,
+            http_status=422,
+            details=details or {},
+        )
+
+
+class CollaborationConflictDetectedError(AgentLayerError, ValueError):
+    """Raised when contradictory claims are detected across collaboration agents."""
+
+    def __init__(self, conflict_id: str, finding_ids: list[str], reason: str) -> None:
+        super().__init__(
+            f"Collaboration conflict '{conflict_id}' detected across findings {finding_ids}: {reason}",
+            code=AgentErrorCode.COLLABORATION_CONFLICT_DETECTED,
+            http_status=409,
+            details={"conflict_id": conflict_id, "finding_ids": finding_ids, "reason": reason},
+        )
+
+
+class CollaborationConflictUnresolvedError(AgentLayerError, RuntimeError):
+    """Raised when an escalated conflict cannot be automatically reconciled."""
+
+    def __init__(self, conflict_id: str) -> None:
+        super().__init__(
+            f"Collaboration conflict '{conflict_id}' remains unresolved and requires intervention.",
+            code=AgentErrorCode.COLLABORATION_CONFLICT_UNRESOLVED,
+            http_status=409,
+            details={"conflict_id": conflict_id},
+        )
+
+
+class CollaborationMaxRevisionsExceededError(AgentLayerError, RuntimeError):
+    """Raised when review revision loops exceed the configured maximum threshold."""
+
+    def __init__(self, session_id: str, max_revisions: int) -> None:
+        super().__init__(
+            f"Collaboration session '{session_id}' exceeded max revisions ({max_revisions}).",
+            code=AgentErrorCode.COLLABORATION_MAX_REVISIONS_EXCEEDED,
+            http_status=422,
+            details={"session_id": session_id, "max_revisions": max_revisions},
+        )
+
+
+class CollaborationAccessDeniedError(AgentLayerError, PermissionError):
+    """Raised when caller lacks required permissions to access collaboration resources."""
+
+    def __init__(self, message: str = "Access to collaboration session or resource denied.") -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.COLLABORATION_ACCESS_DENIED,
+            http_status=403,
+        )
+
+
+class CollaborationTenantIsolationViolationError(AgentLayerError, PermissionError):
+    """Raised when a cross-tenant collaboration access is attempted."""
+
+    def __init__(self, tenant_id: str, target_tenant_id: str) -> None:
+        super().__init__(
+            f"Cross-tenant collaboration access attempt: caller '{tenant_id}' cannot access target '{target_tenant_id}'.",
+            code=AgentErrorCode.COLLABORATION_TENANT_ISOLATION_VIOLATION,
+            http_status=403,
+            details={"caller_tenant_id": tenant_id, "target_tenant_id": target_tenant_id},
+        )
+
 
 

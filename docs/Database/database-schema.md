@@ -2157,4 +2157,119 @@ Append-only security and operational audit trail for memory access and mutations
 | `correlation_id` | `VARCHAR(128)` | NULL, INDEX | Request tracing correlation ID |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Event timestamp |
 
+---
+
+### 3.31 Multi-Agent Collaboration Schema (Phase 4.8)
+
+Supports structured collaboration sessions, explicit task ownership, validated message routing, evidence-backed findings, peer reviews, and deterministic conflict records.
+
+#### Table: `collaboration_sessions`
+Root collaboration session entity governing shared objectives and lifecycle.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `session_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Domain session ID (`collab_sess_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `requested_by` | `VARCHAR(128)` | NOT NULL | Invoking user ID |
+| `objective` | `TEXT` | NOT NULL | High-level collaboration goal |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `planning`, `in_progress`, `reviewing`, `synthesizing`, `completed`, `failed`, `cancelled` |
+| `workflow_id` | `VARCHAR(128)` | NULL, INDEX | Associated parent workflow execution ID |
+| `max_agents` | `INTEGER` | NOT NULL, DEFAULT 5 | Concurrency ceiling for participant agents |
+| `require_review` | `BOOLEAN` | NOT NULL, DEFAULT TRUE | Enforces peer-review gate before completion |
+| `max_revisions` | `INTEGER` | NOT NULL, DEFAULT 2 | Max review revision cycles permitted |
+| `summary` | `TEXT` | NULL | Final synthesized executive summary |
+| `report` | `JSONB` | NOT NULL, DEFAULT '{}' | Consolidated findings, review history, unresolved conflicts |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Session inception timestamp |
+| `completed_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Completion or terminal timestamp |
+
+#### Table: `collaboration_tasks`
+Structured subtasks assigned to individual specialized agents.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `task_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Domain task ID (`collab_task_...`) |
+| `session_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent session ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `agent_id` | `VARCHAR(128)` | NOT NULL, INDEX | Assigned agent capability/ID |
+| `title` | `VARCHAR(256)` | NOT NULL | Short task title |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `pending`, `assigned`, `running`, `succeeded`, `failed`, `cancelled` |
+| `attempt` | `INTEGER` | NOT NULL, DEFAULT 0 | Current execution attempt count |
+| `max_attempts` | `INTEGER` | NOT NULL, DEFAULT 3 | Retry upper bound |
+| `dependencies` | `JSONB` | NOT NULL, DEFAULT '[]' | List of predecessor `task_id`s |
+| `inputs` | `JSONB` | NOT NULL, DEFAULT '{}' | Input payload parameters |
+| `outputs` | `JSONB` | NOT NULL, DEFAULT '{}' | Subtask outputs upon success |
+| `error_code` | `VARCHAR(64)` | NULL | Error code if task failed |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Task registration timestamp |
+| `completed_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Task completion timestamp |
+
+#### Table: `collaboration_messages`
+Append-only log of validated inter-agent messages.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `message_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique message ID (`collab_msg_...`) |
+| `session_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent session ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `sender_id` | `VARCHAR(128)` | NOT NULL, INDEX | Sending agent ID |
+| `recipient_id` | `VARCHAR(128)` | NOT NULL, INDEX | Recipient agent ID (or `*` / `coordinator`) |
+| `task_id` | `VARCHAR(128)` | NULL, INDEX | Associated task ID |
+| `message_type` | `VARCHAR(64)` | NOT NULL | `task_assignment`, `handoff`, `clarification`, `review_request`, `review_response` |
+| `payload` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized payload |
+| `correlation_id` | `VARCHAR(128)` | NULL, INDEX | Distributed trace correlation ID |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Message timestamp |
+
+#### Table: `collaboration_findings`
+Verifiable knowledge claims produced by agents during collaboration.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `finding_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique finding ID (`collab_fnd_...`) |
+| `session_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent session ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `task_id` | `VARCHAR(128)` | NOT NULL, INDEX | Producing task ID |
+| `claim` | `TEXT` | NOT NULL | Structured statement of claim |
+| `evidence_refs` | `JSONB` | NOT NULL, DEFAULT '[]' | List of authorized evidence IDs / document refs |
+| `provenance` | `JSONB` | NOT NULL, DEFAULT '{}' | Generating agent ID, model, runtime metadata |
+| `limitations` | `TEXT` | NULL | Self-reported agent limitations or caveats |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Finding creation timestamp |
+
+#### Table: `collaboration_reviews`
+Peer-review evaluation records reviewing one or more findings.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `review_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique review ID (`collab_rev_...`) |
+| `session_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent session ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `reviewer_id` | `VARCHAR(128)` | NOT NULL, INDEX | Reviewing agent ID |
+| `finding_ids` | `JSONB` | NOT NULL, DEFAULT '[]' | Findings evaluated |
+| `outcome` | `VARCHAR(32)` | NOT NULL | `accepted`, `rejected`, `needs_revision`, `conflict_detected` |
+| `reasons` | `JSONB` | NOT NULL, DEFAULT '[]' | Specific review critiques or rationale |
+| `unsupported_claims`| `JSONB` | NOT NULL, DEFAULT '[]' | Claims lacking evidence |
+| `missing_evidence` | `JSONB` | NOT NULL, DEFAULT '[]' | References requested but not found |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Review timestamp |
+
+#### Table: `collaboration_conflicts`
+Records contradictory findings across agents with resolution lineage.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `conflict_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique conflict ID (`collab_cnf_...`) |
+| `session_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent session ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant boundary isolation |
+| `finding_ids` | `JSONB` | NOT NULL, DEFAULT '[]' | Contradicting finding IDs |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `detected`, `resolving`, `resolved`, `escalated` |
+| `description` | `TEXT` | NOT NULL | Nature of the contradiction |
+| `resolution` | `TEXT` | NULL | Resolution rationale or policy applied |
+| `resolved_by` | `VARCHAR(128)` | NULL | Resolving agent ID or user ID (if escalated) |
+| `resolved_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Resolution timestamp |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Conflict detection timestamp |
+
+
 

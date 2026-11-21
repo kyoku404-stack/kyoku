@@ -5448,4 +5448,122 @@ All Phase 4.7 memory endpoints are mounted under `/api/v1/memory` (with backward
   - `403 Forbidden`: `MEMORY_ACCESS_DENIED`.
   - `404 Not Found`: `MEMORY_NOT_FOUND`.
 
+---
+
+## 27. Multi-Agent Collaboration API (Phase 4.8)
+
+Provides session lifecycle, task delegation, structured inter-agent messaging, evidence-backed findings, peer review, and deterministic conflict resolution across specialized agents.
+
+### 27.1 Start Collaboration Session
+- **Endpoint:** `POST /api/v1/collaborations` (alias: `POST /api/collaborations`)
+- **Permission:** `agent.invoke`
+- **Request Body:**
+```json
+{
+  "objective": "Perform competitive architecture assessment",
+  "workflow_id": "wf-arch-123",
+  "agent_ids": ["agent:researcher", "agent:analyst", "agent:critic"],
+  "tasks": [
+    {
+      "task_id": "task-research",
+      "agent_id": "agent:researcher",
+      "title": "Gather competitor benchmark specs",
+      "dependencies": [],
+      "inputs": {"scope": "cloud-native storage"}
+    },
+    {
+      "task_id": "task-analysis",
+      "agent_id": "agent:analyst",
+      "title": "Analyze latency and durability trade-offs",
+      "dependencies": ["task-research"],
+      "inputs": {}
+    }
+  ],
+  "require_review": true,
+  "max_revisions": 2
+}
+```
+- **Responses:**
+  - `202 Accepted`:
+```json
+{
+  "success": true,
+  "data": {
+    "session_id": "collab_sess_12345678",
+    "tenant_id": "tenant-corp",
+    "requested_by": "usr-lead-01",
+    "objective": "Perform competitive architecture assessment",
+    "status": "planning",
+    "workflow_id": "wf-arch-123",
+    "created_at": "2026-11-21T12:00:00Z"
+  }
+}
+```
+  - `400 Bad Request`: `COLLABORATION_MESSAGE_INVALID` / `COLLABORATION_AGENT_NOT_REGISTERED`.
+  - `403 Forbidden`: `COLLABORATION_ACCESS_DENIED` / `COLLABORATION_TENANT_ISOLATION_VIOLATION`.
+
+### 27.2 Get Collaboration Session
+- **Endpoint:** `GET /api/v1/collaborations/{session_id}` (alias: `GET /api/collaborations/{session_id}`)
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[CollaborationSession]` with current session state, summary, execution metrics, and consolidated report (if completed).
+  - `403 Forbidden`: `COLLABORATION_ACCESS_DENIED`.
+  - `404 Not Found`: `COLLABORATION_SESSION_NOT_FOUND`.
+
+### 27.3 Get Collaboration Tasks
+- **Endpoint:** `GET /api/v1/collaborations/{session_id}/tasks` (alias: `GET /api/collaborations/{session_id}/tasks`)
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[List[CollaborationTask]]` with task statuses, assigned agents, dependencies, attempts, inputs, outputs, and failure error codes.
+  - `404 Not Found`: `COLLABORATION_SESSION_NOT_FOUND`.
+
+### 27.4 Get Collaboration Messages
+- **Endpoint:** `GET /api/v1/collaborations/{session_id}/messages` (alias: `GET /api/collaborations/{session_id}/messages`)
+- **Query Parameters:** `task_id` (optional), `limit` (optional, default 50), `since` (optional timestamp)
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[List[CollaborationMessage]]` with sender, recipient, message type, sanitized payload, and correlation metadata.
+  - `404 Not Found`: `COLLABORATION_SESSION_NOT_FOUND`.
+
+### 27.5 Get Collaboration Findings
+- **Endpoint:** `GET /api/v1/collaborations/{session_id}/findings` (alias: `GET /api/collaborations/{session_id}/findings`)
+- **Query Parameters:** `task_id` (optional)
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[List[CollaborationFinding]]` including verifiable evidence refs, claim provenance, and documented limitations.
+  - `404 Not Found`: `COLLABORATION_SESSION_NOT_FOUND`.
+
+### 27.6 Get Collaboration Reviews
+- **Endpoint:** `GET /api/v1/collaborations/{session_id}/reviews` (alias: `GET /api/collaborations/{session_id}/reviews`)
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[List[ReviewResult]]` with reviewer IDs, finding IDs, outcome (`accepted`, `rejected`, `needs_revision`, `conflict_detected`), unsupported claims, and missing evidence.
+  - `404 Not Found`: `COLLABORATION_SESSION_NOT_FOUND`.
+
+### 27.7 Cancel Collaboration Session
+- **Endpoint:** `POST /api/v1/collaborations/{session_id}/cancel` (alias: `POST /api/collaborations/{session_id}/cancel`)
+- **Permission:** `agent.invoke`
+- **Request Body:** (optional) `{"reason": "User abort request"}`
+- **Responses:**
+  - `200 OK`: `ApiResponse[CollaborationSession]` with updated status `cancelled`.
+  - `400 Bad Request`: `COLLABORATION_SESSION_COMPLETED` (if session has already reached terminal success).
+  - `404 Not Found`: `COLLABORATION_SESSION_NOT_FOUND`.
+
+### 27.8 Resolve Collaboration Conflict
+- **Endpoint:** `POST /api/v1/collaborations/{session_id}/resolve-conflict` (alias: `POST /api/collaborations/{session_id}/resolve-conflict`)
+- **Permission:** `agent.invoke`
+- **Request Body:**
+```json
+{
+  "conflict_id": "conf-001",
+  "resolution": "Adopt Claim A based on benchmark trace #402",
+  "accepted_finding_ids": ["find-001"],
+  "rejected_finding_ids": ["find-002"]
+}
+```
+- **Responses:**
+  - `200 OK`: `ApiResponse[CollaborationConflict]` marked `resolved` with resolution notes.
+  - `404 Not Found`: `COLLABORATION_SESSION_NOT_FOUND`.
+
+
 

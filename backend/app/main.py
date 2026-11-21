@@ -9,6 +9,10 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
+from backend.app.agents.collaboration.repository import (
+    SqlAlchemyCollaborationRepository,
+)
+from backend.app.agents.collaboration.service import CollaborationService
 from backend.app.agents.memory.repository import SqlAlchemyMemoryRepository
 from backend.app.agents.memory.service import MemoryService
 from backend.app.agents.observability.telemetry import RuntimeMetricsCollector
@@ -50,6 +54,7 @@ from backend.app.api.middleware import (
     register_exception_handlers,
 )
 from backend.app.api.v1 import api_v1_router
+from backend.app.api.v1.agent_collaboration import router as agent_collaboration_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.memory import router as memory_router
 from backend.app.core.config import settings
@@ -111,6 +116,10 @@ OPENAPI_TAGS = [
     {
         "name": "Memory",
         "description": "Phase 4.7 agent memory system, scoped retrieval, proposals, and lifecycle governance.",
+    },
+    {
+        "name": "Multi-Agent Collaboration",
+        "description": "Phase 4.8 multi-agent collaboration sessions, task delegation, peer reviews, and conflict resolution.",
     },
 ]
 
@@ -272,6 +281,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if getattr(app.state, "memory_service", None) is None:
         app.state.memory_service = MemoryService(repository=app.state.memory_repository)
 
+    # Phase 4.8: Initialize lifespan-bound Multi-Agent Collaboration System
+    if getattr(app.state, "collaboration_repository", None) is None:
+        app.state.collaboration_repository = SqlAlchemyCollaborationRepository(session=None)
+    if getattr(app.state, "collaboration_service", None) is None:
+        app.state.collaboration_service = CollaborationService(
+            repository=app.state.collaboration_repository,
+            registry=getattr(app.state, "agent_registry", None),
+        )
+
     logger.info(
         "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning, Research, Tool & Memory Engine",
         app.state.agent_registry.count(),
@@ -337,6 +355,9 @@ app.include_router(api_v1_router, prefix=settings.API_V1_STR)
 
 # 8. Mount Phase 4.7 Memory Compatibility Router (/api/memory/*)
 app.include_router(memory_router, prefix="/api")
+
+# 9. Mount Phase 4.8 Collaboration Compatibility Router (/api/collaborations/*)
+app.include_router(agent_collaboration_router, prefix="/api")
 
 # 6. Mount Root-Level Observability & Health Probes (/health, /health/*)
 app.include_router(health_router)

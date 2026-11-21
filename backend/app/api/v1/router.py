@@ -4,6 +4,7 @@ Mounts and registers all v1 modular sub-routers.
 """
 
 from backend.app.api.v1.activity import router as activity_router
+from backend.app.api.v1.agent_collaboration import router as agent_collaboration_router
 from backend.app.api.v1.agent_executions import router as agent_executions_router
 from backend.app.api.v1.agent_workflows import router as agent_workflows_router
 from backend.app.api.v1.agents import router as agents_router
@@ -74,6 +75,7 @@ api_v1_router.include_router(memory_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(connectors_router)
 api_v1_router.include_router(collaboration_router)
+api_v1_router.include_router(agent_collaboration_router)
 api_v1_router.include_router(security_router)
 api_v1_router.include_router(workflows_router)
 api_v1_router.include_router(plugins_router)
