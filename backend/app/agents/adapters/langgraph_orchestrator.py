@@ -146,6 +146,16 @@ class CompiledKeepWorkflowGraph:
 
         return state
 
+    async def ainvoke(
+        self,
+        initial_state: dict[str, Any],
+        context: AgentContext | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """LangGraph-compatible invocation alias delegating to arun."""
+        ctx = context or kwargs.pop("context", None)
+        return await self.arun(initial_state, context=ctx, **kwargs)
+
 
 class KeepStateGraph:
     """Declarative LangGraph-compatible StateGraph builder owned by KEEP's adapter layer."""

@@ -1,5 +1,9 @@
 """KEEP Phase 4.8 — Multi-Agent Collaboration Module."""
 
+from backend.app.agents.collaboration.conflict_resolution import (
+    ConflictResolutionEngine,
+    claims_contradict,
+)
 from backend.app.agents.collaboration.contracts import (
     CancelSessionRequest,
     CollaborationConflict,
@@ -25,11 +29,8 @@ from backend.app.agents.collaboration.contracts import (
     generate_collaboration_session_id,
     generate_collaboration_task_id,
 )
-from backend.app.agents.collaboration.conflict_resolution import (
-    ConflictResolutionEngine,
-    claims_contradict,
-)
 from backend.app.agents.collaboration.findings import FindingsCatalog
+from backend.app.agents.collaboration.graph import build_collaboration_graph
 from backend.app.agents.collaboration.messaging import (
     CollaborationMessageService,
     scrub_secrets_from_text,
@@ -39,6 +40,7 @@ from backend.app.agents.collaboration.policies import CollaborationPolicyEngine
 from backend.app.agents.collaboration.repository import (
     BaseCollaborationRepository,
     InMemoryCollaborationRepository,
+    SqlAlchemyCollaborationRepository,
 )
 from backend.app.agents.collaboration.review import PeerReviewService
 from backend.app.agents.collaboration.service import CollaborationService
@@ -71,8 +73,10 @@ __all__ = [
     "ReviewResult",
     "SessionManager",
     "SessionStatus",
+    "SqlAlchemyCollaborationRepository",
     "TaskDispatcher",
     "TaskStatus",
+    "build_collaboration_graph",
     "claims_contradict",
     "generate_collaboration_conflict_id",
     "generate_collaboration_finding_id",

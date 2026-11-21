@@ -67,8 +67,11 @@ class TaskDispatcher:
             if not self.registry.is_registered(agent_id):
                 raise CollaborationAgentNotRegisteredError(agent_id)
             if required_capability:
-                metadata = self.registry.get_agent_metadata(agent_id)
-                has_cap = any(c.capability == required_capability for c in metadata.capabilities)
+                metadata = self.registry.get_metadata(agent_id)
+                has_cap = any(
+                    (getattr(c, "name", None) or getattr(c, "capability", None)) == required_capability
+                    for c in metadata.capabilities
+                )
                 if not has_cap:
                     raise CollaborationAgentCapabilityMismatchError(agent_id, required_capability)
 

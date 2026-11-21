@@ -3,4 +3,5 @@
 from backend.app.agents.collaboration.repository import (  # noqa: F401
     BaseCollaborationRepository,
     InMemoryCollaborationRepository,
+    SqlAlchemyCollaborationRepository,
 )

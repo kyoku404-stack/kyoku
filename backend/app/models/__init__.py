@@ -1,4 +1,12 @@
 from backend.app.models.activity import ActivityLog
+from backend.app.models.agent_collaboration import (
+    CollaborationConflictModel,
+    CollaborationFindingModel,
+    CollaborationMessageModel,
+    CollaborationReviewModel,
+    CollaborationSessionModel,
+    CollaborationTaskModel,
+)
 from backend.app.models.agent_execution import AgentCheckpoint, AgentExecution
 from backend.app.models.agent_memory import (
     MemoryAccessEventModel,
@@ -119,6 +127,12 @@ __all__ = [
     "ChatMessage",
     "ChatSession",
     "CollaborationActivity",
+    "CollaborationConflictModel",
+    "CollaborationFindingModel",
+    "CollaborationMessageModel",
+    "CollaborationReviewModel",
+    "CollaborationSessionModel",
+    "CollaborationTaskModel",
     "Connector",
     "ConnectorSyncJob",
     "ConnectorSyncLog",
