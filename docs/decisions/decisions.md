@@ -2621,3 +2621,58 @@ Unbounded retrieval of past memories clutters downstream LLM context windows, in
 
 #### Status
 ACCEPTED
+
+---
+
+### ADR-089: Structured Agent Collaboration Sessions & Explicit Task Ownership
+
+#### Date
+2026-11-21
+
+#### Context
+Allowing specialized AI agents to interact via unconstrained peer-to-peer dialogues or self-spawning loops leads to non-deterministic execution, infinite loops, high token expenditure, and lack of accountability.
+
+#### Decision
+1. Formalize multi-agent interactions inside a bounded `CollaborationSession` with strict participant quotas (1–8 agents), bounded task DAGs, and deterministic completion criteria.
+2. Mandate explicit task ownership: every subtask is assigned to a verified Phase 4.1 registered agent with typed input/output specifications, explicit prerequisites, and bounded retry policies.
+3. Manage session progression and cancellation through centralized state machines ensuring immutable terminal states.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-090: Decoupled Message Routing & Evidence-Backed Findings
+
+#### Date
+2026-11-21
+
+#### Context
+Direct agent-to-agent remote procedure calls or unvalidated conversational message exchanges bypass multi-tenant security barriers, audit logging, and provenance verification.
+
+#### Decision
+1. Route all inter-agent communication through a centralized `CollaborationMessageService` supporting typed envelopes (`task_assignment`, `task_result`, `finding`, `review_request`, `review_result`, `conflict`, `status_update`).
+2. Enforce zero-trust tenant boundaries and correlation tracing on every message, scrubbing secrets, API keys, and bearer tokens.
+3. Require all substantive claims to be registered as `CollaborationFinding` records linked to authorized KEEP evidence IDs (`evidence_refs`), preventing ungrounded hallucinations from propagating across the agent collective.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-091: Deterministic Peer Review, Conflict Resolution & Transparent Uncertainty Reporting
+
+#### Date
+2026-11-21
+
+#### Context
+When multiple specialized agents analyze complex domain problems, contradictions and evidence gaps emerge. Resolving conflicts by simple majority voting or self-reported confidence scores creates false certainty and risks amplifying hallucinations.
+
+#### Decision
+1. Implement an explicit peer-review phase where a Review Agent validates claims, evidence links, and methodology before report synthesis.
+2. Detect contradictory claims and surface them as first-class `CollaborationConflict` entities.
+3. Apply bounded revision loops (maximum 2 revision rounds) for addressing peer-review criticisms.
+4. If a conflict remains unresolved after evidence re-checking and bounded revisions, transparently preserve both perspectives in the final report alongside stated limitations and uncertainties, and provide an escalation pathway for human review.
+
+#### Status
+ACCEPTED
