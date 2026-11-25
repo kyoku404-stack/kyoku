@@ -1,4 +1,11 @@
 from backend.app.models.activity import ActivityLog
+from backend.app.models.agent_autonomy import (
+    AutonomousWorkflowModel,
+    AutonomousWorkflowStepModel,
+    AutonomyBudgetModel,
+    AutonomyDecisionModel,
+    AutonomyEventModel,
+)
 from backend.app.models.agent_collaboration import (
     CollaborationConflictModel,
     CollaborationFindingModel,
@@ -124,6 +131,11 @@ __all__ = [
     "AssistantReport",
     "AssistantTask",
     "AssistantWorkflow",
+    "AutonomousWorkflowModel",
+    "AutonomousWorkflowStepModel",
+    "AutonomyBudgetModel",
+    "AutonomyDecisionModel",
+    "AutonomyEventModel",
     "ChatMessage",
     "ChatSession",
     "CollaborationActivity",

@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.8 — Multi-Agent Collaboration (100% COMPLETE ✓)
+Phase 4.9 — Autonomous Workflow Engine (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -20,6 +20,46 @@ Phase 4.4 (Planning & Reasoning Engine) is 100% COMPLETE across all four member 
 Phase 4.5 (Research Agents) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
 Phase 4.6 (Tool-Calling Framework) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.7 (Agent Memory System) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.8 (Multi-Agent Collaboration) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.9 (Autonomous Workflow Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+
+Phase 4.9 Member 1 (Autonomous Controller & Lifecycle) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.9-autonomous-workflow-engine.md`), ADRs `ADR-092`–`ADR-094` (`docs/decisions/decisions.md`), REST API Section 28 (`docs/API/api-contract.md`), and Schema Section 3.32 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 13 Phase 4.9 typed error codes and exceptions (`AutonomousWorkflowNotFoundError`, `AutonomousWorkflowInvalidStateError`, `AutonomousWorkflowUnsupportedTypeError`, `AutonomousWorkflowCancelledError`, `AutonomousWorkflowBudgetExhaustedError`, `AutonomousWorkflowDeadlineExceededError`, `AutonomousWorkflowReplanLimitError`, `AutonomousWorkflowApprovalRequiredError`, `AutonomousWorkflowPlanRejectedError`, `AutonomousWorkflowPolicyDeniedError`, `AutonomousWorkflowTenantViolationError`, `AutonomousWorkflowAccessDeniedError`, `AutonomousWorkflowIdempotencyConflictError`).
+- Implemented contracts (`backend/app/agents/autonomy/contracts.py`), LangGraph state (`state.py`), repository interfaces (`repository.py`), and `AutonomousWorkflowController` (`controller.py`) with compatibility re-exports in `backend/app/autonomy/`.
+- Authored unit tests `tests/unit/test_phase4_9_autonomy_core.py` (7/7 passed).
+
+Phase 4.9 Member 2 (Adaptive Planning, Evaluation, ORM & Migrations) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models (`AutonomousWorkflowModel`, `AutonomousWorkflowStepModel`, `AutonomyDecisionModel`, `AutonomyEventModel`, `AutonomyBudgetModel`) in `backend/app/models/agent_autonomy.py`, exported in `backend/app/models/__init__.py`.
+- Created Alembic database migration `backend/migrations/versions/9d0e1f2a3b4c_phase_4_9_autonomous_workflow_engine.py` (`8c9d0e1f2a3b` → `9d0e1f2a3b4c (head)`).
+- Implemented `SqlAlchemyAutonomyRepository` (`backend/app/agents/autonomy/repository.py`) with durable restart-safe persistence and strict tenant boundaries.
+- Implemented `AutonomyPlannerAdapter` (`planner_adapter.py`) and `ProgressEvaluator` (`evaluator.py`).
+- Authored unit tests `tests/unit/test_phase4_9_autonomy_planning.py` (4/4 passed).
+
+Phase 4.9 Member 3 (Autonomy Policies, Safety & LangGraph Engine) deliverables are COMPLETED:
+- Implemented `AutonomyPolicyEngine` (`policy.py`) enforcing server-side caps, prompt-injection rejection, fail-closed plan validation, write approval gates, cross-tenant boundaries, and resume permission revalidation.
+- Implemented `build_autonomous_workflow_graph` (`graph.py`) via KEEP's LangGraph state-graph adapter (`langgraph_orchestrator.py`), and unified facade `AutonomousWorkflowService` (`service.py`).
+- Authored unit tests `tests/unit/test_phase4_9_autonomy_security.py` (5/5 passed).
+
+Phase 4.9 Member 4 (FastAPI Endpoints, Lifespan Wiring & Full QA) deliverables are COMPLETED:
+- Mounted REST endpoints in `backend/app/api/v1/autonomous_workflows.py` (`/api/v1/autonomous-workflows*` and compatibility `/api/autonomous-workflows*`), registered in `backend/app/api/v1/router.py`, and wired into `backend/app/main.py` lifespan.
+- Authored integration & QA suite `tests/integration/test_phase4_9_autonomy_integration.py` (8/8 passed) proving all 12 Definition-of-Done criteria and Churn Investigation adaptive replanning milestone.
+
+Phase 4.9 Stage 5 (Frontend UI, Vitest & Playwright E2E) deliverables are COMPLETED:
+- Created types (`frontend/src/types/autonomy.ts`), API service (`frontend/src/services/autonomousWorkflowService.ts`), React hook (`frontend/src/hooks/useAutonomousWorkflows.ts`), modular components (`AutonomousLaunchForm`, `AutonomousWorkflowList`, `AutonomousWorkflowInspector`), and `AutonomousWorkflowsPage` mounted at `/agents/autonomy` with `Autonomous Workflows` (`Phase 4.9`) Sidebar link.
+- Empirical QA Gates:
+  - Ruff check across `backend/` & `tests/`: **0 errors**.
+  - Alembic head: **`9d0e1f2a3b4c (head)`** (`tests/integration/test_db_migrations.py` **4/4 passed**).
+  - Full unit test suite (`pytest tests/unit/`): **624/624 passed**.
+  - Phase 4.1–4.9 + Security & Migrations integration suite: **101/101 passed**.
+  - Frontend build (`tsc && vite build`) & ESLint: **0 errors, 0 warnings** (1,898 modules).
+  - Vitest (`npx vitest run`): **52/52 files, 393/393 tests passed**.
+  - Playwright Chromium (`tests/e2e/phase4_9_autonomous_workflows.spec.ts`): **2/2 passed**.
+
+---
+
+### Previous Milestone Archive (Phase 4.8)
+
 Phase 4.8 (Multi-Agent Collaboration) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 
 Phase 4.8 Member 1 (Core Architecture, Contracts & Session Management) deliverables are COMPLETED:

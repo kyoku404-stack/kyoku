@@ -9,6 +9,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
+from backend.app.agents.autonomy.repository import SqlAlchemyAutonomyRepository
+from backend.app.agents.autonomy.service import AutonomousWorkflowService
 from backend.app.agents.collaboration.repository import (
     SqlAlchemyCollaborationRepository,
 )
@@ -55,6 +57,9 @@ from backend.app.api.middleware import (
 )
 from backend.app.api.v1 import api_v1_router
 from backend.app.api.v1.agent_collaboration import router as agent_collaboration_router
+from backend.app.api.v1.autonomous_workflows import (
+    router as autonomous_workflows_router,
+)
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.memory import router as memory_router
 from backend.app.core.config import settings
@@ -120,6 +125,10 @@ OPENAPI_TAGS = [
     {
         "name": "Multi-Agent Collaboration",
         "description": "Phase 4.8 multi-agent collaboration sessions, task delegation, peer reviews, and conflict resolution.",
+    },
+    {
+        "name": "Autonomous Workflows",
+        "description": "Phase 4.9 goal-driven autonomous workflows with bounded replanning, write approvals, and audit trails.",
     },
 ]
 
@@ -290,6 +299,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             registry=getattr(app.state, "agent_registry", None),
         )
 
+    # Phase 4.9: Initialize lifespan-bound Autonomous Workflow Engine
+    if getattr(app.state, "autonomy_repository", None) is None:
+        app.state.autonomy_repository = SqlAlchemyAutonomyRepository(
+            session_factory=async_session_factory
+        )
+    if getattr(app.state, "autonomy_service", None) is None:
+        app.state.autonomy_service = AutonomousWorkflowService(
+            repository=app.state.autonomy_repository,
+            workflow_registry=getattr(app.state, "workflow_registry", None),
+            agent_registry=getattr(app.state, "agent_registry", None),
+            planning_service=getattr(app.state, "planning_service", None),
+            runtime_service=getattr(app.state, "agent_runtime", None),
+            orchestration_service=getattr(app.state, "orchestration_service", None),
+            tool_executor=getattr(app.state, "tool_executor", None),
+            memory_service=getattr(app.state, "memory_service", None),
+            collaboration_service=getattr(app.state, "collaboration_service", None),
+        )
+
     logger.info(
         "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning, Research, Tool & Memory Engine",
         app.state.agent_registry.count(),
@@ -358,6 +385,9 @@ app.include_router(memory_router, prefix="/api")
 
 # 9. Mount Phase 4.8 Collaboration Compatibility Router (/api/collaborations/*)
 app.include_router(agent_collaboration_router, prefix="/api")
+
+# 10. Mount Phase 4.9 Autonomous Workflows Compatibility Router (/api/autonomous-workflows/*)
+app.include_router(autonomous_workflows_router, prefix="/api")
 
 # 6. Mount Root-Level Observability & Health Probes (/health, /health/*)
 app.include_router(health_router)
