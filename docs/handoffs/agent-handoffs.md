@@ -7353,3 +7353,20 @@ COMPLETED ✓
 - Added 10 Phase 4.11 error codes and 7 typed exception classes to `backend/app/agents/errors.py`.
 - Implemented `contracts.py`, `models.py`, `prioritization.py`, `deduplication.py`, `insight_registry.py`, `repository.py` (`BaseIntelligenceRepository`, `InMemoryIntelligenceRepository`), and `service.py` (`IntelligenceService`) under `backend/app/agents/intelligence/` with compatibility aliases in `backend/app/intelligence/`.
 - Authored Stage 1 unit tests in `tests/unit/test_phase4_11_prioritization.py`.
+
+
+---
+
+### Handoff Entry — Phase 4.11 Member 2: Detectors, Evidence Validation, ORM & Migrations
+
+- **Date:** 2026-11-25
+- **Author:** Member 2 (Change, Trend & Knowledge-Gap Detection + Persistence)
+- **Branch:** `agent/ai-lead/feature/phase-4.11-proactive-enterprise-intelligence`
+- **Status:** COMPLETED — Ready for Member 3 (Governance, Policies, Feedback & Evaluation)
+
+#### Summary of Deliverables
+- Implemented 6 SQLAlchemy ORM models (`IntelligenceRunModel`, `IntelligenceInsightModel`, `IntelligenceEvidenceModel`, `IntelligenceFeedbackModel`, `IntelligenceSuppressionModel`, `IntelligenceAuditEventModel`) in `backend/app/models/agent_intelligence.py`, exported in `backend/app/models/__init__.py`.
+- Created Alembic migration `backend/migrations/versions/1f2a3b4c5d6e_phase_4_11_proactive_intelligence.py` (`0e1f2a3b4c5d` → `1f2a3b4c5d6e (head)`), verified via `tests/integration/test_db_migrations.py`.
+- Added `SqlAlchemyIntelligenceRepository` (`backend/app/agents/intelligence/repository.py`) and `EvidenceValidator` (`backend/app/agents/intelligence/evidence_validation.py`).
+- Implemented all 5 detectors (`SignificantChangeDetector`, `KnowledgeGapDetector`, `ContradictionDetector`, `StalenessDetector` + `detect_stale_document`, `EmergingTrendDetector`) and `DetectorRegistry` under `backend/app/agents/intelligence_detectors/` with compatibility aliases in `backend/app/intelligence_detectors/`.
+- Verified with `tests/unit/test_phase4_11_detectors.py` (3/3), `tests/integration/test_db_migrations.py` (4/4), and Ruff (0 errors).
