@@ -84,6 +84,8 @@ class AutonomyPlannerAdapter:
                 "publish",
                 "update crm",
                 "send email",
+                "send external email",
+                "external email",
                 "broadcast",
                 "modify production",
                 "notify customers",
