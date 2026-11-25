@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from backend.app.agents.orchestration.graphs.knowledge_workflow import (
+    DOCUMENT_ENRICHMENT_DEFINITION,
     KNOWLEDGE_ANALYSIS_DEFINITION,
+    build_document_enrichment_graph,
     build_knowledge_workflow_graph,
 )
 from backend.app.agents.orchestration.graphs.parallel_analysis import (
@@ -36,9 +38,11 @@ def build_default_workflow_registry(
 
 
 __all__ = [
+    "DOCUMENT_ENRICHMENT_DEFINITION",
     "KNOWLEDGE_ANALYSIS_DEFINITION",
     "PARALLEL_PROJECT_REVIEW_DEFINITION",
     "build_default_workflow_registry",
+    "build_document_enrichment_graph",
     "build_knowledge_workflow_graph",
     "build_parallel_analysis_graph",
 ]

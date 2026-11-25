@@ -184,5 +184,19 @@ class WorkflowRegistry:
         items.sort(key=lambda d: (d.workflow_id, _semver_key(d.version)))
         return [d.model_dump() for d in items]
 
+    def is_registered(self, workflow_id: str) -> bool:
+        """Returns True iff any version of `workflow_id` is registered."""
+        norm_id = workflow_id.strip().lower()
+        return any(wf_id == norm_id for (wf_id, _ver) in self._definitions)
+
+    def get_enabled(
+        self,
+        workflow_id: str,
+        version: str | None = None,
+    ) -> WorkflowDefinition:
+        """Returns the enabled WorkflowDefinition or raises WorkflowNotFoundError/WorkflowDisabledError."""
+        definition, _ = self.get(workflow_id, version=version, allow_disabled=False)
+        return definition
+
     def count(self) -> int:
         return len(self._definitions)

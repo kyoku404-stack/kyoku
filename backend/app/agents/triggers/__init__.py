@@ -5,6 +5,7 @@ from backend.app.agents.triggers.conditions import (
     evaluate_conditions,
     validate_condition_spec,
 )
+from backend.app.agents.triggers.dispatcher import TriggerDispatcher
 from backend.app.agents.triggers.models import (
     DispatchStatus,
     MissedRunPolicy,
@@ -31,6 +32,7 @@ from backend.app.agents.triggers.repository import (
 )
 from backend.app.agents.triggers.rule_engine import TriggerRuleEngine
 from backend.app.agents.triggers.scheduler import TriggerScheduler, compute_next_run
+from backend.app.agents.triggers.service import TriggerService
 
 __all__ = [
     "ALLOWED_CONDITION_OPERATORS",
@@ -44,6 +46,7 @@ __all__ = [
     "SqlAlchemyTriggerRepository",
     "TriggerCreateRequest",
     "TriggerDispatchRecord",
+    "TriggerDispatcher",
     "TriggerExecutionMode",
     "TriggerPolicyEngine",
     "TriggerRegistry",
@@ -52,6 +55,7 @@ __all__ = [
     "TriggerRuleMatch",
     "TriggerSchedule",
     "TriggerScheduler",
+    "TriggerService",
     "TriggerUpdateRequest",
     "build_dispatch_key",
     "compute_next_run",

@@ -22,6 +22,7 @@ from backend.app.api.v1.connectors import router as connectors_router
 from backend.app.api.v1.dashboard import router as dashboard_router
 from backend.app.api.v1.departments import router as departments_router
 from backend.app.api.v1.documents import router as documents_router
+from backend.app.api.v1.events import router as events_router
 from backend.app.api.v1.graph import router as graph_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.ingestion import router as ingestion_router
@@ -42,6 +43,7 @@ from backend.app.api.v1.security import router as security_router
 from backend.app.api.v1.system import router as system_router
 from backend.app.api.v1.teams import router as teams_router
 from backend.app.api.v1.tools import router as tools_router
+from backend.app.api.v1.triggers import router as triggers_router
 from backend.app.api.v1.users import router as users_router
 from backend.app.api.v1.workflows import router as workflows_router
 from fastapi import APIRouter
@@ -80,6 +82,8 @@ api_v1_router.include_router(connectors_router)
 api_v1_router.include_router(collaboration_router)
 api_v1_router.include_router(agent_collaboration_router)
 api_v1_router.include_router(autonomous_workflows_router)
+api_v1_router.include_router(triggers_router)
+api_v1_router.include_router(events_router)
 api_v1_router.include_router(security_router)
 api_v1_router.include_router(workflows_router)
 api_v1_router.include_router(plugins_router)

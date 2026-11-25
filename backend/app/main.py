@@ -15,11 +15,20 @@ from backend.app.agents.collaboration.repository import (
     SqlAlchemyCollaborationRepository,
 )
 from backend.app.agents.collaboration.service import CollaborationService
+from backend.app.agents.events.adapters.webhook import (
+    WebhookIngestionAdapter,
+    WebhookSourceRegistry,
+)
+from backend.app.agents.events.event_store import SqlAlchemyEventStore
 from backend.app.agents.memory.repository import SqlAlchemyMemoryRepository
 from backend.app.agents.memory.service import MemoryService
 from backend.app.agents.observability.telemetry import RuntimeMetricsCollector
 from backend.app.agents.observability.workflow_tracing import WorkflowMetricsCollector
-from backend.app.agents.orchestration.graphs import build_default_workflow_registry
+from backend.app.agents.orchestration.graphs import (
+    DOCUMENT_ENRICHMENT_DEFINITION,
+    build_default_workflow_registry,
+    build_document_enrichment_graph,
+)
 from backend.app.agents.orchestration.policies import KeepWorkflowPolicyEngine
 from backend.app.agents.orchestration.service import KeepOrchestrationService
 from backend.app.agents.persistence.checkpoints import KeepCheckpointStore
@@ -48,6 +57,8 @@ from backend.app.agents.tools.executor import KeepToolExecutor
 from backend.app.agents.tools.policies import ToolPolicyEngine
 from backend.app.agents.tools.registry import ToolRegistry
 from backend.app.agents.tools.repository import ToolRepository
+from backend.app.agents.triggers.repository import SqlAlchemyTriggerRepository
+from backend.app.agents.triggers.service import TriggerService
 from backend.app.agents.workers.execution_worker import DurableExecutionWorker
 from backend.app.api.middleware import (
     LoggingMiddleware,
@@ -60,8 +71,10 @@ from backend.app.api.v1.agent_collaboration import router as agent_collaboration
 from backend.app.api.v1.autonomous_workflows import (
     router as autonomous_workflows_router,
 )
+from backend.app.api.v1.events import router as events_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.memory import router as memory_router
+from backend.app.api.v1.triggers import router as triggers_router
 from backend.app.core.config import settings
 from backend.app.core.logging import get_logger, setup_logging
 from backend.app.core.metrics import metrics_registry
@@ -130,6 +143,14 @@ OPENAPI_TAGS = [
         "name": "Autonomous Workflows",
         "description": "Phase 4.9 goal-driven autonomous workflows with bounded replanning, write approvals, and audit trails.",
     },
+    {
+        "name": "Event Triggers",
+        "description": "Phase 4.10 declarative event triggers, condition matching, and persistent schedules.",
+    },
+    {
+        "name": "Events & Webhooks",
+        "description": "Phase 4.10 event ingestion, delivery status inspection, dead-letter replay, and HMAC webhooks.",
+    },
 ]
 
 
@@ -193,6 +214,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app.state.workflow_registry = build_default_workflow_registry(
             app.state.agent_registry,
             validate_deps=registry_created_by_lifespan,
+        )
+    if not app.state.workflow_registry.is_registered("document_enrichment"):
+        app.state.workflow_registry.register(
+            DOCUMENT_ENRICHMENT_DEFINITION,
+            build_document_enrichment_graph,
+            validate_deps=False,
         )
     if getattr(app.state, "workflow_repository", None) is None:
         app.state.workflow_repository = SQLAlchemyWorkflowRepository(async_session_factory)
@@ -317,6 +344,29 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             collaboration_service=getattr(app.state, "collaboration_service", None),
         )
 
+    # Phase 4.10: Initialize lifespan-bound Event-Driven & Trigger-Based Agent Engine
+    if getattr(app.state, "event_store", None) is None:
+        app.state.event_store = SqlAlchemyEventStore(session_factory=async_session_factory)
+    if getattr(app.state, "trigger_repository", None) is None:
+        app.state.trigger_repository = SqlAlchemyTriggerRepository(
+            session_factory=async_session_factory
+        )
+    if getattr(app.state, "trigger_service", None) is None:
+        app.state.trigger_service = TriggerService(
+            event_store=app.state.event_store,
+            trigger_repository=app.state.trigger_repository,
+            workflow_registry=getattr(app.state, "workflow_registry", None),
+            orchestration_service=getattr(app.state, "orchestration_service", None),
+            autonomy_service=getattr(app.state, "autonomy_service", None),
+        )
+    if getattr(app.state, "webhook_source_registry", None) is None:
+        app.state.webhook_source_registry = WebhookSourceRegistry()
+    if getattr(app.state, "webhook_adapter", None) is None:
+        app.state.webhook_adapter = WebhookIngestionAdapter(
+            app.state.trigger_service.ingestion_service,
+            app.state.webhook_source_registry,
+        )
+
     logger.info(
         "Initialized KEEP AgentRuntime (%d agents), Orchestration (%d workflows), Planning, Research, Tool & Memory Engine",
         app.state.agent_registry.count(),
@@ -388,6 +438,10 @@ app.include_router(agent_collaboration_router, prefix="/api")
 
 # 10. Mount Phase 4.9 Autonomous Workflows Compatibility Router (/api/autonomous-workflows/*)
 app.include_router(autonomous_workflows_router, prefix="/api")
+
+# 11. Mount Phase 4.10 Triggers & Events Compatibility Routers (/api/triggers*, /api/events*, /api/webhooks*)
+app.include_router(triggers_router, prefix="/api")
+app.include_router(events_router, prefix="/api")
 
 # 6. Mount Root-Level Observability & Health Probes (/health, /health/*)
 app.include_router(health_router)
