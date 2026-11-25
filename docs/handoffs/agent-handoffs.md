@@ -7212,3 +7212,19 @@ COMPLETED ✓
 - Extended `backend/app/agents/errors.py` with 13 Phase 4.9 typed error codes and exceptions (`AutonomousWorkflowNotFoundError`, `AutonomousWorkflowInvalidStateError`, `AutonomousWorkflowUnsupportedTypeError`, `AutonomousWorkflowCancelledError`, `AutonomousWorkflowBudgetExhaustedError`, `AutonomousWorkflowDeadlineExceededError`, `AutonomousWorkflowReplanLimitError`, `AutonomousWorkflowApprovalRequiredError`, `AutonomousWorkflowPlanRejectedError`, `AutonomousWorkflowPolicyDeniedError`, `AutonomousWorkflowTenantViolationError`, `AutonomousWorkflowAccessDeniedError`, `AutonomousWorkflowIdempotencyConflictError`).
 - Implemented core contracts, state schema, repository interface, and controller in `backend/app/agents/autonomy/` (`contracts.py`, `state.py`, `repository.py`, `controller.py`, `__init__.py`) and compatibility package `backend/app/autonomy/`.
 - Verified Stage 1 unit tests (`tests/unit/test_phase4_9_autonomy_core.py`: 7/7 passed).
+
+---
+
+### Handoff Entry — Phase 4.9 Member 2: Adaptive Planning, Evaluation, Persistence & Migrations
+
+- **Date:** 2026-11-25
+- **Author:** Member 2 (Adaptive Planning, Evaluation, Persistence & Migrations)
+- **Branch:** `agent/ai-lead/feature/phase-4.9-autonomous-workflow-engine`
+- **Status:** COMPLETED — Ready for Member 3 (Policy Engine, Safety, LangGraph Graph & Subsystem Integration)
+
+#### Summary of Deliverables
+- Implemented `AutonomousWorkflowModel`, `AutonomousWorkflowStepModel`, `AutonomyDecisionModel`, `AutonomyEventModel`, and `AutonomyBudgetModel` in `backend/app/models/agent_autonomy.py` and exported in `backend/app/models/__init__.py`.
+- Created Alembic schema migration `backend/migrations/versions/9d0e1f2a3b4c_phase_4_9_autonomous_workflow_engine.py` (`8c9d0e1f2a3b` → `9d0e1f2a3b4c (head)`) and updated `tests/integration/test_db_migrations.py`.
+- Implemented `SqlAlchemyAutonomyRepository` (`backend/app/agents/autonomy/repository.py`) supporting session factory & async session persistence across process restarts under strict tenant boundaries.
+- Implemented `AutonomyPlannerAdapter` (`backend/app/agents/autonomy/planner_adapter.py`) wrapping Phase 4.4 planning + adaptive bounded replanning, and `ProgressEvaluator` (`backend/app/agents/autonomy/evaluator.py`) evaluating objective satisfaction, evidence sufficiency, failures, and human review flags.
+- Verified with `tests/unit/test_phase4_9_autonomy_planning.py`, `tests/integration/test_db_migrations.py`, `alembic heads`, and Ruff.

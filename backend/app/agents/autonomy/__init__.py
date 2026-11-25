@@ -28,9 +28,12 @@ from backend.app.agents.autonomy.contracts import (
     is_valid_autonomy_transition,
 )
 from backend.app.agents.autonomy.controller import AutonomousWorkflowController
+from backend.app.agents.autonomy.evaluator import ProgressEvaluator
+from backend.app.agents.autonomy.planner_adapter import AutonomyPlannerAdapter
 from backend.app.agents.autonomy.repository import (
     BaseAutonomyRepository,
     InMemoryAutonomyRepository,
+    SqlAlchemyAutonomyRepository,
 )
 from backend.app.agents.autonomy.state import AutonomyState, sanitize_autonomy_state
 
@@ -49,6 +52,7 @@ __all__ = [
     "AutonomyBudgetSnapshot",
     "AutonomyDecisionRecord",
     "AutonomyEventRecord",
+    "AutonomyPlannerAdapter",
     "AutonomyPolicy",
     "AutonomyPolicyInterface",
     "AutonomySecurityContext",
@@ -61,7 +65,9 @@ __all__ = [
     "EvaluationResult",
     "InMemoryAutonomyRepository",
     "PlannedStepSpec",
+    "ProgressEvaluator",
     "ResumeWorkflowRequest",
+    "SqlAlchemyAutonomyRepository",
     "StepStatus",
     "is_valid_autonomy_transition",
     "sanitize_autonomy_state",
