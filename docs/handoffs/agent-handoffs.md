@@ -7197,3 +7197,18 @@ COMPLETED ✓
 
 
 
+
+---
+
+### Handoff Entry — Phase 4.9 Member 1: Autonomous Controller & Lifecycle
+
+- **Date:** 2026-11-25
+- **Author:** Member 1 (Autonomous Controller & Lifecycle)
+- **Branch:** `agent/ai-lead/feature/phase-4.9-autonomous-workflow-engine`
+- **Status:** COMPLETED — Ready for Member 2 (Adaptive Planning, Evaluation, Persistence & Migrations)
+
+#### Summary of Deliverables
+- Authored master Architecture Specification (`docs/Architecture/phase-4.9-autonomous-workflow-engine.md`), ADRs `ADR-092`–`ADR-094` (`docs/decisions/decisions.md`), REST API Section 28 (`docs/API/api-contract.md`), and Schema Section 3.32 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 13 Phase 4.9 typed error codes and exceptions (`AutonomousWorkflowNotFoundError`, `AutonomousWorkflowInvalidStateError`, `AutonomousWorkflowUnsupportedTypeError`, `AutonomousWorkflowCancelledError`, `AutonomousWorkflowBudgetExhaustedError`, `AutonomousWorkflowDeadlineExceededError`, `AutonomousWorkflowReplanLimitError`, `AutonomousWorkflowApprovalRequiredError`, `AutonomousWorkflowPlanRejectedError`, `AutonomousWorkflowPolicyDeniedError`, `AutonomousWorkflowTenantViolationError`, `AutonomousWorkflowAccessDeniedError`, `AutonomousWorkflowIdempotencyConflictError`).
+- Implemented core contracts, state schema, repository interface, and controller in `backend/app/agents/autonomy/` (`contracts.py`, `state.py`, `repository.py`, `controller.py`, `__init__.py`) and compatibility package `backend/app/autonomy/`.
+- Verified Stage 1 unit tests (`tests/unit/test_phase4_9_autonomy_core.py`: 7/7 passed).

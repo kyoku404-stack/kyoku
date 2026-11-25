@@ -2676,3 +2676,58 @@ When multiple specialized agents analyze complex domain problems, contradictions
 
 #### Status
 ACCEPTED
+
+
+---
+
+### ADR-092: Bounded Autonomy Policy & Server-Side Ceiling Clamping
+
+#### Date
+2026-11-25
+
+#### Context
+Autonomous workflows execute multi-step loops that can trigger expensive planning calls, retries, and tool executions. Allowing clients or LLM planners to specify unbounded step limits, infinite retries, or self-authorized agent lists introduces denial-of-wallet and privilege escalation risks.
+
+#### Decision
+1. Represent workflow execution limits explicitly using `AutonomyPolicy` (`max_steps`, `max_replans`, `max_agent_attempts`, `deadline_seconds`, `require_approval_for_writes`, `allowed_agents`, `allowed_tools`).
+2. Treat client-supplied policy values solely as tightening preferences; enforce mandatory server-side ceilings (`SERVER_MAX_STEPS`, `SERVER_MAX_REPLANS`, `SERVER_MAX_AGENT_ATTEMPTS`, `SERVER_MAX_DEADLINE_SECONDS`) and reject unsupported workflow types.
+3. Validate budgets and wall-clock deadlines inside `AutonomousWorkflowController` at every state transition rather than only at initialization.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-093: Model-Proposed Plans Are Non-Authoritative Until Validated
+
+#### Date
+2026-11-25
+
+#### Context
+In adaptive workflows, initial plans and replanning proposals are generated dynamically by Phase 4.4 planning components in response to intermediate findings or missing evidence. Untrusted knowledge inputs retrieved during execution could attempt prompt injection to invoke restricted tools or unapproved agents.
+
+#### Decision
+1. Isolate planning into a dedicated `AutonomyPlannerAdapter` producing candidate steps with `required_capabilities` and `is_side_effecting` markers.
+2. Mandate a fail-closed `validate_plan` gate via `AutonomyPolicyEngine` before any task is scheduled or executed.
+3. Reject plans referencing unapproved agents, restricted tools, cyclic dependencies, or write operations lacking approval authorization, recording every validation outcome in `autonomy_decisions`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-094: Checkpoint-Safe Pause/Resume & Replay Prevention for Side Effects
+
+#### Date
+2026-11-25
+
+#### Context
+When an autonomous workflow encounters a side-effecting step (`require_approval_for_writes=True`), execution must pause in `awaiting_approval` until an authorized user approves or cancels. On resume, process restarts or permission changes might occur in the interim.
+
+#### Decision
+1. Persist full execution state, step history, budgets, decisions, and sanitized checkpoints across PostgreSQL tables (`autonomous_workflows`, `autonomous_workflow_steps`, `autonomy_decisions`, `autonomy_events`, `autonomy_budgets`).
+2. Enforce fresh caller RBAC, tenant ownership, and workflow permission re-authorization at the moment `resume` is invoked (failing closed if permissions were revoked).
+3. Track step completion states (`succeeded`) deterministically so resumed workflows advance from the approved pending step without re-executing completed side effects.
+
+#### Status
+ACCEPTED

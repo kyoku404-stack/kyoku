@@ -5567,3 +5567,71 @@ Provides session lifecycle, task delegation, structured inter-agent messaging, e
 
 
 
+
+
+---
+
+## 28. Phase 4.9 — Autonomous Workflow Engine Endpoints
+
+All endpoints enforce JWT authentication, `tenant_id` scoping, and `ApiResponse[T]` envelopes. Mounted at `/api/v1/autonomous-workflows` (with compatibility alias `/api/autonomous-workflows`).
+
+### 28.1 Start Autonomous Workflow
+- **Endpoint:** `POST /api/v1/autonomous-workflows`
+- **Permission:** `agent.invoke`
+- **Request Body:**
+```json
+{
+  "objective": "Investigate sudden rise in Q4 customer churn and recommend retention actions",
+  "workflow_id": "autonomous_research",
+  "policy": {
+    "max_steps": 12,
+    "max_replans": 2,
+    "max_agent_attempts": 2,
+    "deadline_seconds": 600,
+    "require_approval_for_writes": true
+  }
+}
+```
+- **Responses:**
+  - `202 Accepted` (or `200 OK` if synchronous execution requested): `ApiResponse[AutonomousWorkflowRecord]` with `execution_id`, initial status, bounded policy snapshot, and budget allocation.
+  - `400 Bad Request`: `AUTONOMOUS_WORKFLOW_UNSUPPORTED_TYPE` / `AUTONOMOUS_WORKFLOW_PLAN_REJECTED`.
+  - `403 Forbidden`: `AUTONOMOUS_WORKFLOW_ACCESS_DENIED` / `AUTONOMOUS_WORKFLOW_POLICY_DENIED`.
+
+### 28.2 Inspect Autonomous Workflow State
+- **Endpoint:** `GET /api/v1/autonomous-workflows/{id}`
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[AutonomousWorkflowRecord]` including current plan, remaining budget snapshot, termination reason, limitations, and final result (if completed).
+  - `403 Forbidden`: `AUTONOMOUS_WORKFLOW_TENANT_VIOLATION`.
+  - `404 Not Found`: `AUTONOMOUS_WORKFLOW_NOT_FOUND`.
+
+### 28.3 Inspect Task Step History
+- **Endpoint:** `GET /api/v1/autonomous-workflows/{id}/steps`
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[List[AutonomousStepRecord]]` listing planned steps, assigned agents, attempt counts, dependencies, and outputs.
+  - `404 Not Found`: `AUTONOMOUS_WORKFLOW_NOT_FOUND`.
+
+### 28.4 Inspect Decisions and Lifecycle Events
+- **Endpoint:** `GET /api/v1/autonomous-workflows/{id}/events`
+- **Permission:** `agent.read` / `agent.invoke`
+- **Responses:**
+  - `200 OK`: `ApiResponse[AutonomyTimelineResponse]` containing ordered `decisions` (`continue`, `replan`, `pause_for_approval`, `stop_*`) and `events` (lifecycle changes, policy checks, approvals, errors).
+  - `404 Not Found`: `AUTONOMOUS_WORKFLOW_NOT_FOUND`.
+
+### 28.5 Request Workflow Cancellation
+- **Endpoint:** `POST /api/v1/autonomous-workflows/{id}/cancel`
+- **Permission:** `agent.invoke`
+- **Request Body:** `{"reason": "Cancelled by operator"}`
+- **Responses:**
+  - `200 OK`: `ApiResponse[AutonomousWorkflowRecord]` with `status="cancelled"` and explicit `termination_reason`.
+  - `409 Conflict`: `AUTONOMOUS_WORKFLOW_INVALID_STATE` (if already completed).
+
+### 28.6 Resume Paused Autonomous Workflow
+- **Endpoint:** `POST /api/v1/autonomous-workflows/{id}/resume`
+- **Permission:** `agent.invoke` (or `agent.manage` for approval-gated writes)
+- **Request Body:** `{"approve": true, "reason": "Approved write operation by lead"}`
+- **Responses:**
+  - `200 OK`: `ApiResponse[AutonomousWorkflowRecord]` revalidating caller permissions, granting approval if requested, continuing remaining steps without replaying completed side effects.
+  - `403 Forbidden`: `AUTONOMOUS_WORKFLOW_ACCESS_DENIED` (permission revoked or cross-tenant).
+  - `409 Conflict`: `AUTONOMOUS_WORKFLOW_INVALID_STATE` (workflow not in resumable paused state).

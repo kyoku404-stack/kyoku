@@ -141,6 +141,21 @@ class AgentErrorCode(str, Enum):
     COLLABORATION_ACCESS_DENIED = "COLLABORATION_ACCESS_DENIED"
     COLLABORATION_TENANT_ISOLATION_VIOLATION = "COLLABORATION_TENANT_ISOLATION_VIOLATION"
 
+    # Phase 4.9 Autonomous Workflow Engine error codes
+    AUTONOMOUS_WORKFLOW_NOT_FOUND = "AUTONOMOUS_WORKFLOW_NOT_FOUND"
+    AUTONOMOUS_WORKFLOW_INVALID_STATE = "AUTONOMOUS_WORKFLOW_INVALID_STATE"
+    AUTONOMOUS_WORKFLOW_UNSUPPORTED_TYPE = "AUTONOMOUS_WORKFLOW_UNSUPPORTED_TYPE"
+    AUTONOMOUS_WORKFLOW_CANCELLED = "AUTONOMOUS_WORKFLOW_CANCELLED"
+    AUTONOMOUS_WORKFLOW_BUDGET_EXHAUSTED = "AUTONOMOUS_WORKFLOW_BUDGET_EXHAUSTED"
+    AUTONOMOUS_WORKFLOW_DEADLINE_EXCEEDED = "AUTONOMOUS_WORKFLOW_DEADLINE_EXCEEDED"
+    AUTONOMOUS_WORKFLOW_REPLAN_LIMIT_EXCEEDED = "AUTONOMOUS_WORKFLOW_REPLAN_LIMIT_EXCEEDED"
+    AUTONOMOUS_WORKFLOW_APPROVAL_REQUIRED = "AUTONOMOUS_WORKFLOW_APPROVAL_REQUIRED"
+    AUTONOMOUS_WORKFLOW_PLAN_REJECTED = "AUTONOMOUS_WORKFLOW_PLAN_REJECTED"
+    AUTONOMOUS_WORKFLOW_POLICY_DENIED = "AUTONOMOUS_WORKFLOW_POLICY_DENIED"
+    AUTONOMOUS_WORKFLOW_TENANT_VIOLATION = "AUTONOMOUS_WORKFLOW_TENANT_VIOLATION"
+    AUTONOMOUS_WORKFLOW_ACCESS_DENIED = "AUTONOMOUS_WORKFLOW_ACCESS_DENIED"
+    AUTONOMOUS_WORKFLOW_IDEMPOTENCY_CONFLICT = "AUTONOMOUS_WORKFLOW_IDEMPOTENCY_CONFLICT"
+
 
 class AgentErrorDetail(BaseModel):
     """Structured, sanitized error payload embedded in failed AgentResults and messages."""
@@ -1228,3 +1243,167 @@ class CollaborationTenantIsolationViolationError(AgentLayerError, PermissionErro
 
 
 
+
+
+# ==============================================================================
+# Phase 4.9 — Autonomous Workflow Engine Exceptions
+# ==============================================================================
+
+
+class AutonomousWorkflowNotFoundError(AgentLayerError, KeyError):
+    """Raised when an autonomous workflow execution record does not exist or is invisible to the tenant."""
+
+    def __init__(self, execution_id: str) -> None:
+        super().__init__(
+            f"Autonomous workflow '{execution_id}' was not found.",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_NOT_FOUND,
+            http_status=404,
+            details={"execution_id": execution_id},
+        )
+
+
+class AutonomousWorkflowInvalidStateError(AgentLayerError, ValueError):
+    """Raised when a lifecycle transition, cancel, or resume is invalid for the current workflow state."""
+
+    def __init__(self, execution_id: str, current_status: str, target_action: str) -> None:
+        super().__init__(
+            f"Autonomous workflow '{execution_id}' in state '{current_status}' cannot perform '{target_action}'.",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_INVALID_STATE,
+            http_status=409,
+            details={
+                "execution_id": execution_id,
+                "current_status": current_status,
+                "target_action": target_action,
+            },
+        )
+
+
+class AutonomousWorkflowUnsupportedTypeError(AgentLayerError, ValueError):
+    """Raised when the requested autonomous workflow type is unsupported or disabled."""
+
+    def __init__(self, workflow_id: str) -> None:
+        super().__init__(
+            f"Workflow type '{workflow_id}' is not supported by the Autonomous Workflow Engine.",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_UNSUPPORTED_TYPE,
+            http_status=400,
+            details={"workflow_id": workflow_id},
+        )
+
+
+class AutonomousWorkflowCancelledError(AgentLayerError, RuntimeError):
+    """Raised when an autonomous workflow is cancelled by an authorized actor."""
+
+    def __init__(self, execution_id: str, reason: str = "Cancelled by operator") -> None:
+        super().__init__(
+            f"Autonomous workflow '{execution_id}' was cancelled: {reason}",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_CANCELLED,
+            http_status=409,
+            details={"execution_id": execution_id, "reason": reason},
+        )
+
+
+class AutonomousWorkflowBudgetExhaustedError(AgentLayerError, RuntimeError):
+    """Raised when step, attempt, or total resource budgets for an autonomous workflow are exhausted."""
+
+    def __init__(self, execution_id: str, reason: str) -> None:
+        super().__init__(
+            f"Autonomous workflow '{execution_id}' exhausted execution budget: {reason}",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_BUDGET_EXHAUSTED,
+            http_status=429,
+            details={"execution_id": execution_id, "reason": reason},
+        )
+
+
+class AutonomousWorkflowDeadlineExceededError(AgentLayerError, TimeoutError):
+    """Raised when an autonomous workflow exceeds its bounded wall-clock deadline."""
+
+    def __init__(self, execution_id: str, deadline_seconds: int) -> None:
+        super().__init__(
+            f"Autonomous workflow '{execution_id}' exceeded deadline ({deadline_seconds}s).",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_DEADLINE_EXCEEDED,
+            http_status=504,
+            details={"execution_id": execution_id, "deadline_seconds": deadline_seconds},
+        )
+
+
+class AutonomousWorkflowReplanLimitError(AgentLayerError, RuntimeError):
+    """Raised when bounded replanning exceeds policy max_replans."""
+
+    def __init__(self, execution_id: str, max_replans: int) -> None:
+        super().__init__(
+            f"Autonomous workflow '{execution_id}' exceeded maximum replan limit ({max_replans}).",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_REPLAN_LIMIT_EXCEEDED,
+            http_status=422,
+            details={"execution_id": execution_id, "max_replans": max_replans},
+        )
+
+
+class AutonomousWorkflowApprovalRequiredError(AgentLayerError, PermissionError):
+    """Raised when a side-effecting write step requires explicit human approval."""
+
+    def __init__(self, execution_id: str, step_id: str) -> None:
+        super().__init__(
+            f"Autonomous workflow '{execution_id}' step '{step_id}' requires human approval before execution.",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_APPROVAL_REQUIRED,
+            http_status=403,
+            details={"execution_id": execution_id, "step_id": step_id},
+        )
+
+
+class AutonomousWorkflowPlanRejectedError(AgentLayerError, ValueError):
+    """Raised when a planner proposal fails safety, capability, or permission validation."""
+
+    def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            f"Autonomous plan rejected by policy: {reason}",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_PLAN_REJECTED,
+            http_status=400,
+            details=details or {},
+        )
+
+
+class AutonomousWorkflowPolicyDeniedError(AgentLayerError, PermissionError):
+    """Raised when a policy constraint blocks execution or tool usage."""
+
+    def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            f"Autonomous workflow policy denied action: {reason}",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_POLICY_DENIED,
+            http_status=403,
+            details=details or {},
+        )
+
+
+class AutonomousWorkflowTenantViolationError(AgentLayerError, PermissionError):
+    """Raised when a cross-tenant autonomous workflow access is attempted."""
+
+    def __init__(self, tenant_id: str, target_tenant_id: str) -> None:
+        super().__init__(
+            f"Cross-tenant autonomous workflow access blocked: '{tenant_id}' cannot access '{target_tenant_id}'.",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_TENANT_VIOLATION,
+            http_status=403,
+            details={"caller_tenant_id": tenant_id, "target_tenant_id": target_tenant_id},
+        )
+
+
+class AutonomousWorkflowAccessDeniedError(AgentLayerError, PermissionError):
+    """Raised when caller lacks required RBAC permissions to run or resume an autonomous workflow."""
+
+    def __init__(self, message: str = "Caller lacks required permissions for autonomous workflow operation.") -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_ACCESS_DENIED,
+            http_status=403,
+        )
+
+
+class AutonomousWorkflowIdempotencyConflictError(AgentLayerError, ValueError):
+    """Raised when a caller reuses an idempotency key with a different objective or workflow type."""
+
+    def __init__(self, idempotency_key: str) -> None:
+        super().__init__(
+            f"Idempotency key '{idempotency_key}' was reused with a mismatched autonomous workflow payload.",
+            code=AgentErrorCode.AUTONOMOUS_WORKFLOW_IDEMPOTENCY_CONFLICT,
+            http_status=409,
+            details={"idempotency_key": idempotency_key},
+        )

@@ -2273,3 +2273,105 @@ Records contradictory findings across agents with resolution lineage.
 
 
 
+
+
+---
+
+### 3.32 Phase 4.9 — Autonomous Workflow Engine Schema
+
+#### Table: `autonomous_workflows`
+Tracks goal-driven autonomous workflow lifecycle, policy snapshot, progress state, and outcomes.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `execution_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Domain identifier (`auto_wf_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `requested_by` | `VARCHAR(128)` | NOT NULL, INDEX | Authenticated creator user ID |
+| `workflow_id` | `VARCHAR(128)` | NOT NULL, INDEX | Supported workflow type identifier |
+| `objective` | `TEXT` | NOT NULL | Natural-language objective |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `pending`, `running`, `awaiting_approval`, `completed`, `failed`, `budget_exhausted`, `cancelled` |
+| `policy_snapshot` | `JSONB` | NOT NULL, DEFAULT '{}' | Server-clamped `AutonomyPolicy` |
+| `current_plan` | `JSONB` | NOT NULL, DEFAULT '{}' | Active validated plan dictionary |
+| `current_step_index` | `INTEGER` | NOT NULL, DEFAULT 0 | Cursor into current plan execution |
+| `replan_count` | `INTEGER` | NOT NULL, DEFAULT 0 | Number of bounded replans executed |
+| `termination_reason` | `TEXT` | NULL | Explicit stopping / completion explanation |
+| `limitations` | `JSONB` | NOT NULL, DEFAULT '[]' | Documented evidence gaps or caveats |
+| `final_result` | `JSONB` | NOT NULL, DEFAULT '{}' | Synthesized report / final artifact |
+| `checkpoint_ref` | `VARCHAR(128)` | NULL | Sanitized LangGraph checkpoint reference |
+| `idempotency_key` | `VARCHAR(128)` | NULL, INDEX | Scoped idempotency key |
+| `deadline_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | Absolute deadline timestamp |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Creation timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Last update timestamp |
+| `completed_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Terminal timestamp |
+
+#### Table: `autonomous_workflow_steps`
+Records planned steps, agent bindings, attempt counts, side-effect markers, and execution results.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `step_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Unique step identifier (`auto_step_...`) |
+| `execution_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent autonomous workflow ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `plan_version` | `INTEGER` | NOT NULL, DEFAULT 1 | Plan revision that produced this step |
+| `step_order` | `INTEGER` | NOT NULL | Topological execution order |
+| `title` | `VARCHAR(256)` | NOT NULL | Human-readable step summary |
+| `agent_id` | `VARCHAR(128)` | NOT NULL, INDEX | Resolved Phase 4.1 agent ID |
+| `tool_id` | `VARCHAR(128)` | NULL | Approved Phase 4.6 tool ID (if applicable) |
+| `required_capability` | `VARCHAR(128)` | NOT NULL | Required agent capability |
+| `is_side_effecting` | `BOOLEAN` | NOT NULL, DEFAULT false | Requires write-approval check if true |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `pending`, `running`, `succeeded`, `failed`, `skipped`, `awaiting_approval`, `cancelled` |
+| `attempt` | `INTEGER` | NOT NULL, DEFAULT 0 | Executed attempts |
+| `max_attempts` | `INTEGER` | NOT NULL, DEFAULT 2 | Bounded retry cap |
+| `inputs` | `JSONB` | NOT NULL, DEFAULT '{}' | Validated input payload |
+| `outputs` | `JSONB` | NOT NULL, DEFAULT '{}' | Step result payload & evidence refs |
+| `error_code` | `VARCHAR(64)` | NULL | Sanitized error code if failed |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Registration timestamp |
+| `completed_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Completion timestamp |
+
+#### Table: `autonomy_decisions`
+Audit trail of every controller and policy transition decision.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `decision_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Decision identifier (`auto_dec_...`) |
+| `execution_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent autonomous workflow ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `action` | `VARCHAR(64)` | NOT NULL, INDEX | `continue`, `replan`, `pause_for_approval`, `stop_completed`, `stop_failed`, `stop_budget_exhausted`, `stop_cancelled` |
+| `reason` | `TEXT` | NOT NULL | Rationale explaining the decision |
+| `evaluation_snapshot` | `JSONB` | NOT NULL, DEFAULT '{}' | Evaluator scores/flags at decision time |
+| `remaining_steps` | `INTEGER` | NOT NULL | Remaining step budget at decision time |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Decision timestamp |
+
+#### Table: `autonomy_events`
+Append-only operational event stream capturing lifecycle transitions, policy gates, approvals, and failures.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `event_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Event identifier (`auto_evt_...`) |
+| `execution_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent autonomous workflow ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `event_type` | `VARCHAR(64)` | NOT NULL, INDEX | e.g., `workflow.started`, `plan.validated`, `policy.denied`, `approval.paused`, `approval.resumed`, `workflow.completed` |
+| `actor_id` | `VARCHAR(128)` | NOT NULL | Authenticated user ID or `system:controller` |
+| `details` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized diagnostic metadata |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Event timestamp |
+
+#### Table: `autonomy_budgets`
+Tracks configured caps and real-time consumption counters per execution.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `execution_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Parent autonomous workflow ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `max_steps` | `INTEGER` | NOT NULL | Step upper bound |
+| `steps_consumed` | `INTEGER` | NOT NULL, DEFAULT 0 | Steps executed so far |
+| `max_replans` | `INTEGER` | NOT NULL | Replan upper bound |
+| `replans_consumed` | `INTEGER` | NOT NULL, DEFAULT 0 | Replans performed so far |
+| `max_agent_attempts` | `INTEGER` | NOT NULL | Per-step attempt upper bound |
+| `total_agent_attempts` | `INTEGER` | NOT NULL, DEFAULT 0 | Cumulative agent attempts |
+| `deadline_seconds` | `INTEGER` | NOT NULL | Wall-clock deadline ceiling |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Last counter update |
