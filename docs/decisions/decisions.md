@@ -2731,3 +2731,58 @@ When an autonomous workflow encounters a side-effecting step (`require_approval_
 
 #### Status
 ACCEPTED
+
+
+---
+
+### ADR-095: Schema-Validated Data-Only Event Envelopes & Trusted Tenant Provenance
+
+#### Date
+2026-11-25
+
+#### Context
+Accepting arbitrary unvalidated event blobs or allowing external payloads to assert `tenant_id` opens KEEP to multi-tenant spoofing, queue poisoning, and indirect prompt injection if document contents are embedded inside events.
+
+#### Decision
+1. Define a versioned `KeepEvent` envelope distinguishing producer `occurred_at` from ingestion `published_at`, carrying `event_id`, `event_type`, `schema_version`, `source`, `resource_id`, and `correlation_id`.
+2. Derive `tenant_id` strictly from authenticated service callers or verified webhook source credentials, rejecting mismatched caller-claimed tenants.
+3. Enforce schema validation and payload hygiene at ingestion time (reference authorized `document_id`/resource IDs rather than raw document bodies or credentials) before any queue persistence.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-096: Declarative Allowlisted Trigger Rules With Cooldown & Concurrency Limits
+
+#### Date
+2026-11-25
+
+#### Context
+Dynamic string evaluation (`eval()`) of trigger rules introduces remote code execution risk, while unthrottled rules can trigger runaway workflow storms during bulk document uploads or retry loops.
+
+#### Decision
+1. Implement declarative condition matching (`eq`, `neq`, `in`, `contains`, `gt`, `lt`, `exists`) validated strictly against an explicit operator allowlist without `eval()`.
+2. Bind every `TriggerRule` to `tenant_id`, `trigger_version`, `enabled`, allowed `workflow_id` mappings, `cooldown_seconds`, and `max_concurrent_runs`.
+3. Persist every match, cooldown suppression, concurrency rejection, and policy denial cleanly in `event_audit_log`.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-097: Effectively-Once Dispatch via Unique Claims, Dead-Letter Replay & Webhook Security
+
+#### Date
+2026-11-25
+
+#### Context
+At-least-once event queues, duplicate deliveries, and worker crashes between workflow queuing and database acknowledgment can spawn duplicate agent workflows. Furthermore, unauthenticated webhooks allow replay attacks.
+
+#### Decision
+1. Enforce a database `UNIQUE(dispatch_key)` constraint over `{event_id}:{trigger_id}:{trigger_version}` on `trigger_dispatches` so concurrent or replayed deliveries atomically claim once and reuse existing `workflow_execution_id` references on retry.
+2. Classify failures into retryable (exponential backoff with jitter up to `max_attempts`) vs permanent/exhausted (`dead_letter`), with safe operator inspection and manual replay endpoints.
+3. Require HMAC-SHA256 signature verification, bounded timestamp replay windows (`±300s`), payload size limits, and source tenant mapping on `POST /api/v1/webhooks/{source_id}`.
+
+#### Status
+ACCEPTED

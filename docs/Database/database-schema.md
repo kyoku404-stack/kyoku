@@ -2375,3 +2375,122 @@ Tracks configured caps and real-time consumption counters per execution.
 | `total_agent_attempts` | `INTEGER` | NOT NULL, DEFAULT 0 | Cumulative agent attempts |
 | `deadline_seconds` | `INTEGER` | NOT NULL | Wall-clock deadline ceiling |
 | `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Last counter update |
+
+
+---
+
+### 3.33 Phase 4.10 — Event-Driven & Trigger-Based Agents Schema
+
+#### Table: `events`
+Durable accepted event log with schema metadata and optional transactional outbox state.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `event_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Idempotent event identifier |
+| `event_type` | `VARCHAR(128)` | NOT NULL, INDEX | Registered event type (e.g., `knowledge.document.indexed`) |
+| `schema_version` | `INTEGER` | NOT NULL, DEFAULT 1 | Event payload schema version |
+| `source` | `VARCHAR(128)` | NOT NULL, INDEX | Trusted producer identifier |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `resource_id` | `VARCHAR(128)` | NULL, INDEX | Referenced entity ID |
+| `correlation_id` | `VARCHAR(128)` | NOT NULL, INDEX | Distributed trace correlation ID |
+| `occurred_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | Producer timestamp |
+| `published_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | KEEP ingestion timestamp |
+| `outbox_published` | `BOOLEAN` | NOT NULL, DEFAULT true | Transactional outbox relay flag |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `accepted`, `processing`, `processed`, `dead_letter` |
+| `payload` | `JSONB` | NOT NULL, DEFAULT '{}' | Validated data-only metadata |
+
+#### Table: `trigger_rules`
+Tenant-scoped declarative event-to-workflow rules.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `trigger_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Rule identifier (`trg_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `owner_id` | `VARCHAR(128)` | NOT NULL | Creator user ID |
+| `name` | `VARCHAR(256)` | NOT NULL | Rule name |
+| `event_type` | `VARCHAR(128)` | NOT NULL, INDEX | Target event type |
+| `workflow_id` | `VARCHAR(128)` | NOT NULL, INDEX | Approved Phase 4.3 or 4.9 workflow |
+| `execution_mode` | `VARCHAR(32)` | NOT NULL, DEFAULT 'workflow' | `workflow` or `autonomous_workflow` |
+| `version` | `INTEGER` | NOT NULL, DEFAULT 1 | Optimistic rule version |
+| `enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Enable/disable flag |
+| `allowed_sources` | `JSONB` | NOT NULL, DEFAULT '[]' | Producer allowlist |
+| `conditions` | `JSONB` | NOT NULL, DEFAULT '{}' | Declarative condition spec |
+| `cooldown_seconds` | `INTEGER` | NOT NULL, DEFAULT 0 | Per-resource cooldown seconds |
+| `max_concurrent_runs` | `INTEGER` | NOT NULL, DEFAULT 1 | Active dispatch cap |
+| `last_triggered_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Last dispatch timestamp |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Creation timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Update timestamp |
+
+#### Table: `event_deliveries`
+Queue processing state supporting worker leases, retries with backoff, and DLQ inspection.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `delivery_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Delivery identifier (`delv_...`) |
+| `event_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent event ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `pending`, `processing`, `completed`, `retry_scheduled`, `dead_letter` |
+| `attempt` | `INTEGER` | NOT NULL, DEFAULT 0 | Attempts executed |
+| `max_attempts` | `INTEGER` | NOT NULL, DEFAULT 3 | Retry upper bound |
+| `worker_lease_until` | `TIMESTAMP WITH TIME ZONE` | NULL | Worker claim lease expiration |
+| `next_retry_at` | `TIMESTAMP WITH TIME ZONE` | NULL, INDEX | Backoff wakeup timestamp |
+| `last_error` | `TEXT` | NULL | Sanitized error diagnostic |
+| `is_permanent_failure` | `BOOLEAN` | NOT NULL, DEFAULT false | Retryable vs permanent marker |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Enqueue timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Update timestamp |
+
+#### Table: `trigger_dispatches`
+Effectively-once workflow dispatch ledger enforced by unique `dispatch_key`.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `dispatch_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Dispatch identifier (`dsp_...`) |
+| `dispatch_key` | `VARCHAR(256)` | UNIQUE, NOT NULL, INDEX | Deterministic `{event_id}:{trigger_id}:{version}` claim key |
+| `event_id` | `VARCHAR(128)` | NOT NULL, INDEX | Matched event ID |
+| `trigger_id` | `VARCHAR(128)` | NOT NULL, INDEX | Matched trigger ID |
+| `trigger_version` | `INTEGER` | NOT NULL | Trigger version matched |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `workflow_id` | `VARCHAR(128)` | NOT NULL | Launched workflow identifier |
+| `execution_mode` | `VARCHAR(32)` | NOT NULL | `workflow` or `autonomous_workflow` |
+| `workflow_execution_id` | `VARCHAR(128)` | NULL, INDEX | Linked Phase 4.3 or 4.9 execution ID |
+| `resource_key` | `VARCHAR(128)` | NULL, INDEX | Cooldown/dedup resource key |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `claimed`, `dispatched`, `completed`, `failed`, `suppressed` |
+| `reason` | `TEXT` | NULL | Match/suppression/failure detail |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Claim timestamp |
+
+#### Table: `trigger_schedules`
+Persistent time-based trigger definitions and missed-run tracking.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `schedule_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Schedule identifier (`sch_...`) |
+| `trigger_id` | `VARCHAR(128)` | NOT NULL, INDEX | Target trigger ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `cron_expression` | `VARCHAR(64)` | NULL | Cron schedule (exclusive with interval) |
+| `interval_seconds` | `INTEGER` | NULL | Interval seconds (exclusive with cron) |
+| `timezone` | `VARCHAR(64)` | NOT NULL, DEFAULT 'UTC' | IANA timezone |
+| `missed_run_policy` | `VARCHAR(32)` | NOT NULL, DEFAULT 'coalesce' | `skip`, `coalesce`, or `replay_latest` |
+| `enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Schedule active state |
+| `next_run_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, INDEX | Next due execution time |
+| `last_run_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Last executed timestamp |
+
+#### Table: `event_audit_log`
+Append-only security and lifecycle audit log for events, triggers, and webhook checks.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `audit_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Audit identifier (`ev_aud_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `event_id` | `VARCHAR(128)` | NULL, INDEX | Related event ID |
+| `trigger_id` | `VARCHAR(128)` | NULL, INDEX | Related trigger ID |
+| `action` | `VARCHAR(64)` | NOT NULL, INDEX | `event.accepted`, `event.rejected`, `trigger.matched`, `trigger.suppressed`, `webhook.rejected`, `dlq.replayed` |
+| `actor_id` | `VARCHAR(128)` | NOT NULL | User or system actor |
+| `reason` | `TEXT` | NULL | Explanation of audit event |
+| `details` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized diagnostic metadata |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Timestamp |

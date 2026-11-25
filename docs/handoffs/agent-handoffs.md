@@ -7276,3 +7276,64 @@ COMPLETED ✓
   - `npm run lint`: **0 errors, 0 warnings**
   - `npx vitest run`: **52/52 files, 393/393 tests passed** (including `autonomousWorkflowService.test.ts` + `autonomousWorkflowComponents.test.tsx`)
   - Playwright Chromium (`tests/e2e/phase4_9_autonomous_workflows.spec.ts`): **2/2 passed**
+
+---
+
+### Handoff Entry — Phase 4.10 Member 1: Event Contracts & Ingestion
+
+- **Date:** 2026-11-25
+- **Author:** Member 1 (Event Contracts & Ingestion)
+- **Branch:** `agent/ai-lead/feature/phase-4.10-event-driven-trigger-agents`
+- **Status:** COMPLETED — Ready for Member 2 (Trigger Registry, Rule Engine & Persistence)
+
+#### Summary of Deliverables
+- Authored master Architecture Specification (`docs/Architecture/phase-4.10-event-driven-trigger-agents.md`), ADRs `ADR-095`–`ADR-097` (`docs/decisions/decisions.md`), REST API Section 29 (`docs/API/api-contract.md`), and Schema Section 3.33 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 14 Phase 4.10 typed error codes and exceptions (`EventValidationError`, `EventNotFoundError`, `EventDuplicateError`, `EventTenantMismatchError`, `EventDeadLetterError`, `TriggerNotFoundError`, `TriggerAlreadyExistsError`, `TriggerDisabledError`, `TriggerPolicyDeniedError`, `TriggerAccessDeniedError`, `TriggerWorkflowNotAllowedError`, `TriggerRateLimitedError`, `WebhookAuthenticationError`, `WebhookReplayDetectedError`).
+- Implemented event contracts, validation, event store, publisher & outbox relay, ingestion service, internal domain adapter, and HMAC-SHA256 webhook adapter under `backend/app/agents/events/` and `backend/app/events/`.
+- Verified Stage 1 unit tests (`tests/unit/test_phase4_10_event_ingestion.py`: 5/5 passed).
+
+---
+
+### Handoff Entry — Phase 4.10 Member 2: Trigger Registry, Rule Engine & Persistence
+
+- **Date:** 2026-11-25
+- **Author:** Member 2 (Trigger Registry, Rule Engine & Persistence)
+- **Branch:** `agent/ai-lead/feature/phase-4.10-event-driven-trigger-agents`
+- **Status:** COMPLETED — Ready for Member 3 (Queue Reliability, Policies & Scheduler)
+
+#### Summary of Deliverables
+- Implemented 6 SQLAlchemy ORM models (`AgentEventModel`, `TriggerRuleModel`, `EventDeliveryModel`, `TriggerDispatchModel`, `TriggerScheduleModel`, `EventAuditLogModel`) in `backend/app/models/agent_triggers.py`, exported in `backend/app/models/__init__.py`.
+- Created Alembic schema migration `backend/migrations/versions/0e1f2a3b4c5d_phase_4_10_event_driven_triggers.py` (`9d0e1f2a3b4c` → `0e1f2a3b4c5d (head)`) and updated `tests/integration/test_db_migrations.py`.
+- Implemented `SqlAlchemyEventStore` (`events/event_store.py`) and `BaseTriggerRepository`, `InMemoryTriggerRepository`, `SqlAlchemyTriggerRepository` (`triggers/repository.py`) with DB unique `dispatch_key` atomic claiming.
+- Implemented declarative trigger models (`triggers/models.py`), allowlisted zero-eval condition evaluator (`triggers/conditions.py`), `TriggerRegistry` (`triggers/registry.py`), and `TriggerRuleEngine` (`triggers/rule_engine.py`) with compatibility aliases in `backend/app/triggers/`.
+- Verified with `tests/unit/test_phase4_10_trigger_rules.py`, `tests/integration/test_db_migrations.py`, `alembic heads`, and Ruff.
+
+---
+
+### Handoff Entry — Phase 4.10 Member 3: Queue Reliability, Scheduling & Security Policies
+
+- **Date:** 2026-11-25
+- **Author:** Member 3 (Queue Reliability, Scheduling & Security Policies)
+- **Branch:** `agent/ai-lead/feature/phase-4.10-event-driven-trigger-agents`
+- **Status:** COMPLETED — Ready for Member 4 (Dispatcher, FastAPI APIs & Full QA)
+
+#### Summary of Deliverables
+- Implemented `TriggerPolicyEngine` (`backend/app/agents/triggers/policies.py`) enforcing zero-trust RBAC, tenant isolation, cooldown windows, concurrency caps, and suppression audit logs.
+- Implemented `TriggerScheduler` (`backend/app/agents/triggers/scheduler.py`) with 5-field cron & interval evaluation, IANA timezone/DST support, missed-run policies (`skip`/`coalesce`/`replay_latest`), and unique run keys.
+- Implemented `EventQueueWorker` (`backend/app/agents/workers/event_worker.py`) with lease claiming, retryable vs permanent error handling, exponential backoff + jitter, DLQ routing, startup crash recovery, and safe replay.
+- Verified with Stage 3 unit tests (`tests/unit/test_phase4_10_reliability_security.py`).
+
+---
+
+### Handoff Entry — Phase 4.10 Member 4: Workflow Dispatcher, REST APIs & Full QA
+
+- **Date:** 2026-11-25
+- **Author:** Member 4 (Workflow Dispatch, API & Integration)
+- **Branch:** `agent/ai-lead/feature/phase-4.10-event-driven-trigger-agents`
+- **Status:** COMPLETED — Ready for PR & Human Review Gate (`BACKEND_FIRST`)
+
+#### Summary of Deliverables
+- Registered `document_enrichment` approved workflow in `backend/app/agents/orchestration/graphs/` (`knowledge_workflow.py`, `__init__.py`).
+- Implemented `TriggerDispatcher` (`backend/app/agents/triggers/dispatcher.py`) and unified `TriggerService` (`backend/app/agents/triggers/service.py`) bridging matched triggers to Phase 4.3 `KeepOrchestrationService` and Phase 4.9 `AutonomousWorkflowService` using unique DB `dispatch_key` claims.
+- Mounted all REST endpoints in `backend/app/api/v1/triggers.py` and `backend/app/api/v1/events.py` (`/api/v1/triggers*`, `/api/v1/events*`, `/api/v1/webhooks/{source_id}` and `/api/*` compatibility mounts), registered in `backend/app/api/v1/router.py`, and wired into `backend/app/main.py` lifespan.
+- Authored end-to-end integration & QA suite `tests/integration/test_phase4_10_event_dispatch.py` proving all 17 Phase 4.10 Readiness Checklist items and the Recommended First Demo (`knowledge.document.indexed` → `document_enrichment` + duplicate replay prevention).

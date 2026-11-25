@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.9 — Autonomous Workflow Engine (100% COMPLETE ✓)
+Phase 4.10 — Event-Driven & Trigger-Based Agents (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -21,6 +21,39 @@ Phase 4.5 (Research Agents) is 100% COMPLETE across all four member roles + Stag
 Phase 4.6 (Tool-Calling Framework) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.7 (Agent Memory System) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.8 (Multi-Agent Collaboration) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.9 (Autonomous Workflow Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+Phase 4.10 (Event-Driven & Trigger-Based Agents) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+
+Phase 4.10 Member 1 (Event Contracts, Ingestion, Validation & Store) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.10-event-driven-trigger-agents.md`), ADRs `ADR-095`–`ADR-097` (`docs/decisions/decisions.md`), REST API Section 29 (`docs/API/api-contract.md`), Schema Section 3.33 (`docs/Database/database-schema.md`), and handoff records (`docs/handoffs/agent-handoffs.md`).
+- Extended `backend/app/agents/errors.py` with 14 Phase 4.10 typed error codes and exception classes.
+- Implemented event contracts (`contracts.py`), payload validation & topic allowlisting (`validation.py`), durable event store interfaces & implementations (`event_store.py`), publisher (`publisher.py`), ingestion pipeline (`ingestion.py`), and adapters (`adapters/internal.py`, `adapters/webhook.py`) under `backend/app/agents/events/` with compatibility aliases in `backend/app/events/`.
+- Authored unit tests `tests/unit/test_phase4_10_event_ingestion.py`.
+
+Phase 4.10 Member 2 (ORM Models, Alembic Migrations & Trigger Rule Engine) deliverables are COMPLETED:
+- Implemented SQLAlchemy ORM models (`AgentEventModel`, `TriggerRuleModel`, `EventDeliveryModel`, `TriggerDispatchModel`, `TriggerScheduleModel`, `EventAuditLogModel`) in `backend/app/models/agent_triggers.py`, exported in `backend/app/models/__init__.py`.
+- Created Alembic database migration `backend/migrations/versions/0e1f2a3b4c5d_phase_4_10_event_driven_triggers.py` (`9d0e1f2a3b4c` → `0e1f2a3b4c5d (head)`), verified via `tests/integration/test_db_migrations.py`.
+- Added `SqlAlchemyEventStore` (`backend/app/agents/events/event_store.py`) and implemented trigger models (`models.py`), condition evaluator (`conditions.py`), repository (`repository.py`), registry (`registry.py`), and `TriggerRuleEngine` (`rule_engine.py`) under `backend/app/agents/triggers/` with compatibility aliases in `backend/app/triggers/`.
+- Authored unit tests `tests/unit/test_phase4_10_trigger_rules.py`.
+
+Phase 4.10 Member 3 (Reliability Policies, Scheduler & Event Queue Worker) deliverables are COMPLETED:
+- Implemented `TriggerPolicyEngine` (`backend/app/agents/triggers/policies.py`), `TriggerScheduler` with Windows-safe timezone resolution (`scheduler.py`), and `EventQueueWorker` (`backend/app/agents/workers/event_worker.py`) supporting lease management, exponential backoff/jitter, Dead Letter Queue (DLQ) capture & replay, and crash recovery.
+- Authored unit tests `tests/unit/test_phase4_10_reliability_security.py` (all 12 Phase 4.10 unit tests across Members 1–3 passed: **12/12 passed**).
+
+Phase 4.10 Member 4 (Trigger Dispatcher, FastAPI Routes, Demo Scenario & QA) deliverables are COMPLETED:
+- Added `DOCUMENT_ENRICHMENT_DEFINITION` & `build_document_enrichment_graph` (`backend/app/agents/orchestration/graphs/knowledge_workflow.py`) and `is_registered()` / `get_enabled()` helpers (`backend/app/agents/orchestration/workflow_registry.py`).
+- Implemented `TriggerDispatcher` (`dispatcher.py`) and `TriggerService` (`service.py`), mounted REST endpoints in `backend/app/api/v1/triggers.py` and `backend/app/api/v1/events.py` (registered in `router.py`), and wired lifecycle startup/shutdown + `/api` compatibility mounts in `backend/app/main.py`.
+- Authored integration & QA suite `tests/integration/test_phase4_10_event_dispatch.py` (**5/5 passed**) proving all 17 Phase 4.10 Readiness Checklist items and the Recommended First Demo (`knowledge.document.indexed` → `document_enrichment` + duplicate replay deduplication).
+- Empirical QA Gates (`UI_MODE = BACKEND_FIRST` — Stage 5 Frontend intentionally skipped):
+  - Ruff check across `backend/` & `tests/`: **0 errors**.
+  - Alembic head: **`0e1f2a3b4c5d (head)`**.
+  - Full unit test suite (`pytest tests/unit/`): **636/636 passed** (including **12/12** Phase 4.10 unit tests).
+  - Phase 4.1–4.10 + Migrations & Security integration suite: **106/106 passed** (including **5/5** Phase 4.10 integration tests).
+
+---
+
+### Previous Milestone Archive (Phase 4.9)
+
 Phase 4.9 (Autonomous Workflow Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
 
 Phase 4.9 Member 1 (Autonomous Controller & Lifecycle) deliverables are COMPLETED:

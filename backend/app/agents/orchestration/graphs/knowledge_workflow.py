@@ -47,6 +47,25 @@ KNOWLEDGE_ANALYSIS_DEFINITION = WorkflowDefinition(
     tags=["phase-4.3", "sequential", "conditional"],
 )
 
+DOCUMENT_ENRICHMENT_DEFINITION = WorkflowDefinition(
+    workflow_id="document_enrichment",
+    name="Triggered Document Classification & Knowledge Enrichment",
+    version="1.0.0",
+    description=(
+        "Event-triggered workflow classifying newly indexed KEEP documents, extracting key entities, "
+        "identifying related knowledge, and summarizing actionable metadata."
+    ),
+    task_type="knowledge_analysis",
+    required_capabilities=["knowledge.search", "knowledge.analyze"],
+    required_agents=["knowledge_retrieval", "knowledge_analysis"],
+    optional_agents=[],
+    allow_partial_success=False,
+    default_timeout_seconds=60.0,
+    max_timeout_seconds=300.0,
+    max_agent_invocations=6,
+    tags=["phase-4.10", "event-triggered", "enrichment"],
+)
+
 
 def route_after_retrieval(state: dict[str, Any]) -> Literal["analyze", "no_evidence"]:
     """Structured conditional router checking validated retrieval evidence."""
@@ -88,3 +107,19 @@ def build_knowledge_workflow_graph(
     graph.add_edge("no_evidence", "aggregate")
     graph.add_edge("aggregate", END)
     return graph.compile()
+
+
+def build_document_enrichment_graph(
+    *,
+    runtime: Any,
+    definition: WorkflowDefinition = DOCUMENT_ENRICHMENT_DEFINITION,
+    on_step: Any | None = None,
+    workflow_policy: Any | None = None,
+) -> CompiledKeepWorkflowGraph:
+    """Compiles the triggered document enrichment graph bound to Phase 4.2 AgentRuntime."""
+    return build_knowledge_workflow_graph(
+        runtime=runtime,
+        definition=definition,
+        on_step=on_step,
+        workflow_policy=workflow_policy,
+    )

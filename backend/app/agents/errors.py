@@ -156,6 +156,22 @@ class AgentErrorCode(str, Enum):
     AUTONOMOUS_WORKFLOW_ACCESS_DENIED = "AUTONOMOUS_WORKFLOW_ACCESS_DENIED"
     AUTONOMOUS_WORKFLOW_IDEMPOTENCY_CONFLICT = "AUTONOMOUS_WORKFLOW_IDEMPOTENCY_CONFLICT"
 
+    # Phase 4.10 Event-Driven & Trigger-Based Agents error codes
+    EVENT_VALIDATION_ERROR = "EVENT_VALIDATION_ERROR"
+    EVENT_NOT_FOUND = "EVENT_NOT_FOUND"
+    EVENT_DUPLICATE = "EVENT_DUPLICATE"
+    EVENT_TENANT_MISMATCH = "EVENT_TENANT_MISMATCH"
+    EVENT_DEAD_LETTERED = "EVENT_DEAD_LETTERED"
+    TRIGGER_NOT_FOUND = "TRIGGER_NOT_FOUND"
+    TRIGGER_ALREADY_EXISTS = "TRIGGER_ALREADY_EXISTS"
+    TRIGGER_DISABLED = "TRIGGER_DISABLED"
+    TRIGGER_POLICY_DENIED = "TRIGGER_POLICY_DENIED"
+    TRIGGER_ACCESS_DENIED = "TRIGGER_ACCESS_DENIED"
+    TRIGGER_WORKFLOW_NOT_ALLOWED = "TRIGGER_WORKFLOW_NOT_ALLOWED"
+    TRIGGER_RATE_LIMITED = "TRIGGER_RATE_LIMITED"
+    WEBHOOK_AUTHENTICATION_FAILED = "WEBHOOK_AUTHENTICATION_FAILED"
+    WEBHOOK_REPLAY_DETECTED = "WEBHOOK_REPLAY_DETECTED"
+
 
 class AgentErrorDetail(BaseModel):
     """Structured, sanitized error payload embedded in failed AgentResults and messages."""
@@ -1406,4 +1422,174 @@ class AutonomousWorkflowIdempotencyConflictError(AgentLayerError, ValueError):
             code=AgentErrorCode.AUTONOMOUS_WORKFLOW_IDEMPOTENCY_CONFLICT,
             http_status=409,
             details={"idempotency_key": idempotency_key},
+        )
+
+
+# ==============================================================================
+# Phase 4.10 — Event-Driven & Trigger-Based Agents Exceptions
+# ==============================================================================
+
+
+class EventValidationError(AgentLayerError, ValueError):
+    """Raised when an incoming event fails schema, size, or payload hygiene checks."""
+
+    def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            f"Event validation failed: {reason}",
+            code=AgentErrorCode.EVENT_VALIDATION_ERROR,
+            http_status=400,
+            details=details or {},
+        )
+
+
+class EventNotFoundError(AgentLayerError, KeyError):
+    """Raised when an event or delivery record is missing or invisible to the tenant."""
+
+    def __init__(self, identifier: str) -> None:
+        super().__init__(
+            f"Event or delivery '{identifier}' was not found.",
+            code=AgentErrorCode.EVENT_NOT_FOUND,
+            http_status=404,
+            details={"identifier": identifier},
+        )
+
+
+class EventDuplicateError(AgentLayerError, ValueError):
+    """Raised when a duplicate conflicting event delivery is rejected."""
+
+    def __init__(self, event_id: str) -> None:
+        super().__init__(
+            f"Duplicate event '{event_id}' already exists.",
+            code=AgentErrorCode.EVENT_DUPLICATE,
+            http_status=409,
+            details={"event_id": event_id},
+        )
+
+
+class EventTenantMismatchError(AgentLayerError, PermissionError):
+    """Raised when an event payload or caller attempts cross-tenant spoofing."""
+
+    def __init__(self, caller_tenant: str, target_tenant: str) -> None:
+        super().__init__(
+            f"Event tenant isolation violation: '{caller_tenant}' cannot access '{target_tenant}'.",
+            code=AgentErrorCode.EVENT_TENANT_MISMATCH,
+            http_status=403,
+            details={"caller_tenant": caller_tenant, "target_tenant": target_tenant},
+        )
+
+
+class EventDeadLetterError(AgentLayerError, RuntimeError):
+    """Raised when a delivery exhausts retries or encounters a permanent failure."""
+
+    def __init__(self, delivery_id: str, reason: str) -> None:
+        super().__init__(
+            f"Event delivery '{delivery_id}' dead-lettered: {reason}",
+            code=AgentErrorCode.EVENT_DEAD_LETTERED,
+            http_status=422,
+            details={"delivery_id": delivery_id, "reason": reason},
+        )
+
+
+class TriggerNotFoundError(AgentLayerError, KeyError):
+    """Raised when a trigger rule or schedule does not exist for the tenant."""
+
+    def __init__(self, trigger_id: str) -> None:
+        super().__init__(
+            f"Trigger '{trigger_id}' was not found.",
+            code=AgentErrorCode.TRIGGER_NOT_FOUND,
+            http_status=404,
+            details={"trigger_id": trigger_id},
+        )
+
+
+class TriggerAlreadyExistsError(AgentLayerError, ValueError):
+    """Raised on duplicate trigger identifier creation."""
+
+    def __init__(self, trigger_id: str) -> None:
+        super().__init__(
+            f"Trigger '{trigger_id}' already exists.",
+            code=AgentErrorCode.TRIGGER_ALREADY_EXISTS,
+            http_status=409,
+            details={"trigger_id": trigger_id},
+        )
+
+
+class TriggerDisabledError(AgentLayerError, ValueError):
+    """Raised when attempting to dispatch a disabled trigger."""
+
+    def __init__(self, trigger_id: str) -> None:
+        super().__init__(
+            f"Trigger '{trigger_id}' is disabled.",
+            code=AgentErrorCode.TRIGGER_DISABLED,
+            http_status=409,
+            details={"trigger_id": trigger_id},
+        )
+
+
+class TriggerPolicyDeniedError(AgentLayerError, PermissionError):
+    """Raised when trigger policy denies an event-to-workflow activation."""
+
+    def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            f"Trigger policy denied execution: {reason}",
+            code=AgentErrorCode.TRIGGER_POLICY_DENIED,
+            http_status=403,
+            details=details or {},
+        )
+
+
+class TriggerAccessDeniedError(AgentLayerError, PermissionError):
+    """Raised when caller lacks RBAC clearance for triggers or events."""
+
+    def __init__(self, message: str = "Caller lacks required permissions for triggers/events.") -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.TRIGGER_ACCESS_DENIED,
+            http_status=403,
+        )
+
+
+class TriggerWorkflowNotAllowedError(AgentLayerError, ValueError):
+    """Raised when a trigger targets an unregistered or disallowed workflow."""
+
+    def __init__(self, workflow_id: str) -> None:
+        super().__init__(
+            f"Workflow '{workflow_id}' is not registered or allowed for event triggers.",
+            code=AgentErrorCode.TRIGGER_WORKFLOW_NOT_ALLOWED,
+            http_status=400,
+            details={"workflow_id": workflow_id},
+        )
+
+
+class TriggerRateLimitedError(AgentLayerError, RuntimeError):
+    """Raised when trigger cooldown or concurrency cap suppresses dispatch."""
+
+    def __init__(self, trigger_id: str, reason: str) -> None:
+        super().__init__(
+            f"Trigger '{trigger_id}' rate-limited: {reason}",
+            code=AgentErrorCode.TRIGGER_RATE_LIMITED,
+            http_status=429,
+            details={"trigger_id": trigger_id, "reason": reason},
+        )
+
+
+class WebhookAuthenticationError(AgentLayerError, PermissionError):
+    """Raised when an external webhook signature or source registration fails verification."""
+
+    def __init__(self, reason: str = "Invalid or missing webhook signature.") -> None:
+        super().__init__(
+            f"Webhook authentication failed: {reason}",
+            code=AgentErrorCode.WEBHOOK_AUTHENTICATION_FAILED,
+            http_status=401,
+        )
+
+
+class WebhookReplayDetectedError(AgentLayerError, ValueError):
+    """Raised when an external webhook timestamp falls outside the replay protection window."""
+
+    def __init__(self, reason: str = "Webhook timestamp outside allowed replay window.") -> None:
+        super().__init__(
+            reason,
+            code=AgentErrorCode.WEBHOOK_REPLAY_DETECTED,
+            http_status=409,
         )

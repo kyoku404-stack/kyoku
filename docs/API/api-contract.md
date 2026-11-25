@@ -5635,3 +5635,29 @@ All endpoints enforce JWT authentication, `tenant_id` scoping, and `ApiResponse[
   - `200 OK`: `ApiResponse[AutonomousWorkflowRecord]` revalidating caller permissions, granting approval if requested, continuing remaining steps without replaying completed side effects.
   - `403 Forbidden`: `AUTONOMOUS_WORKFLOW_ACCESS_DENIED` (permission revoked or cross-tenant).
   - `409 Conflict`: `AUTONOMOUS_WORKFLOW_INVALID_STATE` (workflow not in resumable paused state).
+
+
+---
+
+## 29. Phase 4.10 — Event-Driven & Trigger-Based Agents Endpoints
+
+All trigger/event management endpoints require JWT authentication, tenant scoping, and `ApiResponse[T]` envelopes (except external webhook ingestion which uses HMAC signature + timestamp + source verification). Mounted under `/api/v1/*` and `/api/*`.
+
+### 29.1 Trigger Management
+- `POST /api/v1/triggers` — Create declarative trigger rule (`agent.manage` / `agent.invoke`, HTTP 201)
+- `GET /api/v1/triggers` — List tenant-scoped trigger rules (`agent.read`)
+- `GET /api/v1/triggers/{trigger_id}` — Retrieve trigger configuration (`agent.read`)
+- `PATCH /api/v1/triggers/{trigger_id}` — Update conditions, cooldown, or concurrency limits (`agent.manage` / `agent.invoke`)
+- `POST /api/v1/triggers/{trigger_id}/enable` — Enable trigger rule (`agent.manage` / `agent.invoke`)
+- `POST /api/v1/triggers/{trigger_id}/disable` — Disable trigger rule (`agent.manage` / `agent.invoke`)
+- `GET /api/v1/triggers/{trigger_id}/runs` — Inspect dispatch & workflow execution history (`agent.read`)
+- `POST /api/v1/triggers/{trigger_id}/schedules` — Attach cron or interval schedule to trigger (`agent.manage` / `agent.invoke`)
+
+### 29.2 Event Ingestion, Status & Dead-Letter Replay
+- `POST /api/v1/events` — Accept authenticated internal KEEP event (`agent.invoke`, HTTP 202)
+- `GET /api/v1/events/{event_id}` — Inspect event metadata, deliveries, and triggered dispatches (`agent.read`)
+- `GET /api/v1/events/dead-letter` — List dead-lettered deliveries for tenant inspection (`agent.read`)
+- `POST /api/v1/events/deliveries/{delivery_id}/replay` — Safely replay a dead-lettered delivery (`agent.manage` / `agent.invoke`)
+
+### 29.3 Authenticated External Webhooks
+- `POST /api/v1/webhooks/{source_id}` — Verify HMAC-SHA256 signature (`X-KEEP-Signature`), timestamp replay window (`X-KEEP-Timestamp`), and payload limits before publishing normalized `KeepEvent` (`HTTP 202`).
