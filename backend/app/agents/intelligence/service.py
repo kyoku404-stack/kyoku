@@ -182,10 +182,15 @@ class IntelligenceService:
         registry: InsightRegistry | None = None,
         orchestration_dispatcher: Any | None = None,
     ) -> None:
+        from backend.app.agents.intelligence.evidence_validation import (
+            EvidenceValidator,
+        )
+        from backend.app.agents.intelligence.policies import IntelligencePolicyEngine
+
         self.repository = repository or InMemoryIntelligenceRepository()
         self.detectors: dict[str, DetectorProtocol] = {}
-        self.evidence_validator: EvidenceValidatorProtocol = evidence_validator or _DefaultEvidenceValidator()
-        self.policy_engine: PolicyEngineProtocol = policy_engine or _DefaultPolicyEngine()
+        self.evidence_validator: EvidenceValidatorProtocol = evidence_validator or EvidenceValidator()
+        self.policy_engine: PolicyEngineProtocol = policy_engine or IntelligencePolicyEngine()
         self.registry = registry or InsightRegistry()
         self.orchestration_dispatcher = orchestration_dispatcher
         for d in detectors or []:
