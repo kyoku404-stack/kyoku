@@ -2786,3 +2786,57 @@ At-least-once event queues, duplicate deliveries, and worker crashes between wor
 
 #### Status
 ACCEPTED
+
+
+---
+
+### ADR-098: Evidence-Backed Proactive Insights with Separate Facts, Limitations & Re-checked Provenance
+
+#### Date
+2026-11-25
+
+#### Context
+Proactive alerts lose enterprise trust when they fabricate conclusions, leak restricted document snippets, or become stale after document permissions change.
+
+#### Decision
+1. Represent every finding as a structured `IntelligenceCandidate` / `IntelligenceInsight` containing explicit `evidence_refs`, `observed_facts`, `inferred_explanation`, `limitations`, `detector_version`, and `ranking_version`.
+2. Store only normalized `evidence_refs` in `intelligence_evidence` rather than copying raw restricted document text.
+3. Re-validate source authorization whenever an insight or its evidence endpoint is accessed, withholding or scoping out unauthorized evidence dynamically.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-099: Deterministic Weighted Prioritization & Scoped Suppression
+
+#### Date
+2026-11-25
+
+#### Context
+Alert fatigue occurs when every minor document edit or repeated detection run notifies users identically.
+
+#### Decision
+1. Compute deterministic priority scores using `S = 100(0.30I + 0.25R + 0.25E + 0.10U + 0.10N)` with normalized `[0, 1]` inputs and explicit tie-breaking.
+2. Enforce deduplication keys (`dedup_key`) and suppression windows (`intelligence_suppressions`) scoped to `tenant`, `audience`, or `user`, keeping per-user dismissals separate from organization-wide insight status.
+
+#### Status
+ACCEPTED
+
+---
+
+### ADR-100: Event-Driven Proactive Scans via Phase 4.10 & Bounded Workflow Investigation
+
+#### Date
+2026-11-25
+
+#### Context
+Phase 4.11 must reuse KEEP's Phase 4.10 triggers and Phase 4.3/4.5/4.9 workflow orchestration rather than building a parallel execution runtime or tool-calling loop.
+
+#### Decision
+1. Initiate proactive scans via `POST /api/v1/intelligence/scans` or Phase 4.10 event hooks (`knowledge.document.indexed`, `document.version.created`, scheduled scans).
+2. Capture detector failures inside `intelligence_runs` without silently dropping partial run telemetry.
+3. When an authorized user requests deeper investigation of an insight, dispatch an approved workflow through `KeepOrchestrationService` respecting existing RBAC and tenant guards.
+
+#### Status
+ACCEPTED

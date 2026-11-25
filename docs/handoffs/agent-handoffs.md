@@ -7337,3 +7337,19 @@ COMPLETED ✓
 - Implemented `TriggerDispatcher` (`backend/app/agents/triggers/dispatcher.py`) and unified `TriggerService` (`backend/app/agents/triggers/service.py`) bridging matched triggers to Phase 4.3 `KeepOrchestrationService` and Phase 4.9 `AutonomousWorkflowService` using unique DB `dispatch_key` claims.
 - Mounted all REST endpoints in `backend/app/api/v1/triggers.py` and `backend/app/api/v1/events.py` (`/api/v1/triggers*`, `/api/v1/events*`, `/api/v1/webhooks/{source_id}` and `/api/*` compatibility mounts), registered in `backend/app/api/v1/router.py`, and wired into `backend/app/main.py` lifespan.
 - Authored end-to-end integration & QA suite `tests/integration/test_phase4_10_event_dispatch.py` proving all 17 Phase 4.10 Readiness Checklist items and the Recommended First Demo (`knowledge.document.indexed` → `document_enrichment` + duplicate replay prevention).
+
+
+---
+
+### Handoff Entry — Phase 4.11 Member 1: Core Intelligence Contracts, Prioritization & Service
+
+- **Date:** 2026-11-25
+- **Author:** Member 1 (Intelligence Engine & Contracts)
+- **Branch:** `agent/ai-lead/feature/phase-4.11-proactive-enterprise-intelligence`
+- **Status:** COMPLETED — Ready for Member 2 (Detectors, Evidence Validation, ORM & Migrations)
+
+#### Summary of Deliverables
+- Authored [docs/Architecture/phase-4.11-proactive-enterprise-intelligence.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/Architecture/phase-4.11-proactive-enterprise-intelligence.md), `ADR-098`–`ADR-100` in [docs/decisions/decisions.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/decisions/decisions.md), REST Section 30 in [docs/API/api-contract.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/API/api-contract.md), and Schema Section 3.34 in [docs/Database/database-schema.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/Database/database-schema.md).
+- Added 10 Phase 4.11 error codes and 7 typed exception classes to `backend/app/agents/errors.py`.
+- Implemented `contracts.py`, `models.py`, `prioritization.py`, `deduplication.py`, `insight_registry.py`, `repository.py` (`BaseIntelligenceRepository`, `InMemoryIntelligenceRepository`), and `service.py` (`IntelligenceService`) under `backend/app/agents/intelligence/` with compatibility aliases in `backend/app/intelligence/`.
+- Authored Stage 1 unit tests in `tests/unit/test_phase4_11_prioritization.py`.

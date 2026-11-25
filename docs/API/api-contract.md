@@ -5661,3 +5661,24 @@ All trigger/event management endpoints require JWT authentication, tenant scopin
 
 ### 29.3 Authenticated External Webhooks
 - `POST /api/v1/webhooks/{source_id}` — Verify HMAC-SHA256 signature (`X-KEEP-Signature`), timestamp replay window (`X-KEEP-Timestamp`), and payload limits before publishing normalized `KeepEvent` (`HTTP 202`).
+
+
+---
+
+## 30. Phase 4.11 — Proactive Enterprise Intelligence Endpoints
+
+All intelligence endpoints require JWT authentication, strict tenant scoping, and `ApiResponse[T]` envelopes. Mounted under `/api/v1/intelligence/*` and `/api/intelligence/*`.
+
+### 30.1 Intelligence Feed & Insight Lifecycle
+- `GET /api/v1/intelligence/insights` — List published insights visible to the authenticated user (`agent.read`), supporting category, status, and min-score filters.
+- `GET /api/v1/intelligence/insights/{insight_id}` — View insight details with live source-access re-check (`agent.read`).
+- `GET /api/v1/intelligence/insights/{insight_id}/evidence` — Retrieve authorized supporting source references & provenance (`agent.read`).
+- `POST /api/v1/intelligence/insights/{insight_id}/feedback` — Submit user feedback (`useful`, `irrelevant`, `already_known`, `incorrect`, `needs_more_evidence`) (`agent.read`).
+- `POST /api/v1/intelligence/insights/{insight_id}/dismiss` — Dismiss an insight for user feed or organization-wide (`agent.read` for personal; `agent.manage` for org-wide).
+- `POST /api/v1/intelligence/insights/{insight_id}/resolve` — Mark an insight resolved (`agent.invoke` / `agent.manage`).
+- `POST /api/v1/intelligence/insights/{insight_id}/investigate` — Optionally launch an approved research/investigation workflow via Phase 4.3 orchestration (`agent.invoke`).
+
+### 30.2 Detection Runs, Scans & Operational Metrics
+- `GET /api/v1/intelligence/runs/{run_id}` — Inspect a detection run, detector versions, candidate counts, and recorded detector errors (`agent.read`).
+- `POST /api/v1/intelligence/scans` — Request an authorized proactive intelligence scan across supplied or recent observations (`agent.invoke`).
+- `GET /api/v1/intelligence/metrics` — View authorized operational & evaluation metrics (alert volume, duplicate suppression rate, feedback breakdown) (`agent.read`).
