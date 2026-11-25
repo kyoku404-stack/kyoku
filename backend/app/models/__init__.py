@@ -33,14 +33,6 @@ from backend.app.models.agent_research import (
     ResearchFindingModel,
     ResearchRun,
 )
-from backend.app.models.agent_triggers import (
-    AgentEventModel,
-    EventAuditLogModel,
-    EventDeliveryModel,
-    TriggerDispatchModel,
-    TriggerRuleModel,
-    TriggerScheduleModel,
-)
 from backend.app.models.agent_tool import (
     ToolAuditLogModel,
     ToolInvocationModel,
@@ -141,14 +133,8 @@ __all__ = [
     "AgentPlanEvent",
     "AgentPlanRevision",
     "AgentPlanTask",
-    "AgentEventModel",
     "AgentWorkflowExecution",
     "AgentWorkflowStep",
-    "EventAuditLogModel",
-    "EventDeliveryModel",
-    "TriggerDispatchModel",
-    "TriggerRuleModel",
-    "TriggerScheduleModel",
     "AnalyticsSnapshot",
     "AssistantApproval",
     "AssistantReport",
