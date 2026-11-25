@@ -172,6 +172,18 @@ class AgentErrorCode(str, Enum):
     WEBHOOK_AUTHENTICATION_FAILED = "WEBHOOK_AUTHENTICATION_FAILED"
     WEBHOOK_REPLAY_DETECTED = "WEBHOOK_REPLAY_DETECTED"
 
+    # Phase 4.11 Proactive Enterprise Intelligence error codes
+    INTELLIGENCE_INSIGHT_NOT_FOUND = "INTELLIGENCE_INSIGHT_NOT_FOUND"
+    INTELLIGENCE_RUN_NOT_FOUND = "INTELLIGENCE_RUN_NOT_FOUND"
+    INTELLIGENCE_EVIDENCE_INVALID = "INTELLIGENCE_EVIDENCE_INVALID"
+    INTELLIGENCE_ACCESS_DENIED = "INTELLIGENCE_ACCESS_DENIED"
+    INTELLIGENCE_TENANT_VIOLATION = "INTELLIGENCE_TENANT_VIOLATION"
+    INTELLIGENCE_INVALID_STATE = "INTELLIGENCE_INVALID_STATE"
+    INTELLIGENCE_FEEDBACK_INVALID = "INTELLIGENCE_FEEDBACK_INVALID"
+    INTELLIGENCE_SUPPRESSED = "INTELLIGENCE_SUPPRESSED"
+    INTELLIGENCE_DETECTOR_ERROR = "INTELLIGENCE_DETECTOR_ERROR"
+    INTELLIGENCE_SCAN_REJECTED = "INTELLIGENCE_SCAN_REJECTED"
+
 
 class AgentErrorDetail(BaseModel):
     """Structured, sanitized error payload embedded in failed AgentResults and messages."""
@@ -1592,4 +1604,86 @@ class WebhookReplayDetectedError(AgentLayerError, ValueError):
             reason,
             code=AgentErrorCode.WEBHOOK_REPLAY_DETECTED,
             http_status=409,
+        )
+
+
+class IntelligenceInsightNotFoundError(AgentLayerError, LookupError):
+    """Raised when an intelligence insight does not exist in the caller's tenant."""
+
+    def __init__(self, insight_id: str) -> None:
+        super().__init__(
+            f"Intelligence insight '{insight_id}' not found.",
+            code=AgentErrorCode.INTELLIGENCE_INSIGHT_NOT_FOUND,
+            http_status=404,
+            details={"insight_id": insight_id},
+        )
+
+
+class IntelligenceRunNotFoundError(AgentLayerError, LookupError):
+    """Raised when a detection run does not exist in the caller's tenant."""
+
+    def __init__(self, run_id: str) -> None:
+        super().__init__(
+            f"Intelligence run '{run_id}' not found.",
+            code=AgentErrorCode.INTELLIGENCE_RUN_NOT_FOUND,
+            http_status=404,
+            details={"run_id": run_id},
+        )
+
+
+class IntelligenceEvidenceError(AgentLayerError, ValueError):
+    """Raised when insight evidence validation fails or references are missing."""
+
+    def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            f"Evidence validation failed: {reason}",
+            code=AgentErrorCode.INTELLIGENCE_EVIDENCE_INVALID,
+            http_status=422,
+            details=details or {},
+        )
+
+
+class IntelligenceAccessDeniedError(AgentLayerError, PermissionError):
+    """Raised when caller lacks RBAC or source permissions for intelligence access."""
+
+    def __init__(self, message: str = "Caller lacks required permissions for intelligence access.") -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.INTELLIGENCE_ACCESS_DENIED,
+            http_status=403,
+        )
+
+
+class IntelligenceTenantViolationError(AgentLayerError, PermissionError):
+    """Raised when a cross-tenant intelligence operation is attempted."""
+
+    def __init__(self, message: str = "Cross-tenant intelligence access is forbidden.") -> None:
+        super().__init__(
+            message,
+            code=AgentErrorCode.INTELLIGENCE_TENANT_VIOLATION,
+            http_status=403,
+        )
+
+
+class IntelligenceInvalidStateError(AgentLayerError, ValueError):
+    """Raised when an insight lifecycle transition is invalid."""
+
+    def __init__(self, insight_id: str, current_status: str, action: str) -> None:
+        super().__init__(
+            f"Cannot '{action}' insight '{insight_id}' from status '{current_status}'.",
+            code=AgentErrorCode.INTELLIGENCE_INVALID_STATE,
+            http_status=409,
+            details={"insight_id": insight_id, "current_status": current_status, "action": action},
+        )
+
+
+class IntelligenceScanRejectedError(AgentLayerError, ValueError):
+    """Raised when a scan request violates policy or validation constraints."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(
+            f"Intelligence scan rejected: {reason}",
+            code=AgentErrorCode.INTELLIGENCE_SCAN_REJECTED,
+            http_status=400,
+            details={"reason": reason},
         )

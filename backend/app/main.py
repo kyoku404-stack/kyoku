@@ -73,6 +73,7 @@ from backend.app.api.v1.autonomous_workflows import (
 )
 from backend.app.api.v1.events import router as events_router
 from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.intelligence import router as intelligence_router
 from backend.app.api.v1.memory import router as memory_router
 from backend.app.api.v1.triggers import router as triggers_router
 from backend.app.core.config import settings
@@ -442,6 +443,9 @@ app.include_router(autonomous_workflows_router, prefix="/api")
 # 11. Mount Phase 4.10 Triggers & Events Compatibility Routers (/api/triggers*, /api/events*, /api/webhooks*)
 app.include_router(triggers_router, prefix="/api")
 app.include_router(events_router, prefix="/api")
+
+# 12. Mount Phase 4.11 Proactive Intelligence Compatibility Router (/api/intelligence/*)
+app.include_router(intelligence_router, prefix="/api")
 
 # 6. Mount Root-Level Observability & Health Probes (/health, /health/*)
 app.include_router(health_router)

@@ -144,6 +144,13 @@ const navItems: NavItem[] = [
     requiredPermission: Permission.AGENT_VIEW,
     badge: 'Phase 4.9',
   },
+  {
+    label: 'Proactive Intelligence',
+    path: ROUTES.AGENT_INTELLIGENCE,
+    icon: Sparkles,
+    requiredPermission: Permission.AGENT_VIEW,
+    badge: 'Phase 4.11',
+  },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },
   {

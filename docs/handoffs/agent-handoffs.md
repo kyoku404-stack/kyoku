@@ -7337,3 +7337,68 @@ COMPLETED ✓
 - Implemented `TriggerDispatcher` (`backend/app/agents/triggers/dispatcher.py`) and unified `TriggerService` (`backend/app/agents/triggers/service.py`) bridging matched triggers to Phase 4.3 `KeepOrchestrationService` and Phase 4.9 `AutonomousWorkflowService` using unique DB `dispatch_key` claims.
 - Mounted all REST endpoints in `backend/app/api/v1/triggers.py` and `backend/app/api/v1/events.py` (`/api/v1/triggers*`, `/api/v1/events*`, `/api/v1/webhooks/{source_id}` and `/api/*` compatibility mounts), registered in `backend/app/api/v1/router.py`, and wired into `backend/app/main.py` lifespan.
 - Authored end-to-end integration & QA suite `tests/integration/test_phase4_10_event_dispatch.py` proving all 17 Phase 4.10 Readiness Checklist items and the Recommended First Demo (`knowledge.document.indexed` → `document_enrichment` + duplicate replay prevention).
+
+
+---
+
+### Handoff Entry — Phase 4.11 Member 1: Core Intelligence Contracts, Prioritization & Service
+
+- **Date:** 2026-11-25
+- **Author:** Member 1 (Intelligence Engine & Contracts)
+- **Branch:** `agent/ai-lead/feature/phase-4.11-proactive-enterprise-intelligence`
+- **Status:** COMPLETED — Ready for Member 2 (Detectors, Evidence Validation, ORM & Migrations)
+
+#### Summary of Deliverables
+- Authored [docs/Architecture/phase-4.11-proactive-enterprise-intelligence.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/Architecture/phase-4.11-proactive-enterprise-intelligence.md), `ADR-098`–`ADR-100` in [docs/decisions/decisions.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/decisions/decisions.md), REST Section 30 in [docs/API/api-contract.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/API/api-contract.md), and Schema Section 3.34 in [docs/Database/database-schema.md](file:///c:/Users/Kaustubh%20Dhone/kyoku/docs/Database/database-schema.md).
+- Added 10 Phase 4.11 error codes and 7 typed exception classes to `backend/app/agents/errors.py`.
+- Implemented `contracts.py`, `models.py`, `prioritization.py`, `deduplication.py`, `insight_registry.py`, `repository.py` (`BaseIntelligenceRepository`, `InMemoryIntelligenceRepository`), and `service.py` (`IntelligenceService`) under `backend/app/agents/intelligence/` with compatibility aliases in `backend/app/intelligence/`.
+- Authored Stage 1 unit tests in `tests/unit/test_phase4_11_prioritization.py`.
+
+
+---
+
+### Handoff Entry — Phase 4.11 Member 2: Detectors, Evidence Validation, ORM & Migrations
+
+- **Date:** 2026-11-25
+- **Author:** Member 2 (Change, Trend & Knowledge-Gap Detection + Persistence)
+- **Branch:** `agent/ai-lead/feature/phase-4.11-proactive-enterprise-intelligence`
+- **Status:** COMPLETED — Ready for Member 3 (Governance, Policies, Feedback & Evaluation)
+
+#### Summary of Deliverables
+- Implemented 6 SQLAlchemy ORM models (`IntelligenceRunModel`, `IntelligenceInsightModel`, `IntelligenceEvidenceModel`, `IntelligenceFeedbackModel`, `IntelligenceSuppressionModel`, `IntelligenceAuditEventModel`) in `backend/app/models/agent_intelligence.py`, exported in `backend/app/models/__init__.py`.
+- Created Alembic migration `backend/migrations/versions/1f2a3b4c5d6e_phase_4_11_proactive_intelligence.py` (`0e1f2a3b4c5d` → `1f2a3b4c5d6e (head)`), verified via `tests/integration/test_db_migrations.py`.
+- Added `SqlAlchemyIntelligenceRepository` (`backend/app/agents/intelligence/repository.py`) and `EvidenceValidator` (`backend/app/agents/intelligence/evidence_validation.py`).
+- Implemented all 5 detectors (`SignificantChangeDetector`, `KnowledgeGapDetector`, `ContradictionDetector`, `StalenessDetector` + `detect_stale_document`, `EmergingTrendDetector`) and `DetectorRegistry` under `backend/app/agents/intelligence_detectors/` with compatibility aliases in `backend/app/intelligence_detectors/`.
+- Verified with `tests/unit/test_phase4_11_detectors.py` (3/3), `tests/integration/test_db_migrations.py` (4/4), and Ruff (0 errors).
+
+
+---
+
+### Handoff Entry — Phase 4.11 Member 3: Governance, Security Policies, Feedback & Evaluation
+
+- **Date:** 2026-11-25
+- **Author:** Member 3 (Relevance, Governance & Feedback)
+- **Branch:** `agent/ai-lead/feature/phase-4.11-proactive-enterprise-intelligence`
+- **Status:** COMPLETED — Ready for Member 4 (Phase 4.10 Integration, FastAPI APIs, Feed UI & Full QA)
+
+#### Summary of Deliverables
+- Implemented `IntelligencePolicyEngine` (`backend/app/agents/intelligence/policies.py`) enforcing zero-trust RBAC, tenant isolation, live source-access re-checks, secret/token redaction in summaries, and publication quality gates.
+- Implemented `InsightFeedbackService` (`backend/app/agents/intelligence/feedback.py`) and labelled detector evaluation (`backend/app/agents/intelligence/evaluation.py`).
+- Wired `EvidenceValidator` and `IntelligencePolicyEngine` as defaults in `IntelligenceService`.
+- Verified with `tests/unit/test_phase4_11_governance_security.py`, `tests/unit/test_phase4_11_prioritization.py`, and `tests/unit/test_phase4_11_detectors.py`.
+
+
+---
+
+### Handoff Entry — Phase 4.11 Member 4: FastAPI Endpoints, Phase 4.10 Bridge & Full Backend QA
+
+- **Date:** 2026-11-25
+- **Author:** Member 4 (Integration, APIs & Intelligence Feed)
+- **Branch:** `agent/ai-lead/feature/phase-4.11-proactive-enterprise-intelligence`
+- **Status:** COMPLETED — Ready for Stage 5 Frontend UI (`UI_MODE = YES`)
+
+#### Summary of Deliverables
+- Mounted all Phase 4.11 REST endpoints in `backend/app/api/v1/intelligence.py` (`/api/v1/intelligence/*` + `/api/intelligence/*` compatibility mount in `backend/app/main.py`, registered in `backend/app/api/v1/router.py`).
+- Bridged `handle_proactive_event()` to Phase 4.10 events and `/insights/{insight_id}/investigate` to Phase 4.3 `KeepOrchestrationService`.
+- Authored integration & QA suite `tests/integration/test_phase4_11_proactive_intelligence.py` (4/4 passed) proving RBAC, cross-tenant isolation, Recommended First Demonstration, deduplication, restart persistence, and operational metrics.
+- Verified Ruff (0 errors), full unit suite (645/645 passed), and full Phase 4.1–4.11 + migrations + security integration suite (110/110 passed).

@@ -26,6 +26,7 @@ from backend.app.api.v1.events import router as events_router
 from backend.app.api.v1.graph import router as graph_router
 from backend.app.api.v1.health import router as health_router
 from backend.app.api.v1.ingestion import router as ingestion_router
+from backend.app.api.v1.intelligence import router as intelligence_router
 from backend.app.api.v1.invitations import router as invitations_router
 from backend.app.api.v1.members import router as members_router
 from backend.app.api.v1.memory import router as memory_router
@@ -83,6 +84,7 @@ api_v1_router.include_router(collaboration_router)
 api_v1_router.include_router(agent_collaboration_router)
 api_v1_router.include_router(autonomous_workflows_router)
 api_v1_router.include_router(triggers_router)
+api_v1_router.include_router(intelligence_router)
 api_v1_router.include_router(events_router)
 api_v1_router.include_router(security_router)
 api_v1_router.include_router(workflows_router)

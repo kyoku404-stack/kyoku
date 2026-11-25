@@ -4,7 +4,7 @@
 Phase 4 — Multi-Agent Intelligence Platform (Python + FastAPI + LangGraph)
 
 ## Current Sub-Phase
-Phase 4.10 — Event-Driven & Trigger-Based Agents (100% COMPLETE ✓)
+Phase 4.11 — Proactive Enterprise Intelligence (100% COMPLETE ✓)
 
 ## Repository Health
 GREEN
@@ -22,6 +22,44 @@ Phase 4.6 (Tool-Calling Framework) is 100% COMPLETE across all four member roles
 Phase 4.7 (Agent Memory System) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.8 (Multi-Agent Collaboration) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 Phase 4.9 (Autonomous Workflow Engine) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+Phase 4.10 (Event-Driven & Trigger-Based Agents) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
+Phase 4.11 (Proactive Enterprise Intelligence) is 100% COMPLETE across all four member roles + Stage 5 Frontend UI (`UI_MODE = YES`).
+
+Phase 4.11 Member 1 (Intelligence Engine, Insight Contracts, Prioritization & Deduplication) deliverables are COMPLETED:
+- Authored master Architecture Specification (`docs/Architecture/phase-4.11-proactive-enterprise-intelligence.md`), ADRs `ADR-098`–`ADR-100` (`docs/decisions/decisions.md`), REST API Section 30 (`docs/API/api-contract.md`), and Schema Section 3.34 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 10 Phase 4.11 error codes and 7 typed exception classes.
+- Implemented `contracts.py`, `models.py`, `prioritization.py`, `deduplication.py`, `insight_registry.py`, `repository.py`, and `service.py` under `backend/app/agents/intelligence/` with compatibility aliases in `backend/app/intelligence/`.
+- Authored unit tests `tests/unit/test_phase4_11_prioritization.py` (3/3 passed).
+
+Phase 4.11 Member 2 (Detectors, Evidence Validation, ORM & Migrations) deliverables are COMPLETED:
+- Implemented 6 SQLAlchemy ORM models (`IntelligenceRunModel`, `IntelligenceInsightModel`, `IntelligenceEvidenceModel`, `IntelligenceFeedbackModel`, `IntelligenceSuppressionModel`, `IntelligenceAuditEventModel`) in `backend/app/models/agent_intelligence.py`, exported in `backend/app/models/__init__.py`.
+- Created Alembic migration `backend/migrations/versions/1f2a3b4c5d6e_phase_4_11_proactive_intelligence.py` (`0e1f2a3b4c5d` → `1f2a3b4c5d6e (head)`), verified via `tests/integration/test_db_migrations.py`.
+- Added `SqlAlchemyIntelligenceRepository`, `EvidenceValidator`, and all 5 detectors (`SignificantChangeDetector`, `KnowledgeGapDetector`, `ContradictionDetector`, `StalenessDetector`, `EmergingTrendDetector`) under `backend/app/agents/intelligence_detectors/`.
+- Authored unit tests `tests/unit/test_phase4_11_detectors.py` (3/3 passed).
+
+Phase 4.11 Member 3 (Governance, Security Policies, Feedback & Evaluation) deliverables are COMPLETED:
+- Implemented `IntelligencePolicyEngine` (`policies.py`), `InsightFeedbackService` (`feedback.py`), and labelled detector evaluator (`evaluation.py`).
+- Authored unit tests `tests/unit/test_phase4_11_governance_security.py` (3/3 passed).
+
+Phase 4.11 Member 4 (FastAPI Endpoints, Phase 4.10 Bridge & Full Backend QA) deliverables are COMPLETED:
+- Mounted REST endpoints in `backend/app/api/v1/intelligence.py` (`/api/v1/intelligence/*` + `/api/intelligence/*` in `main.py`, registered in `router.py`).
+- Authored integration & QA suite `tests/integration/test_phase4_11_proactive_intelligence.py` (4/4 passed) proving all 18 Readiness Checklist items and the Recommended First Demonstration.
+
+Phase 4.11 Stage 5 (Frontend UI, Vitest & Playwright E2E) deliverables are COMPLETED:
+- Created types (`frontend/src/types/proactiveIntelligence.ts`), API service (`frontend/src/services/proactiveIntelligenceService.ts`), React hook (`frontend/src/hooks/useIntelligence.ts`), modular components (`IntelligenceMetricsBar`, `IntelligenceFeedList`, `IntelligenceDetailPanel`, `IntelligenceScanPanel`), and `IntelligenceFeedPage` mounted at `/agents/intelligence` with `Proactive Intelligence` (`Phase 4.11`) Sidebar link.
+- Empirical QA Gates:
+  - Ruff check across `backend/` & `tests/`: **0 errors**.
+  - Alembic head: **`1f2a3b4c5d6e (head)`**.
+  - Full unit test suite (`pytest tests/unit/`): **645/645 passed**.
+  - Phase 4.1–4.11 + Security & Migrations integration suite: **110/110 passed**.
+  - Frontend build (`tsc && vite build`): **0 errors** (1,905 modules).
+  - Vitest (`npx vitest run`): **53/53 files, 395/395 tests passed**.
+  - Playwright Chromium (`tests/e2e/phase4_11_proactive_intelligence.spec.ts`): **2/2 passed**.
+
+---
+
+### Previous Milestone Archive (Phase 4.10)
+
 Phase 4.10 (Event-Driven & Trigger-Based Agents) is 100% COMPLETE across all four member roles (`BACKEND_FIRST`).
 
 Phase 4.10 Member 1 (Event Contracts, Ingestion, Validation & Store) deliverables are COMPLETED:

@@ -2494,3 +2494,124 @@ Append-only security and lifecycle audit log for events, triggers, and webhook c
 | `reason` | `TEXT` | NULL | Explanation of audit event |
 | `details` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized diagnostic metadata |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Timestamp |
+
+
+---
+
+### 3.34 Phase 4.11 — Proactive Enterprise Intelligence Tables
+
+#### Table: `intelligence_runs`
+Tracks proactive detection scan executions, detector versions, metrics, and partial detector failures.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `run_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Run identifier (`intel_run_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `trigger_source` | `VARCHAR(64)` | NOT NULL | `manual`, `event`, `schedule` |
+| `source_event_id` | `VARCHAR(128)` | NULL, INDEX | Optional Phase 4.10 event ID |
+| `detector_versions` | `JSONB` | NOT NULL, DEFAULT '{}' | Map of detector_id -> version |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `running`, `completed`, `completed_with_errors`, `failed` |
+| `candidates_generated` | `INTEGER` | NOT NULL, DEFAULT 0 | Total candidate count |
+| `insights_published` | `INTEGER` | NOT NULL, DEFAULT 0 | Published insights count |
+| `insights_suppressed` | `INTEGER` | NOT NULL, DEFAULT 0 | Suppressed/deduplicated count |
+| `detector_errors` | `JSONB` | NOT NULL, DEFAULT '[]' | Recorded per-detector failures |
+| `started_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Scan start timestamp |
+| `completed_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Scan completion timestamp |
+
+#### Table: `intelligence_insights`
+Stores ranked, tenant-scoped proactive intelligence insights and lifecycle state.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `insight_id` | `VARCHAR(128)` | UNIQUE, NOT NULL, INDEX | Insight identifier (`ins_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `run_id` | `VARCHAR(128)` | NOT NULL, INDEX | Producing run ID |
+| `category` | `VARCHAR(64)` | NOT NULL, INDEX | `knowledge_gap`, `contradiction`, `stale_knowledge`, `significant_change`, `emerging_trend` |
+| `title` | `VARCHAR(200)` | NOT NULL | Insight headline |
+| `summary` | `TEXT` | NOT NULL | Sanitized summary |
+| `observed_facts` | `JSONB` | NOT NULL, DEFAULT '[]' | Verified observed facts |
+| `inferred_explanation` | `TEXT` | NULL | Separated explanation |
+| `limitations` | `JSONB` | NOT NULL, DEFAULT '[]' | Explicit evidence gaps/caveats |
+| `affected_resource_refs` | `JSONB` | NOT NULL, DEFAULT '[]' | Referenced KEEP resources |
+| `audience_roles` | `JSONB` | NOT NULL, DEFAULT '[]' | Authorized role scopes |
+| `impact_score` | `FLOAT` | NOT NULL | Normalized `[0,1]` impact |
+| `relevance_score` | `FLOAT` | NOT NULL | Normalized `[0,1]` relevance |
+| `evidence_quality_score` | `FLOAT` | NOT NULL | Normalized `[0,1]` evidence quality |
+| `urgency_score` | `FLOAT` | NOT NULL | Normalized `[0,1]` urgency |
+| `novelty_score` | `FLOAT` | NOT NULL | Normalized `[0,1]` novelty |
+| `priority_score` | `FLOAT` | NOT NULL, INDEX | Weighted score `0..100` |
+| `confidence_score` | `FLOAT` | NOT NULL | Independent confidence `[0,1]` |
+| `status` | `VARCHAR(32)` | NOT NULL, INDEX | `published`, `suppressed`, `withheld`, `investigating`, `dismissed`, `resolved` |
+| `dedup_key` | `VARCHAR(255)` | NOT NULL, INDEX | Deterministic deduplication key |
+| `detector_id` | `VARCHAR(128)` | NOT NULL | Producing detector |
+| `detector_version` | `VARCHAR(32)` | NOT NULL | Detector version |
+| `ranking_version` | `VARCHAR(32)` | NOT NULL | Ranking formula version |
+| `workflow_execution_id` | `VARCHAR(128)` | NULL | Optional linked investigation workflow |
+| `owner_id` | `VARCHAR(128)` | NULL | Optional owner user ID |
+| `source_freshness_at` | `TIMESTAMP WITH TIME ZONE` | NULL | Latest source observation timestamp |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Creation timestamp |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Last update timestamp |
+
+#### Table: `intelligence_evidence`
+Stores insight-to-source provenance links without duplicating restricted document bodies.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `evidence_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Evidence record ID (`evd_...`) |
+| `insight_id` | `VARCHAR(128)` | NOT NULL, INDEX | Parent insight ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `resource_ref` | `VARCHAR(255)` | NOT NULL, INDEX | Source reference (`doc:...`, `ver:...`, `run:...`) |
+| `source_type` | `VARCHAR(64)` | NOT NULL | `document`, `document_version`, `research_run`, `knowledge_record` |
+| `source_version` | `VARCHAR(64)` | NULL | Source version tag |
+| `snippet` | `TEXT` | NULL | Short sanitized excerpt |
+| `validation_outcome` | `VARCHAR(32)` | NOT NULL | `valid`, `missing`, `unauthorized`, `stale` |
+| `verified_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Verification timestamp |
+
+#### Table: `intelligence_feedback`
+Captures user feedback and per-user dismissal preferences separately from org-wide insight state.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `feedback_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Feedback identifier (`ifb_...`) |
+| `insight_id` | `VARCHAR(128)` | NOT NULL, INDEX | Target insight ID |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `user_id` | `VARCHAR(128)` | NOT NULL, INDEX | Submitting user ID |
+| `feedback` | `VARCHAR(32)` | NOT NULL | `useful`, `irrelevant`, `already_known`, `incorrect`, `needs_more_evidence` |
+| `comment` | `TEXT` | NULL | Optional feedback comment |
+| `scope` | `VARCHAR(32)` | NOT NULL, DEFAULT 'user' | `user` or `organization` |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Submission timestamp |
+
+#### Table: `intelligence_suppressions`
+Tracks active deduplication/suppression windows and per-user dismissals.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `suppression_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Suppression ID (`isup_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `dedup_key` | `VARCHAR(255)` | NOT NULL, INDEX | Suppressed deduplication key |
+| `scope` | `VARCHAR(32)` | NOT NULL | `tenant`, `audience`, `user` |
+| `user_id` | `VARCHAR(128)` | NULL, INDEX | Set when `scope == 'user'` |
+| `reason` | `TEXT` | NOT NULL | Suppression/dismissal reason |
+| `suppressed_until` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, INDEX | Window expiration |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Creation timestamp |
+
+#### Table: `intelligence_audit_events`
+Append-only audit trail for candidate creation, validation, publication, suppression, dismissal, and resolution.
+
+| Column | Type | Constraints | Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Internal primary key |
+| `audit_id` | `VARCHAR(128)` | UNIQUE, NOT NULL | Audit identifier (`iaud_...`) |
+| `tenant_id` | `VARCHAR(128)` | NOT NULL, INDEX | Tenant isolation boundary |
+| `insight_id` | `VARCHAR(128)` | NULL, INDEX | Related insight ID |
+| `run_id` | `VARCHAR(128)` | NULL, INDEX | Related run ID |
+| `action` | `VARCHAR(64)` | NOT NULL, INDEX | `candidate.created`, `insight.published`, `insight.suppressed`, `insight.withheld`, `insight.dismissed`, `insight.resolved`, `insight.feedback`, `run.detector_failed` |
+| `actor_id` | `VARCHAR(128)` | NOT NULL | User or system actor |
+| `reason` | `TEXT` | NULL | Explanation |
+| `details` | `JSONB` | NOT NULL, DEFAULT '{}' | Sanitized diagnostic metadata |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | NOT NULL, DEFAULT NOW() | Audit timestamp |

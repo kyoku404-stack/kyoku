@@ -15,6 +15,14 @@ from backend.app.models.agent_collaboration import (
     CollaborationTaskModel,
 )
 from backend.app.models.agent_execution import AgentCheckpoint, AgentExecution
+from backend.app.models.agent_intelligence import (
+    IntelligenceAuditEventModel,
+    IntelligenceEvidenceModel,
+    IntelligenceFeedbackModel,
+    IntelligenceInsightModel,
+    IntelligenceRunModel,
+    IntelligenceSuppressionModel,
+)
 from backend.app.models.agent_memory import (
     MemoryAccessEventModel,
     MemoryModel,
@@ -167,6 +175,12 @@ __all__ = [
     "EventAuditLogModel",
     "EventDeliveryModel",
     "IngestionJob",
+    "IntelligenceAuditEventModel",
+    "IntelligenceEvidenceModel",
+    "IntelligenceFeedbackModel",
+    "IntelligenceInsightModel",
+    "IntelligenceRunModel",
+    "IntelligenceSuppressionModel",
     "Invitation",
     "KgEntity",
     "KgRelationship",
