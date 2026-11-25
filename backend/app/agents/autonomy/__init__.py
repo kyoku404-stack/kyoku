@@ -29,12 +29,15 @@ from backend.app.agents.autonomy.contracts import (
 )
 from backend.app.agents.autonomy.controller import AutonomousWorkflowController
 from backend.app.agents.autonomy.evaluator import ProgressEvaluator
+from backend.app.agents.autonomy.graph import build_autonomous_workflow_graph
 from backend.app.agents.autonomy.planner_adapter import AutonomyPlannerAdapter
+from backend.app.agents.autonomy.policy import AutonomyPolicyEngine
 from backend.app.agents.autonomy.repository import (
     BaseAutonomyRepository,
     InMemoryAutonomyRepository,
     SqlAlchemyAutonomyRepository,
 )
+from backend.app.agents.autonomy.service import AutonomousWorkflowService
 from backend.app.agents.autonomy.state import AutonomyState, sanitize_autonomy_state
 
 __all__ = [
@@ -49,11 +52,13 @@ __all__ = [
     "AutonomousWorkflowController",
     "AutonomousWorkflowRecord",
     "AutonomousWorkflowRequest",
+    "AutonomousWorkflowService",
     "AutonomyBudgetSnapshot",
     "AutonomyDecisionRecord",
     "AutonomyEventRecord",
     "AutonomyPlannerAdapter",
     "AutonomyPolicy",
+    "AutonomyPolicyEngine",
     "AutonomyPolicyInterface",
     "AutonomySecurityContext",
     "AutonomyState",
@@ -69,6 +74,7 @@ __all__ = [
     "ResumeWorkflowRequest",
     "SqlAlchemyAutonomyRepository",
     "StepStatus",
+    "build_autonomous_workflow_graph",
     "is_valid_autonomy_transition",
     "sanitize_autonomy_state",
 ]

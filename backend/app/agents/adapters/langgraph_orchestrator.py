@@ -69,6 +69,7 @@ class CompiledKeepWorkflowGraph:
         completed_nodes: set[str] | None = None,
         checkpoint_callback: CheckpointCallback | None = None,
         cancel_checker: Callable[[], bool] | None = None,
+        max_supersteps: int | None = None,
     ) -> dict[str, Any]:
         """Executes the compiled graph with parallel fan-out/fan-in and per-step checkpointing."""
         state = dict(initial_state)
@@ -81,12 +82,14 @@ class CompiledKeepWorkflowGraph:
             frontier = self._resolve_next(START, state)
 
         # Bounded iteration guard prevents accidental cycles in graph definitions
-        max_supersteps = max(len(self._nodes) * 3, 16)
+        resolved_max_supersteps = (
+            max_supersteps if max_supersteps is not None else max(len(self._nodes) * 3, 16)
+        )
         superstep = 0
 
         while frontier:
             superstep += 1
-            if superstep > max_supersteps:
+            if superstep > resolved_max_supersteps:
                 raise RuntimeError("Workflow graph exceeded maximum superstep limit (possible cycle).")
 
             if cancel_checker is not None and cancel_checker():

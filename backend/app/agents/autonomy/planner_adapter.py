@@ -11,6 +11,7 @@ Specification: devdocs/p4/p4.9.txt (Sections 3, 5, 6)
 from __future__ import annotations
 
 from typing import Any
+from uuid import uuid4
 
 from backend.app.agents.autonomy.contracts import (
     AutonomyPolicy,
@@ -99,7 +100,7 @@ class AutonomyPlannerAdapter:
                 tenant_id=security_context.tenant_id,
                 roles=list(security_context.roles),
                 permissions=list(security_context.permissions),
-                correlation_id=security_context.correlation_id or "",
+                correlation_id=security_context.correlation_id or f"corr_{uuid4().hex[:12]}",
                 trusted=True,
             )
             try:

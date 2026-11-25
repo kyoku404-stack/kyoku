@@ -7228,3 +7228,19 @@ COMPLETED ✓
 - Implemented `SqlAlchemyAutonomyRepository` (`backend/app/agents/autonomy/repository.py`) supporting session factory & async session persistence across process restarts under strict tenant boundaries.
 - Implemented `AutonomyPlannerAdapter` (`backend/app/agents/autonomy/planner_adapter.py`) wrapping Phase 4.4 planning + adaptive bounded replanning, and `ProgressEvaluator` (`backend/app/agents/autonomy/evaluator.py`) evaluating objective satisfaction, evidence sufficiency, failures, and human review flags.
 - Verified with `tests/unit/test_phase4_9_autonomy_planning.py`, `tests/integration/test_db_migrations.py`, `alembic heads`, and Ruff.
+
+---
+
+### Handoff Entry — Phase 4.9 Member 3: Policies, Safety & LangGraph Engine
+
+- **Date:** 2026-11-25
+- **Author:** Member 3 (Autonomy Policies, Safety & LangGraph Integration)
+- **Branch:** `agent/ai-lead/feature/phase-4.9-autonomous-workflow-engine`
+- **Status:** COMPLETED — Ready for Member 4 (FastAPI Endpoints, Lifespan Wiring & Full QA)
+
+#### Summary of Deliverables
+- Implemented `AutonomyPolicyEngine` (`backend/app/agents/autonomy/policy.py`) enforcing server-side caps, prompt-injection rejection, fail-closed plan validation against agents/tools, write-approval gating, cross-tenant boundaries, and resume permission re-authorization.
+- Implemented `build_autonomous_workflow_graph` (`backend/app/agents/autonomy/graph.py`) using `KeepStateGraph` with dedicated separated nodes (`validate_policy`, `create_plan`, `validate_plan`, `execute_task`, `evaluate_progress`, `replan_within_budget`, `pause_for_approval`, `finalize_outcome`), integrating Phase 4.2–4.8 services and sanitized checkpointing.
+- Extended `CompiledKeepWorkflowGraph.arun` in `backend/app/agents/adapters/langgraph_orchestrator.py` with optional `max_supersteps` limit for bounded multi-step autonomous loops.
+- Implemented `AutonomousWorkflowService` (`backend/app/agents/autonomy/service.py`) exposing lifecycle orchestration, cancellation, and replay-safe approval resume.
+- Verified Stage 3 security & adaptive loop unit tests (`tests/unit/test_phase4_9_autonomy_security.py`).
