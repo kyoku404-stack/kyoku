@@ -32,6 +32,7 @@ import {
   Server,
   Award,
   BookOpen,
+  GitBranch,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -135,6 +136,13 @@ const navItems: NavItem[] = [
     icon: BookOpen,
     requiredPermission: Permission.AGENT_VIEW,
     badge: 'Phase 4.5',
+  },
+  {
+    label: 'Autonomous Workflows',
+    path: ROUTES.AGENT_AUTONOMY,
+    icon: GitBranch,
+    requiredPermission: Permission.AGENT_VIEW,
+    badge: 'Phase 4.9',
   },
   { label: 'Meeting Intelligence', path: ROUTES.MEETINGS, icon: Video },
   { label: 'Analytics & Graph', path: ROUTES.ANALYTICS, icon: BarChart3, requiredPermission: Permission.ANALYTICS_VIEW },

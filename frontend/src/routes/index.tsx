@@ -56,6 +56,11 @@ const AgentRuntimePage = lazy(() =>
 const ResearchAgentsPage = lazy(() =>
   import('@/pages/ResearchAgentsPage').then((m) => ({ default: m.ResearchAgentsPage }))
 );
+const AutonomousWorkflowsPage = lazy(() =>
+  import('@/pages/AutonomousWorkflowsPage').then((m) => ({
+    default: m.AutonomousWorkflowsPage,
+  }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -472,6 +477,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <ResearchAgentsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'agents/autonomy',
+        element: (
+          <SuspenseWrapper>
+            <AutonomousWorkflowsPage />
           </SuspenseWrapper>
         ),
       },
