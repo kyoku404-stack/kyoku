@@ -62,16 +62,16 @@ def _apply_operator(op: str, actual: Any, expected: Any, exists: bool) -> bool:
     if not exists:
         return op == "neq"
     if op == "eq":
-        return actual == expected
+        return bool(actual == expected)
     if op == "neq":
-        return actual != expected
+        return bool(actual != expected)
     if op == "in":
-        return isinstance(expected, (list, tuple, set)) and actual in expected
+        return bool(isinstance(expected, (list, tuple, set)) and actual in expected)
     if op == "not_in":
-        return isinstance(expected, (list, tuple, set)) and actual not in expected
+        return bool(isinstance(expected, (list, tuple, set)) and actual not in expected)
     if op == "contains":
         if isinstance(actual, (str, list, tuple)):
-            return expected in actual
+            return bool(expected in actual)
         return False
     if op in ("gt", "gte", "lt", "lte"):
         try:
