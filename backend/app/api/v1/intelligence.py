@@ -15,6 +15,7 @@ Exposes:
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from backend.app.agents.contracts import AgentContext
@@ -69,7 +70,9 @@ def _raise_http(exc: AgentLayerError) -> None:
     ) from exc
 
 
-def _build_orchestration_dispatcher(request: Request):
+def _build_orchestration_dispatcher(
+    request: Request,
+) -> Callable[[IntelligenceInsight, str, IntelligenceSecurityContext, str | None], Awaitable[str | None]]:
     async def _dispatch(
         insight: IntelligenceInsight,
         workflow_id: str,
