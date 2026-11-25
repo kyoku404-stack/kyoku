@@ -13,6 +13,9 @@ from backend.app.api.v1.analytics import router as analytics_router
 from backend.app.api.v1.assistant import router as assistant_router
 from backend.app.api.v1.audit import router as audit_router
 from backend.app.api.v1.auth import router as auth_router
+from backend.app.api.v1.autonomous_workflows import (
+    router as autonomous_workflows_router,
+)
 from backend.app.api.v1.chat import router as chat_router
 from backend.app.api.v1.collaboration import router as collaboration_router
 from backend.app.api.v1.connectors import router as connectors_router
@@ -76,6 +79,7 @@ api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(connectors_router)
 api_v1_router.include_router(collaboration_router)
 api_v1_router.include_router(agent_collaboration_router)
+api_v1_router.include_router(autonomous_workflows_router)
 api_v1_router.include_router(security_router)
 api_v1_router.include_router(workflows_router)
 api_v1_router.include_router(plugins_router)

@@ -7244,3 +7244,16 @@ COMPLETED ✓
 - Extended `CompiledKeepWorkflowGraph.arun` in `backend/app/agents/adapters/langgraph_orchestrator.py` with optional `max_supersteps` limit for bounded multi-step autonomous loops.
 - Implemented `AutonomousWorkflowService` (`backend/app/agents/autonomy/service.py`) exposing lifecycle orchestration, cancellation, and replay-safe approval resume.
 - Verified Stage 3 security & adaptive loop unit tests (`tests/unit/test_phase4_9_autonomy_security.py`).
+
+---
+
+### Handoff Entry — Phase 4.9 Member 4: FastAPI Endpoints, Lifespan Integration & Full QA
+
+- **Date:** 2026-11-25
+- **Author:** Member 4 (API, Persistence, Monitoring & Integration)
+- **Branch:** `agent/ai-lead/feature/phase-4.9-autonomous-workflow-engine`
+- **Status:** COMPLETED — Ready for Stage 5 (Frontend UI & E2E, `UI_MODE = YES`)
+
+#### Summary of Deliverables
+- Mounted Phase 4.9 FastAPI endpoints in `backend/app/api/v1/autonomous_workflows.py` (`/api/v1/autonomous-workflows*` and `/api/autonomous-workflows*`), registered in `backend/app/api/v1/router.py`, and bound lifespan-managed `autonomy_repository` & `autonomy_service` in `backend/app/main.py` wrapping Phase 4.1–4.8 services.
+- Authored end-to-end integration & QA suite `tests/integration/test_phase4_9_autonomy_integration.py` (8/8 passed) proving all 12 Definition-of-Done checklist items, the Churn Investigation adaptive replan milestone, write-approval pause/resume without side-effect replay, permission revocation, cross-tenant isolation, server policy clamping, and restart durability.
