@@ -7276,3 +7276,18 @@ COMPLETED ✓
   - `npm run lint`: **0 errors, 0 warnings**
   - `npx vitest run`: **52/52 files, 393/393 tests passed** (including `autonomousWorkflowService.test.ts` + `autonomousWorkflowComponents.test.tsx`)
   - Playwright Chromium (`tests/e2e/phase4_9_autonomous_workflows.spec.ts`): **2/2 passed**
+
+---
+
+### Handoff Entry — Phase 4.10 Member 1: Event Contracts & Ingestion
+
+- **Date:** 2026-11-25
+- **Author:** Member 1 (Event Contracts & Ingestion)
+- **Branch:** `agent/ai-lead/feature/phase-4.10-event-driven-trigger-agents`
+- **Status:** COMPLETED — Ready for Member 2 (Trigger Registry, Rule Engine & Persistence)
+
+#### Summary of Deliverables
+- Authored master Architecture Specification (`docs/Architecture/phase-4.10-event-driven-trigger-agents.md`), ADRs `ADR-095`–`ADR-097` (`docs/decisions/decisions.md`), REST API Section 29 (`docs/API/api-contract.md`), and Schema Section 3.33 (`docs/Database/database-schema.md`).
+- Extended `backend/app/agents/errors.py` with 14 Phase 4.10 typed error codes and exceptions (`EventValidationError`, `EventNotFoundError`, `EventDuplicateError`, `EventTenantMismatchError`, `EventDeadLetterError`, `TriggerNotFoundError`, `TriggerAlreadyExistsError`, `TriggerDisabledError`, `TriggerPolicyDeniedError`, `TriggerAccessDeniedError`, `TriggerWorkflowNotAllowedError`, `TriggerRateLimitedError`, `WebhookAuthenticationError`, `WebhookReplayDetectedError`).
+- Implemented event contracts, validation, event store, publisher & outbox relay, ingestion service, internal domain adapter, and HMAC-SHA256 webhook adapter under `backend/app/agents/events/` and `backend/app/events/`.
+- Verified Stage 1 unit tests (`tests/unit/test_phase4_10_event_ingestion.py`: 5/5 passed).
