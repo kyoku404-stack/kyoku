@@ -18,6 +18,7 @@ from backend.app.agents.triggers.models import (
     TriggerUpdateRequest,
     build_dispatch_key,
 )
+from backend.app.agents.triggers.policies import TriggerPolicyEngine
 from backend.app.agents.triggers.registry import (
     DEFAULT_ALLOWED_AUTONOMOUS_WORKFLOWS,
     DEFAULT_ALLOWED_STANDARD_WORKFLOWS,
@@ -29,6 +30,7 @@ from backend.app.agents.triggers.repository import (
     SqlAlchemyTriggerRepository,
 )
 from backend.app.agents.triggers.rule_engine import TriggerRuleEngine
+from backend.app.agents.triggers.scheduler import TriggerScheduler, compute_next_run
 
 __all__ = [
     "ALLOWED_CONDITION_OPERATORS",
@@ -43,13 +45,16 @@ __all__ = [
     "TriggerCreateRequest",
     "TriggerDispatchRecord",
     "TriggerExecutionMode",
+    "TriggerPolicyEngine",
     "TriggerRegistry",
     "TriggerRule",
     "TriggerRuleEngine",
     "TriggerRuleMatch",
     "TriggerSchedule",
+    "TriggerScheduler",
     "TriggerUpdateRequest",
     "build_dispatch_key",
+    "compute_next_run",
     "evaluate_conditions",
     "validate_condition_spec",
 ]
