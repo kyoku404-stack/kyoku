@@ -37,6 +37,14 @@ from backend.app.models.agent_tool import (
     ToolAuditLogModel,
     ToolInvocationModel,
 )
+from backend.app.models.agent_triggers import (
+    AgentEventModel,
+    EventAuditLogModel,
+    EventDeliveryModel,
+    TriggerDispatchModel,
+    TriggerRuleModel,
+    TriggerScheduleModel,
+)
 from backend.app.models.agent_workflow import AgentWorkflowExecution, AgentWorkflowStep
 from backend.app.models.analytics import (
     AIRecommendation,
@@ -119,6 +127,7 @@ __all__ = [
     "AIRecommendation",
     "ActivityLog",
     "AgentCheckpoint",
+    "AgentEventModel",
     "AgentExecution",
     "AgentPlan",
     "AgentPlanEvent",
@@ -155,6 +164,8 @@ __all__ = [
     "DocumentComment",
     "DocumentVersion",
     "DocumentVersionHistory",
+    "EventAuditLogModel",
+    "EventDeliveryModel",
     "IngestionJob",
     "Invitation",
     "KgEntity",
@@ -199,6 +210,9 @@ __all__ = [
     "Team",
     "ToolAuditLogModel",
     "ToolInvocationModel",
+    "TriggerDispatchModel",
+    "TriggerRuleModel",
+    "TriggerScheduleModel",
     "User",
     "Workflow",
     "WorkflowApproval",

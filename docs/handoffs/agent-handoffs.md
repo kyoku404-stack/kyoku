@@ -7291,3 +7291,19 @@ COMPLETED ✓
 - Extended `backend/app/agents/errors.py` with 14 Phase 4.10 typed error codes and exceptions (`EventValidationError`, `EventNotFoundError`, `EventDuplicateError`, `EventTenantMismatchError`, `EventDeadLetterError`, `TriggerNotFoundError`, `TriggerAlreadyExistsError`, `TriggerDisabledError`, `TriggerPolicyDeniedError`, `TriggerAccessDeniedError`, `TriggerWorkflowNotAllowedError`, `TriggerRateLimitedError`, `WebhookAuthenticationError`, `WebhookReplayDetectedError`).
 - Implemented event contracts, validation, event store, publisher & outbox relay, ingestion service, internal domain adapter, and HMAC-SHA256 webhook adapter under `backend/app/agents/events/` and `backend/app/events/`.
 - Verified Stage 1 unit tests (`tests/unit/test_phase4_10_event_ingestion.py`: 5/5 passed).
+
+---
+
+### Handoff Entry — Phase 4.10 Member 2: Trigger Registry, Rule Engine & Persistence
+
+- **Date:** 2026-11-25
+- **Author:** Member 2 (Trigger Registry, Rule Engine & Persistence)
+- **Branch:** `agent/ai-lead/feature/phase-4.10-event-driven-trigger-agents`
+- **Status:** COMPLETED — Ready for Member 3 (Queue Reliability, Policies & Scheduler)
+
+#### Summary of Deliverables
+- Implemented 6 SQLAlchemy ORM models (`AgentEventModel`, `TriggerRuleModel`, `EventDeliveryModel`, `TriggerDispatchModel`, `TriggerScheduleModel`, `EventAuditLogModel`) in `backend/app/models/agent_triggers.py`, exported in `backend/app/models/__init__.py`.
+- Created Alembic schema migration `backend/migrations/versions/0e1f2a3b4c5d_phase_4_10_event_driven_triggers.py` (`9d0e1f2a3b4c` → `0e1f2a3b4c5d (head)`) and updated `tests/integration/test_db_migrations.py`.
+- Implemented `SqlAlchemyEventStore` (`events/event_store.py`) and `BaseTriggerRepository`, `InMemoryTriggerRepository`, `SqlAlchemyTriggerRepository` (`triggers/repository.py`) with DB unique `dispatch_key` atomic claiming.
+- Implemented declarative trigger models (`triggers/models.py`), allowlisted zero-eval condition evaluator (`triggers/conditions.py`), `TriggerRegistry` (`triggers/registry.py`), and `TriggerRuleEngine` (`triggers/rule_engine.py`) with compatibility aliases in `backend/app/triggers/`.
+- Verified with `tests/unit/test_phase4_10_trigger_rules.py`, `tests/integration/test_db_migrations.py`, `alembic heads`, and Ruff.

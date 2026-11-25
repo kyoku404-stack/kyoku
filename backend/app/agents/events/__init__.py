@@ -13,7 +13,11 @@ from backend.app.agents.events.contracts import (
     WebhookReceipt,
     WebhookSourceConfig,
 )
-from backend.app.agents.events.event_store import BaseEventStore, InMemoryEventStore
+from backend.app.agents.events.event_store import (
+    BaseEventStore,
+    InMemoryEventStore,
+    SqlAlchemyEventStore,
+)
 from backend.app.agents.events.ingestion import EventIngestionService
 from backend.app.agents.events.publisher import (
     EventPublisherInterface,
@@ -40,6 +44,7 @@ __all__ = [
     "InternalEventPublisher",
     "KeepEvent",
     "OutboxEventRelay",
+    "SqlAlchemyEventStore",
     "WebhookReceipt",
     "WebhookSourceConfig",
 ]
