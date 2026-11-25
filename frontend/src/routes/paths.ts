@@ -52,6 +52,7 @@ export const ROUTES = {
   AGENT_RUNTIME: '/agents/runtime',
   AGENT_RESEARCH: '/agents/research',
   AGENT_AUTONOMY: '/agents/autonomy',
+  AGENT_INTELLIGENCE: '/agents/intelligence',
   RESEARCH: '/research',
   NOT_FOUND: '*',
 } as const;

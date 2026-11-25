@@ -61,6 +61,11 @@ const AutonomousWorkflowsPage = lazy(() =>
     default: m.AutonomousWorkflowsPage,
   }))
 );
+const IntelligenceFeedPage = lazy(() =>
+  import('@/pages/IntelligenceFeedPage').then((m) => ({
+    default: m.IntelligenceFeedPage,
+  }))
+);
 const DashboardPage = lazy(() =>
 
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
@@ -485,6 +490,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <AutonomousWorkflowsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'agents/intelligence',
+        element: (
+          <SuspenseWrapper>
+            <IntelligenceFeedPage />
           </SuspenseWrapper>
         ),
       },
