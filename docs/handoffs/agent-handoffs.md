@@ -7386,3 +7386,19 @@ COMPLETED ✓
 - Implemented `InsightFeedbackService` (`backend/app/agents/intelligence/feedback.py`) and labelled detector evaluation (`backend/app/agents/intelligence/evaluation.py`).
 - Wired `EvidenceValidator` and `IntelligencePolicyEngine` as defaults in `IntelligenceService`.
 - Verified with `tests/unit/test_phase4_11_governance_security.py`, `tests/unit/test_phase4_11_prioritization.py`, and `tests/unit/test_phase4_11_detectors.py`.
+
+
+---
+
+### Handoff Entry — Phase 4.11 Member 4: FastAPI Endpoints, Phase 4.10 Bridge & Full Backend QA
+
+- **Date:** 2026-11-25
+- **Author:** Member 4 (Integration, APIs & Intelligence Feed)
+- **Branch:** `agent/ai-lead/feature/phase-4.11-proactive-enterprise-intelligence`
+- **Status:** COMPLETED — Ready for Stage 5 Frontend UI (`UI_MODE = YES`)
+
+#### Summary of Deliverables
+- Mounted all Phase 4.11 REST endpoints in `backend/app/api/v1/intelligence.py` (`/api/v1/intelligence/*` + `/api/intelligence/*` compatibility mount in `backend/app/main.py`, registered in `backend/app/api/v1/router.py`).
+- Bridged `handle_proactive_event()` to Phase 4.10 events and `/insights/{insight_id}/investigate` to Phase 4.3 `KeepOrchestrationService`.
+- Authored integration & QA suite `tests/integration/test_phase4_11_proactive_intelligence.py` (4/4 passed) proving RBAC, cross-tenant isolation, Recommended First Demonstration, deduplication, restart persistence, and operational metrics.
+- Verified Ruff (0 errors), full unit suite (645/645 passed), and full Phase 4.1–4.11 + migrations + security integration suite (110/110 passed).
